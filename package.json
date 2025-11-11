@@ -1,0 +1,35 @@
+{
+  "name": "adminpannelfe",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode qa",
+    "build:qa": "vite build --mode qa",
+    "build:prod": "vite build --mode production",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-form-builder/components-rsuite": "^7.5.0",
+    "@react-form-builder/core": "^7.5.0",
+    "@react-form-builder/designer": "^7.5.0",
+    "lucide-react": "^0.553.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.1",
+    "rsuite": "^5.83.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@originjs/vite-plugin-federation": "^1.4.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "vite": "^5.4.3"
+  }
+}

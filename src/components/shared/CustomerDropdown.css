@@ -1,0 +1,104 @@
+.customer-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.customer-dropdown-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 15px;
+  color: #0f172a;
+  min-height: 48px;
+}
+
+.customer-dropdown-trigger:hover {
+  border-color: #cbd5e1;
+}
+
+.customer-dropdown-trigger:focus-within,
+.customer-dropdown:focus-within .customer-dropdown-trigger {
+  outline: none;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: #666;
+}
+
+.customer-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1050;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-search {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.customer-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  color: #0f172a;
+}
+
+.customer-search-input:focus {
+  outline: none;
+}
+
+.customer-dropdown-list {
+  overflow-y: auto;
+  max-height: 250px;
+}
+
+.customer-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.customer-dropdown-item:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.customer-dropdown-item.selected {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.customer-dropdown-loading,
+.customer-dropdown-empty {
+  padding: 24px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
