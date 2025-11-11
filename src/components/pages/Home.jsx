@@ -59,16 +59,66 @@ function Home({ onLogout }) {
 
       if (Array.isArray(response)) {
         // API returns array directly
-        formsList = response;
-        paginationData.count = response.length;
+        const totalCount = response.length;
+        const pageSize = pagination.page_size;
+        
+        // Case 1: API returns all items (more than page_size) - do client-side pagination
+        if (totalCount > pageSize) {
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = startIndex + pageSize;
+          formsList = response.slice(startIndex, endIndex);
+          
+          const totalPages = Math.ceil(totalCount / pageSize);
+          paginationData = {
+            count: totalCount,
+            next: page < totalPages ? `page=${page + 1}` : null,
+            previous: page > 1 ? `page=${page - 1}` : null,
+          };
+        } 
+        // Case 2: API returns exactly page_size items - assume backend paginated correctly
+        // Enable Next button if we got exactly page_size items (might be more pages)
+        else if (totalCount === pageSize) {
+          formsList = response;
+          paginationData = {
+            count: totalCount, // Approximate - backend should provide total count
+            next: `page=${page + 1}`, // Assume there might be more
+            previous: page > 1 ? `page=${page - 1}` : null,
+          };
+        }
+        // Case 3: API returns fewer than page_size - we're on last page
+        else {
+          formsList = response;
+          paginationData = {
+            count: totalCount,
+            next: null,
+            previous: page > 1 ? `page=${page - 1}` : null,
+          };
+        }
       } else if (response.results) {
         // Paginated response
         formsList = response.results;
-        paginationData = {
-          count: response.count || 0,
-          next: response.next,
-          previous: response.previous,
-        };
+        const totalCount = response.count || 0;
+        const pageSize = pagination.page_size;
+        
+        // If API doesn't provide next/previous URLs, calculate them client-side
+        // This handles cases where API paginates but doesn't return pagination metadata
+        if ((response.next === null || response.next === undefined) && 
+            (response.previous === null || response.previous === undefined) &&
+            totalCount > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          paginationData = {
+            count: totalCount,
+            next: page < totalPages ? `page=${page + 1}` : null,
+            previous: page > 1 ? `page=${page - 1}` : null,
+          };
+        } else {
+          // Use API-provided pagination URLs
+          paginationData = {
+            count: totalCount,
+            next: response.next,
+            previous: response.previous,
+          };
+        }
       }
       
       const transformedForms = formsList.map(apiToLocal);
