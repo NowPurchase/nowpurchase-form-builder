@@ -1,6 +1,6 @@
 import { apiGet, apiPost, apiPut } from './api';
 
-const BASE_ENDPOINT = '/admin/dynamic_log';
+const BASE_ENDPOINT = '/admin/dynamic_form';
 
 export const createDynamicLog = async (data) => {
   const payload = {
