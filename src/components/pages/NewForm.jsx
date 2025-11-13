@@ -8,7 +8,7 @@ import {
 } from "@react-form-builder/components-rsuite";
 import { BiDi } from "@react-form-builder/core";
 import { BuilderView, FormBuilder } from "@react-form-builder/designer";
-import { createDynamicLog, updateDynamicLog, getDynamicLog } from "../../services/dynamicLogApi";
+import { createDynamicLog, updateDynamicLog, getDynamicLog, getCustomerDropdown } from "../../services/dynamicLogApi";
 import { formatErrorMessage, getFieldErrors } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import CustomerDropdown from "../shared/CustomerDropdown";
@@ -17,7 +17,6 @@ import { Menu, X, Loader2, Save, ArrowLeft, Pencil, Trash2 } from "lucide-react"
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
-// Default empty form structure
 const defaultForm = {
   version: "1",
   errorType: "RsErrorMessage",
@@ -40,7 +39,6 @@ const defaultForm = {
   defaultLanguage: "en-US",
 };
 
-// Setup builder view with RSuite components
 const builderComponents = rSuiteComponents.map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
@@ -52,14 +50,12 @@ function NewForm() {
   const [searchParams] = useSearchParams();
   const formBuilderRef = useRef(null);
   
-  // Get edit/duplicate mode from URL params
   const editId = searchParams.get('edit');
   const duplicateId = searchParams.get('duplicate');
   const isEditMode = !!editId;
   const isDuplicateMode = !!duplicateId;
   const formId = editId || duplicateId;
   
-  // State management
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [formType, setFormType] = useState("single");
   const [sections, setSections] = useState([
@@ -74,8 +70,10 @@ function NewForm() {
   const [editingSectionName, setEditingSectionName] = useState(null);
   const [newSectionName, setNewSectionName] = useState("");
   const [templateName, setTemplateName] = useState("");
+  const [description, setDescription] = useState("");
   const [customerId, setCustomerId] = useState(null);
-  const [status, setStatus] = useState("draft");
+  const [customerName, setCustomerName] = useState("");
+  const [status, setStatus] = useState("completed");
   const [saving, setSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -85,7 +83,6 @@ function NewForm() {
   const isRestoringRef = useRef(false);
   const STORAGE_KEY = 'form_builder_draft';
 
-  // Get current form based on selected section
   const getForm = () => {
     if (formType === "single") {
       return sections[0]?.form_json || JSON.stringify(defaultForm);
@@ -94,7 +91,6 @@ function NewForm() {
     return selectedSection?.form_json || JSON.stringify(defaultForm);
   };
 
-  // Save current form to selected section
   const saveCurrentFormToSection = () => {
     if (formBuilderRef.current) {
       const formData = formBuilderRef.current.formAsString;
@@ -110,20 +106,18 @@ function NewForm() {
     }
   };
 
-  // Save form state to localStorage
   const saveToLocalStorage = () => {
-    // Don't save if in edit/duplicate mode or if currently restoring
     if (isEditMode || isDuplicateMode || isRestoringRef.current) return;
     
-    // Save current form to section first
     saveCurrentFormToSection();
     
-    // Use setTimeout to ensure state is updated
     setTimeout(() => {
       try {
         const draftData = {
           templateName,
+          description,
           customerId,
+          customerName,
           status,
           formType,
           sections,
@@ -132,7 +126,7 @@ function NewForm() {
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData));
       } catch (error) {
-        console.error('Failed to save draft to localStorage:', error);
+        // Failed to save draft
       }
     }, 100);
   };
@@ -151,8 +145,14 @@ function NewForm() {
         
         // Restore basic fields
         if (draftData.templateName) setTemplateName(draftData.templateName);
+        if (draftData.description !== null && draftData.description !== undefined) {
+          setDescription(draftData.description);
+        }
         if (draftData.customerId !== null && draftData.customerId !== undefined) {
           setCustomerId(draftData.customerId);
+        }
+        if (draftData.customerName) {
+          setCustomerName(draftData.customerName);
         }
         if (draftData.status) setStatus(draftData.status);
         if (draftData.formType) setFormType(draftData.formType);
@@ -322,11 +322,23 @@ function NewForm() {
   };
 
   const handleSaveFormClick = () => {
+    console.log('[NewForm] Opening save modal with state:', {
+      customerId,
+      customerName,
+      templateName,
+      status,
+      description
+    });
     setFieldErrors({});
     setShowSaveModal(true);
   };
 
   const handleSaveForm = async () => {
+    if (!customerId) {
+      toast.error("Customer is required");
+      return;
+    }
+    
     if (!templateName.trim()) {
       toast.error("Template name is required");
       return;
@@ -366,7 +378,8 @@ function NewForm() {
         template_name: templateName.trim(),
         form_json: formJson,
         customer: customerId,
-        status: status,
+        status: status.toUpperCase(),
+        description: description?.trim() || '',
       };
 
       // Use PUT for edit mode, POST for duplicate/new mode
@@ -426,22 +439,71 @@ function NewForm() {
       try {
         const response = await getDynamicLog(formId);
         
+        console.log('[NewForm] API Response:', response);
+        console.log('[NewForm] Customer data:', {
+          customer: response?.customer,
+          customer_name: response?.customer_name,
+          customerType: typeof response?.customer,
+          isObject: typeof response?.customer === 'object' && response?.customer !== null
+        });
+        
         if (response) {
           // Set template name (for duplicate, user will change it)
           setTemplateName(response.template_name || "");
+          setDescription(response.description ?? "");
           
-          // Set customer ID
+          // Set customer ID and name
           if (response.customer) {
             const customerIdValue = typeof response.customer === 'object' 
               ? response.customer.id 
               : response.customer;
+            
+            console.log('[NewForm] Setting customer ID:', customerIdValue);
             setCustomerId(customerIdValue);
+            
+            // Set customer name if available in response
+            if (response.customer_name) {
+              console.log('[NewForm] Setting customer name from response.customer_name:', response.customer_name);
+              setCustomerName(response.customer_name);
+            } else if (typeof response.customer === 'object' && response.customer.customer_name) {
+              console.log('[NewForm] Setting customer name from response.customer.customer_name:', response.customer.customer_name);
+              setCustomerName(response.customer.customer_name);
+            } else {
+              console.log('[NewForm] No customer name found in response, will fetch it using customer ID:', customerIdValue);
+              // Fetch customer name using the customer ID
+              if (customerIdValue) {
+                try {
+                  const customersResponse = await getCustomerDropdown("");
+                  const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
+                  const foundCustomer = customersList.find(c => c.id === customerIdValue);
+                  if (foundCustomer && foundCustomer.customer_name) {
+                    console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
+                    setCustomerName(foundCustomer.customer_name);
+                  } else {
+                    console.log('[NewForm] Customer not found in dropdown list');
+                  }
+                } catch (err) {
+                  console.error('[NewForm] Failed to fetch customer name:', err);
+                }
+              }
+            }
+          } else {
+            console.log('[NewForm] No customer in response');
           }
           
-          // Set status
+          // Set status (normalize to lowercase)
           if (response.status) {
-            setStatus(response.status);
+            console.log('[NewForm] Setting status:', response.status, '->', response.status.toLowerCase());
+            setStatus(response.status.toLowerCase());
           }
+          
+          console.log('[NewForm] Form data set:', {
+            templateName: response.template_name || "",
+            customerId: response.customer ? (typeof response.customer === 'object' ? response.customer.id : response.customer) : null,
+            customerName: response.customer_name || (typeof response.customer === 'object' && response.customer?.customer_name) || "",
+            status: response.status ? response.status.toLowerCase() : "completed",
+            description: response.description ?? ""
+          });
           
           // Prefill form JSON
           if (response.form_json) {
@@ -502,13 +564,9 @@ function NewForm() {
             }
           }
           
-          // For duplicate mode, auto-open save modal
+          // For duplicate mode, clear template name so user must enter a new one
           if (isDuplicateMode) {
-            // Clear template name so user must enter a new one
             setTemplateName("");
-            setTimeout(() => {
-              setShowSaveModal(true);
-            }, 500);
           }
         }
       } catch (err) {
@@ -550,7 +608,7 @@ function NewForm() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
+  }, [templateName, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
 
   // Save to localStorage before page unload
   useEffect(() => {
@@ -566,7 +624,7 @@ function NewForm() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
+  }, [templateName, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
 
   const handleBack = () => {
     navigate("/home");
@@ -587,8 +645,10 @@ function NewForm() {
 
     // Reset all form state to default
     setTemplateName("");
+    setDescription("");
     setCustomerId(null);
-    setStatus("draft");
+    setCustomerName("");
+    setStatus("completed");
     setFormType("single");
     setSections([
       {
@@ -830,6 +890,54 @@ function NewForm() {
           )}
           <div className="save-modal-content">
             <div className="modal-field-group">
+              <label className="modal-label">
+                Customer <span className="required-asterisk">*</span>
+              </label>
+              {console.log('[NewForm] Rendering CustomerDropdown in modal with:', {
+                customerId,
+                customerName,
+                hasInitialCustomerName: !!customerName
+              })}
+              <CustomerDropdown
+                value={customerId}
+                onChange={(id) => {
+                  console.log('[NewForm] CustomerDropdown onChange called with:', id);
+                  setCustomerId(id);
+                  // Clear error when user selects a customer
+                  if (fieldErrors.customer) {
+                    setFieldErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.customer;
+                      return newErrors;
+                    });
+                  }
+                }}
+                onSelect={(customer) => {
+                  console.log('[NewForm] CustomerDropdown onSelect called with:', customer);
+                  // Update customer name when selected
+                  if (customer && customer.customer_name) {
+                    setCustomerName(customer.customer_name);
+                  }
+                }}
+                initialCustomerName={customerName}
+                placeholder="Select customer..."
+              />
+              {fieldErrors.customer && (
+                <div className="modal-field-error">
+                  {Array.isArray(fieldErrors.customer) 
+                    ? fieldErrors.customer.join(', ')
+                    : fieldErrors.customer}
+                </div>
+              )}
+              {fieldErrors.form_json && (
+                <div className="modal-field-error">
+                  {Array.isArray(fieldErrors.form_json) 
+                    ? fieldErrors.form_json.join(', ')
+                    : fieldErrors.form_json}
+                </div>
+              )}
+            </div>
+            <div className="modal-field-group">
               <label htmlFor="modal-template-name" className="modal-label">
                 Template Name <span className="required-asterisk">*</span>
               </label>
@@ -876,19 +984,31 @@ function NewForm() {
               </select>
             </div>
             <div className="modal-field-group">
-              <label className="modal-label">
-                Customer <span className="optional-text">(optional)</span>
+              <label htmlFor="modal-description" className="modal-label">
+                Description <span className="optional-text">(optional)</span>
               </label>
-              <CustomerDropdown
-                value={customerId}
-                onChange={setCustomerId}
-                placeholder="Select customer..."
+              <textarea
+                id="modal-description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (fieldErrors.description) {
+                    setFieldErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.description;
+                      return newErrors;
+                    });
+                  }
+                }}
+                placeholder="Add a short description for this form..."
+                className={`modal-textarea ${fieldErrors.description ? 'modal-input-error' : ''}`}
+                rows={4}
               />
-              {fieldErrors.form_json && (
+              {fieldErrors.description && (
                 <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.form_json) 
-                    ? fieldErrors.form_json.join(', ')
-                    : fieldErrors.form_json}
+                  {Array.isArray(fieldErrors.description)
+                    ? fieldErrors.description.join(', ')
+                    : fieldErrors.description}
                 </div>
               )}
             </div>
@@ -905,7 +1025,7 @@ function NewForm() {
           <Button
             onClick={handleSaveForm}
             className="modal-submit-btn"
-            disabled={saving || !templateName.trim()}
+            disabled={saving || !templateName.trim() || !customerId}
             loading={saving}
           >
             {saving ? "Saving..." : "Save & Submit"}

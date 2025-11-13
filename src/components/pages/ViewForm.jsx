@@ -15,7 +15,6 @@ import LoadingSpinner from "../shared/LoadingSpinner";
 import "rsuite/dist/rsuite.min.css";
 import "./ViewForm.css";
 
-// Create the view with all RSuite components (same as NewForm.jsx)
 const components = rSuiteComponents.map((c) => c.build().model);
 
 const viewWithCss = createView(components)
@@ -28,15 +27,13 @@ function ViewForm() {
   const { formId } = useParams();
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("preview"); // "preview" or "json"
-  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0); // For multi-step forms
+  const [activeTab, setActiveTab] = useState("preview");
+  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
   const hasFetchedFormRef = useRef(false);
 
   useEffect(() => {
-    // Prevent duplicate calls
     if (!formId) return;
     
-    // Check if we've already fetched this formId
     if (hasFetchedFormRef.current === formId) return;
     
     const fetchForm = async () => {
@@ -71,7 +68,6 @@ function ViewForm() {
         ? formData.form_json
         : JSON.stringify(formData.form_json);
     } else {
-      // For multi-step, return the first section's form_json
       const firstSection = formData.sections?.[0];
       if (firstSection) {
         return typeof firstSection.form_json === "string"
@@ -103,24 +99,21 @@ function ViewForm() {
   const getFormattedJson = () => {
     if (!formData) return "{}";
     
-    // Deep clone to avoid mutating original
     const formattedData = JSON.parse(JSON.stringify(formData));
     
-    // Parse form_json if it's a string
     if (formattedData.form_type === "single" && typeof formattedData.form_json === "string") {
       try {
         formattedData.form_json = JSON.parse(formattedData.form_json);
       } catch (e) {
-        console.error("Failed to parse form_json:", e);
+        // Ignore parse errors
       }
     } else if (formattedData.form_type === "multi-step" && formattedData.sections) {
-      // Parse form_json for each section if it's a string
       formattedData.sections = formattedData.sections.map((section) => {
         if (typeof section.form_json === "string") {
           try {
             section.form_json = JSON.parse(section.form_json);
           } catch (e) {
-            console.error("Failed to parse section form_json:", e);
+            // Ignore parse errors
           }
         }
         return section;
@@ -136,7 +129,6 @@ function ViewForm() {
       await navigator.clipboard.writeText(jsonString);
       toast.success("JSON copied to clipboard!");
     } catch (err) {
-      console.error("Failed to copy JSON:", err);
       toast.error("Failed to copy JSON to clipboard");
     }
   };
@@ -199,7 +191,6 @@ function ViewForm() {
           <div className="form-preview-wrapper">
             {formData.form_type === "multi-step" && getAllSectionsJson() ? (
               <div className="multi-step-preview">
-                {/* Sidebar with sections */}
                 <div className="sections-sidebar">
                   <div className="sections-sidebar-header">
                     <h3>Steps</h3>
@@ -219,7 +210,6 @@ function ViewForm() {
                     ))}
                   </div>
                 </div>
-                {/* Main content area */}
                 <div className="section-content-area">
                   {getAllSectionsJson()[selectedSectionIndex] && (
                     <div className="section-preview">

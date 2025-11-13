@@ -4,13 +4,22 @@ import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "./Toast";
 import "./CustomerDropdown.css";
 
-export default function CustomerDropdown({ value, onChange, placeholder = "Select customer..." }) {
+export default function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName }) {
+  console.log('[CustomerDropdown] Props received:', {
+    value,
+    initialCustomerName,
+    placeholder,
+    hasOnChange: !!onChange,
+    hasOnSelect: !!onSelect
+  });
+  
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const hasFetchedInitialRef = useRef(false);
 
   const fetchCustomers = useCallback(async (query = "") => {
     try {
@@ -33,8 +42,17 @@ export default function CustomerDropdown({ value, onChange, placeholder = "Selec
     }
   }, []);
 
-  // Debounced search effect
+  // Debounced search effect - only when dropdown is open and user enters a query
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery === "") {
+      return;
+    }
+
     // Clear previous timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -42,7 +60,7 @@ export default function CustomerDropdown({ value, onChange, placeholder = "Selec
 
     // Set new timer for debounced search
     debounceTimerRef.current = setTimeout(() => {
-      fetchCustomers(searchQuery);
+      fetchCustomers(trimmedQuery);
     }, 500); // 500ms debounce delay
 
     // Cleanup function
@@ -51,14 +69,20 @@ export default function CustomerDropdown({ value, onChange, placeholder = "Selec
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [searchQuery, fetchCustomers]);
+  }, [isOpen, searchQuery, fetchCustomers]);
 
-  // Fetch customers when dropdown opens (if not already loaded)
+  // Fetch customers when dropdown opens (single initial fetch)
   useEffect(() => {
-    if (isOpen && customers.length === 0 && !loading) {
-      fetchCustomers("");
+    if (isOpen) {
+      if (!hasFetchedInitialRef.current && !loading) {
+        hasFetchedInitialRef.current = true;
+        fetchCustomers("");
+      }
+    } else {
+      hasFetchedInitialRef.current = false;
+      setSearchQuery("");
     }
-  }, [isOpen, customers.length, loading, fetchCustomers]);
+  }, [isOpen, loading, fetchCustomers]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,20 +96,40 @@ export default function CustomerDropdown({ value, onChange, placeholder = "Selec
   }, []);
 
   const selectedCustomer = customers.find((c) => c.customer_id === value);
+  
+  // Use selected customer from list, or initialCustomerName if provided, or placeholder
+  const displayName = selectedCustomer 
+    ? selectedCustomer.customer_name 
+    : (value && initialCustomerName ? initialCustomerName : placeholder);
+  const isPlaceholder = !selectedCustomer && (!value || !initialCustomerName);
+  
+  console.log('[CustomerDropdown] Display logic:', {
+    selectedCustomer: selectedCustomer?.customer_name || 'none',
+    value,
+    initialCustomerName,
+    displayName,
+    isPlaceholder,
+    customersCount: customers.length
+  });
 
   const handleSelect = (customer) => {
     onChange(customer.customer_id);
+    if (onSelect) {
+      onSelect(customer);
+    }
     setIsOpen(false);
     setSearchQuery("");
   };
 
   return (
-    <div className="customer-dropdown" ref={dropdownRef}>
+    <div className={`customer-dropdown ${isOpen ? "open" : ""}`} ref={dropdownRef}>
       <div
         className="customer-dropdown-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>{selectedCustomer ? selectedCustomer.customer_name : placeholder}</span>
+        <span className={isPlaceholder ? "placeholder-text" : ""}>
+          {displayName}
+        </span>
         <span className="dropdown-arrow">{isOpen ? "▲" : "▼"}</span>
       </div>
 

@@ -93,6 +93,43 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.customer-filter-wrapper {
+  flex: 0 0 auto;
+  min-width: 250px;
+  max-width: 350px;
+}
+
+.customer-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.clear-customer-filter-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s ease;
+  opacity: 0.7;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.clear-customer-filter-btn:hover {
+  background: #f1f5f9;
+  color: #1f2937;
+  opacity: 1;
 }
 
 .search-box {
@@ -568,14 +605,12 @@
 
 /* Results Info */
 .results-info {
-  padding: 8px 12px;
-  background: #fafafa;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  padding: 10px 0 0 0;
   font-size: 12px;
   color: #64748b;
   font-weight: 500;
-  border: 1px solid #e5e7eb;
+  margin-top: 8px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .table-container {
@@ -599,11 +634,6 @@
   border-bottom: none;
 }
 
-.forms-table td {
-  padding: 16px;
-  color: #333;
-  font-size: 14px;
-}
 
 .no-data {
   text-align: center;
@@ -670,12 +700,10 @@
 
 .actions-header {
   text-align: center !important;
-  width: 120px;
 }
 
 .actions-cell {
   text-align: center !important;
-  padding: 8px 16px !important;
 }
 
 .row-actions {
@@ -765,46 +793,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
   margin-top: 16px;
   padding: 16px;
-}
-
-.pagination-btn {
-  padding: 6px 14px;
-  background: #0f172a;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.15s ease;
-  letter-spacing: 0.1px;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #1e293b;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.pagination-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.pagination-btn:disabled {
-  background: #e5e7eb;
-  color: #94a3b8;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-.pagination-info {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
 }
 
 /* Sortable table headers */

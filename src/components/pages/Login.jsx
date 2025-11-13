@@ -11,7 +11,6 @@ function Login({ onLogin }) {
   const [countdown, setCountdown] = useState(0);
   const otpInputRef = useRef(null);
 
-  // Countdown timer for resend OTP
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -19,7 +18,6 @@ function Login({ onLogin }) {
     }
   }, [countdown]);
 
-  // Focus OTP input when OTP is sent
   useEffect(() => {
     if (otpSent && otpInputRef.current) {
       otpInputRef.current.focus();
@@ -38,14 +36,12 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      // Automatically prepend +91 to mobile number
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await sendOTP(mobileWithPrefix);
       
-      // Check if OTP was sent successfully
       if (response?.detail || response) {
         setOtpSent(true);
-        setCountdown(60); // 60 seconds countdown
+        setCountdown(60);
         setError("");
       } else {
         setError("Failed to send OTP. Please try again.");
@@ -69,11 +65,9 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      // Automatically prepend +91 to mobile number
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await verifyOTP(mobileWithPrefix, otp);
       
-      // Extract token from response: { token: "...", is_terms_accepted: true }
       const token = response?.token;
       
       if (token) {
@@ -135,7 +129,6 @@ function Login({ onLogin }) {
                   id="mobile"
                   value={mobile}
                   onChange={(e) => {
-                    // Remove +91 if user tries to type it, only allow digits
                     const value = e.target.value.replace(/\+91/g, '').replace(/\D/g, '');
                     setMobile(value);
                   }}
@@ -174,7 +167,6 @@ function Login({ onLogin }) {
                 id="otp"
                 value={otp}
                 onChange={(e) => {
-                  // Only allow digits, max 4 digits
                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                   setOtp(value);
                 }}

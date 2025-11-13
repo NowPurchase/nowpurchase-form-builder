@@ -8,6 +8,7 @@ export const createDynamicLog = async (data) => {
     form_json: data.form_json || {},
     customer: data.customer || null,
     status: data.status || 'draft',
+    description: data.description || '',
   };
 
   return await apiPost(BASE_ENDPOINT + '/', payload);
@@ -20,6 +21,7 @@ export const updateDynamicLog = async (id, data) => {
     form_json: data.form_json || {},
     customer: data.customer || null,
     status: data.status || 'draft',
+    description: data.description || '',
   };
 
   return await apiPut(`${BASE_ENDPOINT}/${id}/`, payload);
@@ -30,15 +32,25 @@ export const getDynamicLog = async (id) => {
 };
 
 export const listDynamicLogs = async (params = {}) => {
-  const queryParams = new URLSearchParams();
+  const queryParams = [];
   
-  if (params.page) queryParams.append('page', params.page);
-  if (params.page_size) queryParams.append('page_size', params.page_size);
-  if (params.status) queryParams.append('status', params.status);
-  if (params.customer) queryParams.append('customer', params.customer);
-  if (params.template_name) queryParams.append('template_name', params.template_name);
+  if (params.page !== undefined && params.page !== null) {
+    queryParams.push(`page=${params.page}`);
+  }
+  if (params.page_size !== undefined && params.page_size !== null) {
+    queryParams.push(`page_size=${params.page_size}`);
+  }
+  if (params.status) {
+    queryParams.push(`status=${encodeURIComponent(params.status)}`);
+  }
+  if (params.customer !== undefined && params.customer !== null) {
+    queryParams.push(`customer=${params.customer}`);
+  }
+  if (params.search) {
+    queryParams.push(`search=${encodeURIComponent(params.search)}`);
+  }
 
-  const queryString = queryParams.toString();
+  const queryString = queryParams.length > 0 ? queryParams.join('&') : '';
   const endpoint = queryString 
     ? `${BASE_ENDPOINT}/?${queryString}`
     : `${BASE_ENDPOINT}/`;

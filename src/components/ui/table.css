@@ -8,6 +8,7 @@
   border-collapse: collapse;
   font-size: 14px;
   background: white;
+  table-layout: fixed;
 }
 
 .table-header {
@@ -16,7 +17,7 @@
 }
 
 .table-head {
-  padding: 8px 12px;
+  padding: 12px 16px;
   text-align: left;
   font-weight: 600;
   font-size: 11px;
@@ -24,14 +25,6 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   position: relative;
-}
-
-.table-head:first-child {
-  padding-left: 16px;
-}
-
-.table-head:last-child {
-  padding-right: 16px;
 }
 
 .table-body {
@@ -60,17 +53,9 @@
 }
 
 .table-cell {
-  padding: 10px 12px;
+  padding: 12px 16px;
   color: #1f2937;
   font-size: 13px;
-}
-
-.table-cell:first-child {
-  padding-left: 16px;
-}
-
-.table-cell:last-child {
-  padding-right: 16px;
 }
 
 .table-footer {
@@ -109,22 +94,43 @@
   font-style: italic;
 }
 
+/* Column width classes for consistent spacing */
+.table-head:first-child,
+.table-cell:first-child {
+  width: 10%;
+}
+
+.table-head:nth-child(2),
+.table-cell:nth-child(2) {
+  width: 25%;
+}
+
+.table-head:nth-child(3),
+.table-cell:nth-child(3) {
+  width: 25%;
+}
+
+.table-head:nth-child(4),
+.table-cell:nth-child(4) {
+  width: 12%;
+}
+
+.table-head:nth-child(5),
+.table-cell:nth-child(5) {
+  width: 18%;
+}
+
+.table-head:nth-child(6),
+.table-cell:nth-child(6) {
+  width: 10%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .table-head,
   .table-cell {
-    padding: 8px 12px;
+    padding: 10px 12px;
     font-size: 12px;
-  }
-  
-  .table-head:first-child,
-  .table-cell:first-child {
-    padding-left: 16px;
-  }
-  
-  .table-head:last-child,
-  .table-cell:last-child {
-    padding-right: 16px;
   }
 }
 
