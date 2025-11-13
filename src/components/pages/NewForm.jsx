@@ -872,7 +872,7 @@ function NewForm() {
                 className="modal-select"
               >
                 <option value="draft">Draft</option>
-                <option value="Completed">Completed</option>
+                <option value="COMPLETED">Completed</option>
               </select>
             </div>
             <div className="modal-field-group">
