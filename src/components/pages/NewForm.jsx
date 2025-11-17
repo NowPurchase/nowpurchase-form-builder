@@ -727,6 +727,13 @@ function NewForm() {
     <div className="new-form-container">
       <div className="new-form-header">
         <div className="header-left">
+          <button 
+            onClick={handleBack} 
+            className="back-button icon-only"
+            title="Back to home"
+          >
+            <span className="button-icon"><ArrowLeft size={18} /></span>
+          </button>
           <button
             className="sidebar-toggle"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -755,13 +762,6 @@ function NewForm() {
             <span className="button-icon">
               {saving ? <Loader2 size={16} className="spinning" /> : <Save size={16} />}
             </span>
-          </button>
-          <button 
-            onClick={handleBack} 
-            className="back-button icon-only"
-            title="Back to home"
-          >
-            <span className="button-icon"><ArrowLeft size={18} /></span>
           </button>
         </div>
       </div>
