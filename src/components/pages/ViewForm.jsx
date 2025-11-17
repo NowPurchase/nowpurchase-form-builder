@@ -163,6 +163,9 @@ function ViewForm() {
         <div className="header-left">
           <h1>{formData["from-name"] || "Form View"}</h1>
           <span className="form-id-badge">ID: {formData.form_id}</span>
+          {formData.version && (
+            <span className="form-version-badge">Version: {formData.version}</span>
+          )}
         </div>
         <div className="header-actions">
           <button onClick={handleBack} className="back-button">

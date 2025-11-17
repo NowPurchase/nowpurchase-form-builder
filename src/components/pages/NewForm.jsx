@@ -443,6 +443,8 @@ function NewForm() {
         console.log('[NewForm] Customer data:', {
           customer: response?.customer,
           customer_name: response?.customer_name,
+          company_name: response?.customer?.company_name,
+          customer_customer_name: response?.customer?.customer_name,
           customerType: typeof response?.customer,
           isObject: typeof response?.customer === 'object' && response?.customer !== null
         });
@@ -450,51 +452,71 @@ function NewForm() {
         if (response) {
           // Set template name (for duplicate, user will change it)
           setTemplateName(response.template_name || "");
-          setDescription(response.description ?? "");
           
-          // Set customer ID and name
-          if (response.customer) {
-            const customerIdValue = typeof response.customer === 'object' 
-              ? response.customer.id 
-              : response.customer;
+          // Only prefill modal fields (customer, status, description) when in EDIT mode
+          // In DUPLICATE mode, these fields should remain empty
+          if (isEditMode) {
+            // Set description
+            setDescription(response.description ?? "");
             
-            console.log('[NewForm] Setting customer ID:', customerIdValue);
-            setCustomerId(customerIdValue);
-            
-            // Set customer name if available in response
-            if (response.customer_name) {
-              console.log('[NewForm] Setting customer name from response.customer_name:', response.customer_name);
-              setCustomerName(response.customer_name);
-            } else if (typeof response.customer === 'object' && response.customer.customer_name) {
-              console.log('[NewForm] Setting customer name from response.customer.customer_name:', response.customer.customer_name);
-              setCustomerName(response.customer.customer_name);
-            } else {
-              console.log('[NewForm] No customer name found in response, will fetch it using customer ID:', customerIdValue);
-              // Fetch customer name using the customer ID
-              if (customerIdValue) {
-                try {
-                  const customersResponse = await getCustomerDropdown("");
-                  const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
-                  const foundCustomer = customersList.find(c => c.id === customerIdValue);
-                  if (foundCustomer && foundCustomer.customer_name) {
-                    console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
-                    setCustomerName(foundCustomer.customer_name);
-                  } else {
-                    console.log('[NewForm] Customer not found in dropdown list');
+            // Set customer ID and name
+            if (response.customer) {
+              const customerIdValue = typeof response.customer === 'object' 
+                ? response.customer.id 
+                : response.customer;
+              
+              console.log('[NewForm] Setting customer ID:', customerIdValue);
+              setCustomerId(customerIdValue);
+              
+              // Set customer name if available in response
+              // API can return customer_name directly, or company_name in customer object
+              if (response.customer_name) {
+                console.log('[NewForm] Setting customer name from response.customer_name:', response.customer_name);
+                setCustomerName(response.customer_name);
+              } else if (typeof response.customer === 'object' && response.customer.customer_name) {
+                console.log('[NewForm] Setting customer name from response.customer.customer_name:', response.customer.customer_name);
+                setCustomerName(response.customer.customer_name);
+              } else if (typeof response.customer === 'object' && response.customer.company_name) {
+                console.log('[NewForm] Setting customer name from response.customer.company_name:', response.customer.company_name);
+                setCustomerName(response.customer.company_name);
+              } else {
+                console.log('[NewForm] No customer name found in response, will fetch it using customer ID:', customerIdValue);
+                // Fetch customer name using the customer ID
+                if (customerIdValue) {
+                  try {
+                    const customersResponse = await getCustomerDropdown("");
+                    const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
+                    const foundCustomer = customersList.find(c => c.id === customerIdValue);
+                    if (foundCustomer && foundCustomer.customer_name) {
+                      console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
+                      setCustomerName(foundCustomer.customer_name);
+                    } else {
+                      console.log('[NewForm] Customer not found in dropdown list');
+                    }
+                  } catch (err) {
+                    console.error('[NewForm] Failed to fetch customer name:', err);
                   }
-                } catch (err) {
-                  console.error('[NewForm] Failed to fetch customer name:', err);
                 }
               }
+            } else {
+              console.log('[NewForm] No customer in response');
+            }
+            
+            // Set status (normalize to lowercase for dropdown)
+            if (response.status) {
+              const normalizedStatus = response.status.toLowerCase();
+              console.log('[NewForm] Setting status from API:', response.status, '->', normalizedStatus);
+              setStatus(normalizedStatus);
+            } else {
+              console.log('[NewForm] No status in API response, keeping default');
             }
           } else {
-            console.log('[NewForm] No customer in response');
-          }
-          
-          // Set status (normalize to lowercase)
-          if (response.status) {
-            console.log('[NewForm] Setting status:', response.status, '->', response.status.toLowerCase());
-            setStatus(response.status.toLowerCase());
+            // Duplicate mode - clear modal fields
+            console.log('[NewForm] Duplicate mode - clearing modal fields (customer, status, description)');
+            setDescription("");
+            setCustomerId(null);
+            setCustomerName("");
+            setStatus("completed"); // Reset to default
           }
           
           console.log('[NewForm] Form data set:', {
@@ -566,6 +588,7 @@ function NewForm() {
           
           // For duplicate mode, clear template name so user must enter a new one
           if (isDuplicateMode) {
+            console.log('[NewForm] Duplicate mode - clearing template name');
             setTemplateName("");
           }
         }
@@ -980,7 +1003,7 @@ function NewForm() {
                 className="modal-select"
               >
                 <option value="draft">Draft</option>
-                <option value="COMPLETED">Completed</option>
+                <option value="completed">Completed</option>
               </select>
             </div>
             <div className="modal-field-group">
