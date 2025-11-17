@@ -70,6 +70,7 @@ function NewForm() {
   const [editingSectionName, setEditingSectionName] = useState(null);
   const [newSectionName, setNewSectionName] = useState("");
   const [templateName, setTemplateName] = useState("");
+  const [sheetId, setSheetId] = useState("");
   const [description, setDescription] = useState("");
   const [customerId, setCustomerId] = useState(null);
   const [customerName, setCustomerName] = useState("");
@@ -115,6 +116,7 @@ function NewForm() {
       try {
         const draftData = {
           templateName,
+          sheetId,
           description,
           customerId,
           customerName,
@@ -145,6 +147,7 @@ function NewForm() {
         
         // Restore basic fields
         if (draftData.templateName) setTemplateName(draftData.templateName);
+        if (draftData.sheetId) setSheetId(draftData.sheetId);
         if (draftData.description !== null && draftData.description !== undefined) {
           setDescription(draftData.description);
         }
@@ -326,6 +329,7 @@ function NewForm() {
       customerId,
       customerName,
       templateName,
+      sheetId,
       status,
       description
     });
@@ -341,6 +345,11 @@ function NewForm() {
     
     if (!templateName.trim()) {
       toast.error("Template name is required");
+      return;
+    }
+    
+    if (!sheetId.trim()) {
+      toast.error("Sheet URL is required");
       return;
     }
 
@@ -376,6 +385,7 @@ function NewForm() {
 
       const apiData = {
         template_name: templateName.trim(),
+        sheet_id: sheetId.trim(),
         form_json: formJson,
         customer: customerId,
         status: status.toUpperCase(),
@@ -453,9 +463,11 @@ function NewForm() {
           // Set template name (for duplicate, user will change it)
           setTemplateName(response.template_name || "");
           
-          // Only prefill modal fields (customer, status, description) when in EDIT mode
+          // Only prefill modal fields (customer, status, description, sheet_id) when in EDIT mode
           // In DUPLICATE mode, these fields should remain empty
           if (isEditMode) {
+            // Set sheet_id
+            setSheetId(response.sheet_id || "");
             // Set description
             setDescription(response.description ?? "");
             
@@ -512,7 +524,8 @@ function NewForm() {
             }
           } else {
             // Duplicate mode - clear modal fields
-            console.log('[NewForm] Duplicate mode - clearing modal fields (customer, status, description)');
+            console.log('[NewForm] Duplicate mode - clearing modal fields (customer, status, description, sheet_id)');
+            setSheetId("");
             setDescription("");
             setCustomerId(null);
             setCustomerName("");
@@ -631,7 +644,7 @@ function NewForm() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
+  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
 
   // Save to localStorage before page unload
   useEffect(() => {
@@ -647,7 +660,7 @@ function NewForm() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
+  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
 
   const handleBack = () => {
     navigate("/home");
@@ -668,6 +681,7 @@ function NewForm() {
 
     // Reset all form state to default
     setTemplateName("");
+    setSheetId("");
     setDescription("");
     setCustomerId(null);
     setCustomerName("");
@@ -993,6 +1007,43 @@ function NewForm() {
               )}
             </div>
             <div className="modal-field-group">
+              <label htmlFor="modal-sheet-url" className="modal-label">
+                Sheet URL <span className="required-asterisk">*</span>
+              </label>
+              <input
+                id="modal-sheet-url"
+                type="text"
+                value={sheetId}
+                onChange={(e) => {
+                  setSheetId(e.target.value);
+                  // Clear error when user starts typing
+                  if (fieldErrors.sheet_id) {
+                    setFieldErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.sheet_id;
+                      return newErrors;
+                    });
+                  }
+                }}
+                placeholder="Enter sheet URL..."
+                className={`modal-input ${fieldErrors.sheet_id ? 'modal-input-error' : ''}`}
+                disabled={isEditMode && sheetId.trim() !== ''}
+                required
+              />
+              {isEditMode && sheetId.trim() !== '' && (
+                <p className="modal-field-hint" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                  Sheet URL cannot be changed in edit mode
+                </p>
+              )}
+              {fieldErrors.sheet_id && (
+                <div className="modal-field-error">
+                  {Array.isArray(fieldErrors.sheet_id) 
+                    ? fieldErrors.sheet_id.join(', ')
+                    : fieldErrors.sheet_id}
+                </div>
+              )}
+            </div>
+            <div className="modal-field-group">
               <label htmlFor="modal-status" className="modal-label">
                 Status
               </label>
@@ -1048,7 +1099,7 @@ function NewForm() {
           <Button
             onClick={handleSaveForm}
             className="modal-submit-btn"
-            disabled={saving || !templateName.trim() || !customerId}
+            disabled={saving || !templateName.trim() || !sheetId.trim() || !customerId}
             loading={saving}
           >
             {saving ? "Saving..." : "Save & Submit"}

@@ -5,6 +5,7 @@ const BASE_ENDPOINT = '/admin/dynamic_form';
 export const createDynamicLog = async (data) => {
   const payload = {
     template_name: data.template_name,
+    sheet_id: data.sheet_id || '',
     form_json: data.form_json || {},
     customer: data.customer || null,
     status: data.status || 'draft',
@@ -18,6 +19,7 @@ export const updateDynamicLog = async (id, data) => {
   const payload = {
     id: id,
     template_name: data.template_name,
+    sheet_id: data.sheet_id || '',
     form_json: data.form_json || {},
     customer: data.customer || null,
     status: data.status || 'draft',
