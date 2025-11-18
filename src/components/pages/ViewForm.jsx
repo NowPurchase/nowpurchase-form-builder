@@ -12,6 +12,8 @@ import { apiToLocal } from "../../utils/dataTransform";
 import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import LoadingSpinner from "../shared/LoadingSpinner";
+import { Download } from "lucide-react";
+import html2pdf from "html2pdf.js";
 import "rsuite/dist/rsuite.min.css";
 import "./ViewForm.css";
 
@@ -31,6 +33,7 @@ function ViewForm() {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
   const [sheetPreviewHtml, setSheetPreviewHtml] = useState("");
   const [loadingSheetPreview, setLoadingSheetPreview] = useState(false);
+  const sheetPreviewRef = useRef(null);
   const hasFetchedFormRef = useRef(false);
 
   useEffect(() => {
@@ -60,6 +63,40 @@ function ViewForm() {
 
   const handleBack = () => {
     navigate("/home");
+  };
+
+  const handleDownloadPDF = () => {
+    if (!sheetPreviewRef.current) {
+      toast.error("No preview content available to download");
+      return;
+    }
+
+    try {
+      const element = sheetPreviewRef.current;
+      const opt = {
+        margin: 0,
+        filename: `${formData?.template_name || 'sheet'}_${formId}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(element).save();
+      toast.success("PDF download started");
+    } catch (err) {
+      const errorMsg = formatErrorMessage(err);
+      toast.error(`Failed to generate PDF: ${errorMsg}`);
+    }
   };
 
   // Fetch sheet preview when Sheet Preview tab is clicked
@@ -197,25 +234,36 @@ function ViewForm() {
         </div>
       </div>
 
-      <div className="view-form-tabs">
-        <button
-          className={`tab-button ${activeTab === "preview" ? "active" : ""}`}
-          onClick={() => setActiveTab("preview")}
-        >
-          Preview
-        </button>
-        <button
-          className={`tab-button ${activeTab === "sheet-preview" ? "active" : ""}`}
-          onClick={() => setActiveTab("sheet-preview")}
-        >
-          Sheet Preview
-        </button>
-        <button
-          className={`tab-button ${activeTab === "json" ? "active" : ""}`}
-          onClick={() => setActiveTab("json")}
-        >
-          JSON View
-        </button>
+      <div className="view-form-tabs-container">
+        <div className="view-form-tabs">
+          <button
+            className={`tab-button ${activeTab === "preview" ? "active" : ""}`}
+            onClick={() => setActiveTab("preview")}
+          >
+            Preview
+          </button>
+          <button
+            className={`tab-button ${activeTab === "sheet-preview" ? "active" : ""}`}
+            onClick={() => setActiveTab("sheet-preview")}
+          >
+            Sheet Preview
+          </button>
+          <button
+            className={`tab-button ${activeTab === "json" ? "active" : ""}`}
+            onClick={() => setActiveTab("json")}
+          >
+            JSON View
+          </button>
+        </div>
+        {activeTab === "sheet-preview" && sheetPreviewHtml && !loadingSheetPreview && (
+          <button 
+            className="sheet-preview-download-btn-top"
+            onClick={handleDownloadPDF}
+            title="Download as PDF"
+          >
+            <Download size={18} />
+          </button>
+        )}
       </div>
 
       <div className="view-form-content">
@@ -234,6 +282,7 @@ function ViewForm() {
               </div>
             ) : sheetPreviewHtml ? (
               <div 
+                ref={sheetPreviewRef}
                 style={{ width: 'fit-content', margin: '0 auto' }}
                 dangerouslySetInnerHTML={{ __html: sheetPreviewHtml }}
               />

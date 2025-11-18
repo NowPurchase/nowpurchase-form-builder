@@ -6,7 +6,6 @@ import Home from "./components/pages/Home";
 import NewForm from "./components/pages/NewForm";
 import ViewForm from "./components/pages/ViewForm";
 import ToastContainer from "./components/shared/Toast";
-import "./App.css";
 
 function AppContent() {
   const navigate = useNavigate();

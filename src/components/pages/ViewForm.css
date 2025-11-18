@@ -79,10 +79,16 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
 }
 
-.view-form-tabs {
+.view-form-tabs-container {
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   padding: 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.view-form-tabs {
   display: flex;
   gap: 8px;
 }
@@ -397,8 +403,42 @@
   height: 100%;
   overflow: auto;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
   padding: 24px;
+}
+
+.sheet-preview-download-btn-top {
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: auto;
+}
+
+.sheet-preview-download-btn-top:hover {
+  background: #1e293b;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.sheet-preview-download-btn-top:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sheet-preview-download-btn-top svg {
+  display: block;
 }
 
