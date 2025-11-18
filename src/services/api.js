@@ -133,6 +133,11 @@ export const apiGet = async (endpoint, options = {}) => {
   return parseJson(response);
 };
 
+export const apiGetText = async (endpoint, options = {}) => {
+  const response = await request(endpoint, { ...options, method: 'GET' });
+  return await response.text();
+};
+
 export const apiPost = async (endpoint, data = {}, options = {}) => {
   const response = await request(endpoint, {
     ...options,

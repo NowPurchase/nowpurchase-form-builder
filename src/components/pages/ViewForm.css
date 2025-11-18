@@ -392,3 +392,13 @@
   background: #64748b;
 }
 
+/* Sheet Preview Styles - Minimal wrapper to allow rendering */
+.sheet-preview-wrapper {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+}
+

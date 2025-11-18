@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from './api';
+import { apiGet, apiPost, apiPut, apiGetText } from './api';
 
 const BASE_ENDPOINT = '/admin/dynamic_form';
 
@@ -72,5 +72,10 @@ export const getCustomerDropdown = async (search = '') => {
     : `${BASE_ENDPOINT}/customers/dropdown/`;
 
   return await apiGet(endpoint);
+};
+
+export const getSheetPreview = async (templateId) => {
+  // This endpoint returns HTML, so we fetch as text
+  return await apiGetText(`/admin/dynamic_logsheet/preview/?template_id=${templateId}`);
 };
 

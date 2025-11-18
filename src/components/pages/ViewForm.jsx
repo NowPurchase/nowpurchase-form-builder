@@ -7,7 +7,7 @@ import {
   rSuiteComponents,
 } from '@react-form-builder/components-rsuite';
 import { BiDi, createView, FormViewer } from '@react-form-builder/core';
-import { getDynamicLog } from "../../services/dynamicLogApi";
+import { getDynamicLog, getSheetPreview } from "../../services/dynamicLogApi";
 import { apiToLocal } from "../../utils/dataTransform";
 import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
@@ -29,6 +29,8 @@ function ViewForm() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("preview");
   const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
+  const [sheetPreviewHtml, setSheetPreviewHtml] = useState("");
+  const [loadingSheetPreview, setLoadingSheetPreview] = useState(false);
   const hasFetchedFormRef = useRef(false);
 
   useEffect(() => {
@@ -59,6 +61,27 @@ function ViewForm() {
   const handleBack = () => {
     navigate("/home");
   };
+
+  // Fetch sheet preview when Sheet Preview tab is clicked
+  useEffect(() => {
+    if (activeTab === "sheet-preview" && formId && !sheetPreviewHtml && !loadingSheetPreview) {
+      const fetchSheetPreview = async () => {
+        try {
+          setLoadingSheetPreview(true);
+          const html = await getSheetPreview(formId);
+          // Use HTML as-is from API response without any modifications
+          setSheetPreviewHtml(html);
+        } catch (err) {
+          const errorMsg = formatErrorMessage(err);
+          toast.error(`Failed to load sheet preview: ${errorMsg}`);
+          setSheetPreviewHtml("");
+        } finally {
+          setLoadingSheetPreview(false);
+        }
+      };
+      fetchSheetPreview();
+    }
+  }, [activeTab, formId, sheetPreviewHtml, loadingSheetPreview]);
 
   const getFormJson = () => {
     if (!formData) return JSON.stringify({});
@@ -182,6 +205,12 @@ function ViewForm() {
           Preview
         </button>
         <button
+          className={`tab-button ${activeTab === "sheet-preview" ? "active" : ""}`}
+          onClick={() => setActiveTab("sheet-preview")}
+        >
+          Sheet Preview
+        </button>
+        <button
           className={`tab-button ${activeTab === "json" ? "active" : ""}`}
           onClick={() => setActiveTab("json")}
         >
@@ -190,7 +219,37 @@ function ViewForm() {
       </div>
 
       <div className="view-form-content">
-        {activeTab === "preview" ? (
+        {activeTab === "sheet-preview" ? (
+          <div className="sheet-preview-wrapper">
+            {loadingSheetPreview ? (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '400px',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <LoadingSpinner text="Loading sheet preview..." />
+              </div>
+            ) : sheetPreviewHtml ? (
+              <div 
+                style={{ width: 'fit-content', margin: '0 auto' }}
+                dangerouslySetInnerHTML={{ __html: sheetPreviewHtml }}
+              />
+            ) : (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '400px',
+                color: '#64748b'
+              }}>
+                <p>No sheet preview available</p>
+              </div>
+            )}
+          </div>
+        ) : activeTab === "preview" ? (
           <div className="form-preview-wrapper">
             {formData.form_type === "multi-step" && getAllSectionsJson() ? (
               <div className="multi-step-preview">
