@@ -5,6 +5,14 @@ import { toast } from "./Toast";
 import "./CustomerDropdown.css";
 
 export default function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName }) {
+  console.log('[CustomerDropdown] Props received:', {
+    value,
+    initialCustomerName,
+    placeholder,
+    hasOnChange: !!onChange,
+    hasOnSelect: !!onSelect
+  });
+  
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,12 +96,21 @@ export default function CustomerDropdown({ value, onChange, onSelect, placeholde
   }, []);
 
   const selectedCustomer = customers.find((c) => c.customer_id === value);
-
+  
   // Use selected customer from list, or initialCustomerName if provided, or placeholder
-  const displayName = selectedCustomer
-    ? selectedCustomer.customer_name
+  const displayName = selectedCustomer 
+    ? selectedCustomer.customer_name 
     : (value && initialCustomerName ? initialCustomerName : placeholder);
   const isPlaceholder = !selectedCustomer && (!value || !initialCustomerName);
+  
+  console.log('[CustomerDropdown] Display logic:', {
+    selectedCustomer: selectedCustomer?.customer_name || 'none',
+    value,
+    initialCustomerName,
+    displayName,
+    isPlaceholder,
+    customersCount: customers.length
+  });
 
   const handleSelect = (customer) => {
     onChange(customer.customer_id);

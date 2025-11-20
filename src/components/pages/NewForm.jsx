@@ -618,49 +618,49 @@ function NewForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formId]);
 
-  // Auto-save form builder changes to section (every 5 seconds) - DISABLED
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     if (formBuilderRef.current) {
-  //       saveCurrentFormToSection();
-  //     }
-  //   }, 5000);
+  // Auto-save form builder changes to section (every 5 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (formBuilderRef.current) {
+        saveCurrentFormToSection();
+      }
+    }, 5000);
 
-  //   return () => clearInterval(interval);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [selectedSectionId]);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSectionId]);
 
-  // Auto-save to localStorage when form data changes - DISABLED
-  // useEffect(() => {
-  //   // Don't auto-save if in edit/duplicate mode or if form is being loaded
-  //   if (isEditMode || isDuplicateMode || loadingForm) return;
+  // Auto-save to localStorage when form data changes
+  useEffect(() => {
+    // Don't auto-save if in edit/duplicate mode or if form is being loaded
+    if (isEditMode || isDuplicateMode || loadingForm) return;
+    
+    autoSave();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
 
-  //   autoSave();
+  // Save to localStorage before page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // Don't save if in edit/duplicate mode
+      if (!isEditMode && !isDuplicateMode) {
+        saveToLocalStorage();
+      }
+    };
 
-  //   // Cleanup timeout on unmount
-  //   return () => {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
-
-  // Save to localStorage before page unload - DISABLED
-  // useEffect(() => {
-  //   const handleBeforeUnload = (e) => {
-  //     // Don't save if in edit/duplicate mode
-  //     if (!isEditMode && !isDuplicateMode) {
-  //       saveToLocalStorage();
-  //     }
-  //   };
-
-  //   window.addEventListener('beforeunload', handleBeforeUnload);
-  //   return () => {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
 
   const handleBack = () => {
     navigate("/home");
@@ -930,6 +930,11 @@ function NewForm() {
               <label className="modal-label">
                 Customer <span className="required-asterisk">*</span>
               </label>
+              {console.log('[NewForm] Rendering CustomerDropdown in modal with:', {
+                customerId,
+                customerName,
+                hasInitialCustomerName: !!customerName
+              })}
               <CustomerDropdown
                 value={customerId}
                 onChange={(id) => {
