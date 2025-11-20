@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   formEngineRsuiteCssLoader,
   ltrCssLoader,
@@ -80,17 +80,16 @@ function NewForm() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [loadingForm, setLoadingForm] = useState(false);
   const hasFetchedFormRef = useRef(false);
-  const autoSaveTimeoutRef = useRef(null);
-  const isRestoringRef = useRef(false);
-  const STORAGE_KEY = 'form_builder_draft';
+  const pendingModalOpenRef = useRef(false);
 
-  const getForm = () => {
+  // Memoize getForm to prevent unnecessary re-renders
+  const getForm = useCallback(() => {
     if (formType === "single") {
       return sections[0]?.form_json || JSON.stringify(defaultForm);
     }
     const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
     return selectedSection?.form_json || JSON.stringify(defaultForm);
-  };
+  }, [formType, sections, selectedSectionId]);
 
   const saveCurrentFormToSection = () => {
     if (formBuilderRef.current) {
@@ -105,117 +104,6 @@ function NewForm() {
         });
       });
     }
-  };
-
-  const saveToLocalStorage = () => {
-    if (isEditMode || isDuplicateMode || isRestoringRef.current) return;
-    
-    saveCurrentFormToSection();
-    
-    setTimeout(() => {
-      try {
-        const draftData = {
-          templateName,
-          sheetId,
-          description,
-          customerId,
-          customerName,
-          status,
-          formType,
-          sections,
-          selectedSectionId,
-          savedAt: new Date().toISOString(),
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData));
-      } catch (error) {
-        // Failed to save draft
-      }
-    }, 100);
-  };
-
-  // Restore form state from localStorage
-  const restoreFromLocalStorage = () => {
-    // Don't restore if in edit/duplicate mode (we fetch from API)
-    if (isEditMode || isDuplicateMode) return;
-    
-    isRestoringRef.current = true;
-    
-    try {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        const draftData = JSON.parse(savedData);
-        
-        // Restore basic fields
-        if (draftData.templateName) setTemplateName(draftData.templateName);
-        if (draftData.sheetId) setSheetId(draftData.sheetId);
-        if (draftData.description !== null && draftData.description !== undefined) {
-          setDescription(draftData.description);
-        }
-        if (draftData.customerId !== null && draftData.customerId !== undefined) {
-          setCustomerId(draftData.customerId);
-        }
-        if (draftData.customerName) {
-          setCustomerName(draftData.customerName);
-        }
-        if (draftData.status) setStatus(draftData.status);
-        if (draftData.formType) setFormType(draftData.formType);
-        if (draftData.sections && draftData.sections.length > 0) {
-          setSections(draftData.sections);
-        }
-        if (draftData.selectedSectionId) {
-          setSelectedSectionId(draftData.selectedSectionId);
-        }
-        
-        // Restore form builder after a delay
-        setTimeout(() => {
-          if (formBuilderRef.current) {
-            const formToLoad = draftData.formType === 'single' 
-              ? draftData.sections[0]?.form_json 
-              : draftData.sections.find(s => s.section_id === draftData.selectedSectionId)?.form_json;
-            
-            if (formToLoad) {
-              try {
-                formBuilderRef.current.parseForm(formToLoad);
-                toast.info('Draft restored from previous session');
-              } catch (e) {
-                console.error('Error restoring form:', e);
-              }
-            }
-          }
-          // Allow auto-save after restoration completes
-          setTimeout(() => {
-            isRestoringRef.current = false;
-          }, 500);
-        }, 300);
-      } else {
-        isRestoringRef.current = false;
-      }
-    } catch (error) {
-      console.error('Failed to restore draft from localStorage:', error);
-      isRestoringRef.current = false;
-    }
-  };
-
-  // Clear localStorage draft
-  const clearDraft = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.error('Failed to clear draft:', error);
-    }
-  };
-
-  // Debounced auto-save function
-  const autoSave = () => {
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    
-    // Set new timeout for auto-save (2 seconds debounce)
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      saveToLocalStorage();
-    }, 2000);
   };
 
   // Handle section selection
@@ -233,8 +121,6 @@ function NewForm() {
           formBuilderRef.current.parseForm(selectedSection.form_json);
         }
       }
-      // Trigger auto-save after section switch
-      autoSave();
     }, 100);
   };
 
@@ -333,8 +219,13 @@ function NewForm() {
       status,
       description
     });
-    setFieldErrors({});
-    setShowSaveModal(true);
+    
+    // CRITICAL: Save current form to sections BEFORE opening modal
+    // This ensures the form data is preserved when FormBuilder re-renders
+    saveCurrentFormToSection();
+    
+    // Mark that we want to open modal after sections state updates
+    pendingModalOpenRef.current = true;
   };
 
   const handleSaveForm = async () => {
@@ -399,8 +290,6 @@ function NewForm() {
       } else {
         await createDynamicLog(apiData);
         toast.success("Form saved successfully!");
-        // Clear draft after successful save
-        clearDraft();
       }
       
       setShowSaveModal(false);
@@ -424,14 +313,6 @@ function NewForm() {
     }
   };
 
-  // Restore draft from localStorage on mount (only for new forms)
-  useEffect(() => {
-    if (!isEditMode && !isDuplicateMode) {
-      restoreFromLocalStorage();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Fetch form data when in edit or duplicate mode
   useEffect(() => {
     // Prevent duplicate calls
@@ -439,9 +320,6 @@ function NewForm() {
     
     // Check if we've already fetched this formId
     if (hasFetchedFormRef.current === formId) return;
-    
-    // Clear any draft when entering edit/duplicate mode
-    clearDraft();
     
     const fetchFormData = async () => {
       hasFetchedFormRef.current = formId;
@@ -618,53 +496,66 @@ function NewForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formId]);
 
-  // Auto-save form builder changes to section (every 5 seconds)
+  // Handle opening modal after form is saved to sections
+  // This ensures the form data is in sections state before FormBuilder re-renders
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (formBuilderRef.current) {
-        saveCurrentFormToSection();
-      }
-    }, 5000);
+    if (pendingModalOpenRef.current && !showSaveModal) {
+      // Reset the flag first to prevent re-triggering
+      pendingModalOpenRef.current = false;
+      // Small delay to ensure state is fully updated
+      setTimeout(() => {
+        setFieldErrors({});
+        setShowSaveModal(true);
+      }, 50);
+    }
+  }, [sections, showSaveModal]);
 
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSectionId]);
-
-  // Auto-save to localStorage when form data changes
+  // Restore form when modal closes to ensure form persists
   useEffect(() => {
-    // Don't auto-save if in edit/duplicate mode or if form is being loaded
-    if (isEditMode || isDuplicateMode || loadingForm) return;
-    
-    autoSave();
-    
-    // Cleanup timeout on unmount
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
+    if (!showSaveModal && formBuilderRef.current) {
+      // Modal just closed - restore form from sections to ensure it's displayed
+      const currentForm = getForm();
+      if (currentForm) {
+        try {
+          // Small delay to ensure modal close animation completes
+          setTimeout(() => {
+            if (formBuilderRef.current) {
+              formBuilderRef.current.parseForm(currentForm);
+            }
+          }, 100);
+        } catch (e) {
+          console.error("Error restoring form after modal close:", e);
+        }
       }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode, loadingForm]);
-
-  // Save to localStorage before page unload
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      // Don't save if in edit/duplicate mode
-      if (!isEditMode && !isDuplicateMode) {
-        saveToLocalStorage();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateName, sheetId, description, customerId, status, formType, sections, selectedSectionId, isEditMode, isDuplicateMode]);
+    }
+  }, [showSaveModal, getForm]);
 
   const handleBack = () => {
     navigate("/home");
   };
+
+  // Memoized callbacks for CustomerDropdown to prevent re-renders
+  const handleCustomerChange = useCallback((id) => {
+    console.log('[NewForm] CustomerDropdown onChange called with:', id);
+    setCustomerId(id);
+    // Clear error when user selects a customer
+    setFieldErrors(prev => {
+      if (prev.customer) {
+        const newErrors = { ...prev };
+        delete newErrors.customer;
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleCustomerSelect = useCallback((customer) => {
+    console.log('[NewForm] CustomerDropdown onSelect called with:', customer);
+    // Update customer name when selected
+    if (customer && customer.customer_name) {
+      setCustomerName(customer.customer_name);
+    }
+  }, []);
 
   // Clear/reset form to default state
   const handleClearForm = () => {
@@ -698,9 +589,6 @@ function NewForm() {
     setSelectedSectionId("section_1");
     setFieldErrors({});
     setShowSaveModal(false);
-    
-    // Clear localStorage draft
-    clearDraft();
     
     // Reset form builder
     setTimeout(() => {
@@ -930,32 +818,10 @@ function NewForm() {
               <label className="modal-label">
                 Customer <span className="required-asterisk">*</span>
               </label>
-              {console.log('[NewForm] Rendering CustomerDropdown in modal with:', {
-                customerId,
-                customerName,
-                hasInitialCustomerName: !!customerName
-              })}
               <CustomerDropdown
                 value={customerId}
-                onChange={(id) => {
-                  console.log('[NewForm] CustomerDropdown onChange called with:', id);
-                  setCustomerId(id);
-                  // Clear error when user selects a customer
-                  if (fieldErrors.customer) {
-                    setFieldErrors(prev => {
-                      const newErrors = { ...prev };
-                      delete newErrors.customer;
-                      return newErrors;
-                    });
-                  }
-                }}
-                onSelect={(customer) => {
-                  console.log('[NewForm] CustomerDropdown onSelect called with:', customer);
-                  // Update customer name when selected
-                  if (customer && customer.customer_name) {
-                    setCustomerName(customer.customer_name);
-                  }
-                }}
+                onChange={handleCustomerChange}
+                onSelect={handleCustomerSelect}
                 initialCustomerName={customerName}
                 placeholder="Select customer..."
               />

@@ -1,18 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { getCustomerDropdown } from "../../services/dynamicLogApi";
 import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "./Toast";
 import "./CustomerDropdown.css";
 
-export default function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName }) {
-  console.log('[CustomerDropdown] Props received:', {
-    value,
-    initialCustomerName,
-    placeholder,
-    hasOnChange: !!onChange,
-    hasOnSelect: !!onSelect
-  });
-  
+function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName }) {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,15 +94,6 @@ export default function CustomerDropdown({ value, onChange, onSelect, placeholde
     ? selectedCustomer.customer_name 
     : (value && initialCustomerName ? initialCustomerName : placeholder);
   const isPlaceholder = !selectedCustomer && (!value || !initialCustomerName);
-  
-  console.log('[CustomerDropdown] Display logic:', {
-    selectedCustomer: selectedCustomer?.customer_name || 'none',
-    value,
-    initialCustomerName,
-    displayName,
-    isPlaceholder,
-    customersCount: customers.length
-  });
 
   const handleSelect = (customer) => {
     onChange(customer.customer_id);
@@ -169,4 +152,6 @@ export default function CustomerDropdown({ value, onChange, onSelect, placeholde
     </div>
   );
 }
+
+export default memo(CustomerDropdown);
 
