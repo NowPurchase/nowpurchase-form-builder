@@ -893,14 +893,8 @@ function NewForm() {
                 }}
                 placeholder="Enter sheet URL..."
                 className={`modal-input ${fieldErrors.sheet_id ? 'modal-input-error' : ''}`}
-                disabled={isEditMode && sheetId.trim() !== ''}
                 required
               />
-              {isEditMode && sheetId.trim() !== '' && (
-                <p className="modal-field-hint" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                  Sheet URL cannot be changed in edit mode
-                </p>
-              )}
               {fieldErrors.sheet_id && (
                 <div className="modal-field-error">
                   {Array.isArray(fieldErrors.sheet_id) 
