@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   formEngineRsuiteCssLoader,
   ltrCssLoader,
@@ -155,6 +155,16 @@ function ViewForm() {
       toast.success("Form submitted successfully!");
     },
   }), []);
+
+  // Handler to log form data changes
+  const handleFormDataChange = useCallback((formData) => {
+    const { data, errors } = formData;
+    console.log('=== Form Input Data Changed ===');
+    console.log('Form Data:', data);
+    console.log('Form Errors:', errors);
+    console.log('Full FormData Object:', formData);
+    console.log('================================');
+  }, []);
 
   const getFormattedJson = () => {
     if (!formData) return "{}";
@@ -335,6 +345,7 @@ function ViewForm() {
                           formName={getAllSectionsJson()[selectedSectionIndex].section_name}
                           getForm={() => getSectionFormJson(getAllSectionsJson()[selectedSectionIndex])}
                           actions={actions}
+                          onFormDataChange={handleFormDataChange}
                         />
                       </div>
                     </div>
@@ -347,6 +358,7 @@ function ViewForm() {
                 formName={formData["from-name"]}
                 getForm={getFormJson}
                 actions={actions}
+                onFormDataChange={handleFormDataChange}
               />
             )}
           </div>

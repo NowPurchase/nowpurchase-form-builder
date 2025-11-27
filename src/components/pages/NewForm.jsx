@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   formEngineRsuiteCssLoader,
   ltrCssLoader,
@@ -81,28 +81,191 @@ function NewForm() {
   const [loadingForm, setLoadingForm] = useState(false);
   const hasFetchedFormRef = useRef(false);
   const pendingModalOpenRef = useRef(false);
+  const isProcessingFormRef = useRef(false);
+  const lastFormDataRef = useRef(null);
 
-  // Memoize getForm to prevent unnecessary re-renders
-  const getForm = useCallback(() => {
-    if (formType === "single") {
-      return sections[0]?.form_json || JSON.stringify(defaultForm);
+  // Helper to safely clone and clean form JSON, preventing circular references
+  // MUST be defined before getFormDataAsString to avoid initialization errors
+  const cleanFormJson = useCallback((formJson) => {
+    if (!formJson) return JSON.stringify(defaultForm);
+    
+    try {
+      let parsed;
+      
+      // If it's already a string, parse it first
+      if (typeof formJson === 'string') {
+        parsed = JSON.parse(formJson);
+      } else {
+        parsed = formJson;
+      }
+      
+      // Use structuredClone if available (handles circular refs better)
+      // Otherwise use JSON parse/stringify with circular reference detection
+      let cleaned;
+      if (typeof structuredClone !== 'undefined') {
+        try {
+          cleaned = structuredClone(parsed);
+        } catch {
+          // Fallback to JSON method if structuredClone fails
+          cleaned = JSON.parse(JSON.stringify(parsed));
+        }
+      } else {
+        // Fallback: use JSON with circular reference handler
+        const seen = new WeakSet();
+        const jsonString = JSON.stringify(parsed, (key, value) => {
+          if (typeof value === 'function' || typeof value === 'symbol') {
+            return undefined;
+          }
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return undefined; // Remove circular references
+            }
+            seen.add(value);
+          }
+          return value;
+        });
+        cleaned = JSON.parse(jsonString);
+      }
+      
+      // Final validation and stringification
+      const result = JSON.stringify(cleaned);
+      JSON.parse(result); // Validate it's valid JSON
+      return result;
+    } catch (error) {
+      console.error("Error cleaning form JSON:", error);
+      return JSON.stringify(defaultForm);
     }
-    const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
-    return selectedSection?.form_json || JSON.stringify(defaultForm);
-  }, [formType, sections, selectedSectionId]);
+  }, []);
+
+  // Helper function to safely get form data as string, handling circular references
+  // Defined after cleanFormJson to avoid initialization errors
+  const getFormDataAsString = useCallback((formBuilder) => {
+    if (!formBuilder) return null;
+    
+    // Prevent recursive calls
+    if (isProcessingFormRef.current) {
+      return lastFormDataRef.current || JSON.stringify(defaultForm);
+    }
+    
+    isProcessingFormRef.current = true;
+    try {
+      let formData = formBuilder.formAsString;
+      
+      // If formAsString returns an object instead of string, stringify it
+      if (typeof formData !== 'string') {
+        // Use structuredClone if available, otherwise use JSON with circular ref handler
+        if (typeof structuredClone !== 'undefined') {
+          try {
+            formData = JSON.stringify(structuredClone(formData));
+          } catch {
+            // Fallback to JSON method
+            const seen = new WeakSet();
+            formData = JSON.stringify(formData, (key, value) => {
+              if (typeof value === 'function' || typeof value === 'symbol') {
+                return undefined;
+              }
+              if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) {
+                  return undefined;
+                }
+                seen.add(value);
+              }
+              return value;
+            });
+          }
+        } else {
+          const seen = new WeakSet();
+          formData = JSON.stringify(formData, (key, value) => {
+            if (typeof value === 'function' || typeof value === 'symbol') {
+              return undefined;
+            }
+            if (typeof value === 'object' && value !== null) {
+              if (seen.has(value)) {
+                return undefined;
+              }
+              seen.add(value);
+            }
+            return value;
+          });
+        }
+      }
+      
+      // Validate and clean the JSON
+      const parsed = JSON.parse(formData);
+      const cleaned = cleanFormJson(JSON.stringify(parsed));
+      lastFormDataRef.current = cleaned;
+      return cleaned;
+    } catch (error) {
+      console.error("Error getting form data as string:", error);
+      // Try to get a fresh copy from the builder if available
+      try {
+        if (formBuilder.formAsString && typeof formBuilder.formAsString === 'string') {
+          const cleaned = cleanFormJson(formBuilder.formAsString);
+          lastFormDataRef.current = cleaned;
+          return cleaned;
+        }
+      } catch {
+        // If that fails, return default form
+      }
+      const defaultFormJson = JSON.stringify(defaultForm);
+      lastFormDataRef.current = defaultFormJson;
+      return defaultFormJson;
+    } finally {
+      setTimeout(() => {
+        isProcessingFormRef.current = false;
+      }, 0);
+    }
+  }, [cleanFormJson]);
+
+  // Memoize getForm to prevent unnecessary re-renders and infinite loops
+  // Use useMemo to cache the form JSON string to prevent recreation on every render
+  const formJsonString = useMemo(() => {
+    let formJson;
+    if (formType === "single") {
+      formJson = sections[0]?.form_json || JSON.stringify(defaultForm);
+    } else {
+      const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
+      formJson = selectedSection?.form_json || JSON.stringify(defaultForm);
+    }
+    
+    // Always return clean, serializable JSON
+    return cleanFormJson(formJson);
+  }, [formType, sections, selectedSectionId, cleanFormJson]);
+
+  // Stable getForm callback that returns memoized form JSON
+  const getForm = useCallback(() => {
+    // Prevent recursive calls
+    if (isProcessingFormRef.current) {
+      return lastFormDataRef.current || JSON.stringify(defaultForm);
+    }
+    
+    isProcessingFormRef.current = true;
+    try {
+      const result = formJsonString;
+      lastFormDataRef.current = result;
+      return result;
+    } finally {
+      // Use setTimeout to reset flag after current execution completes
+      setTimeout(() => {
+        isProcessingFormRef.current = false;
+      }, 0);
+    }
+  }, [formJsonString]);
 
   const saveCurrentFormToSection = () => {
     if (formBuilderRef.current) {
-      const formData = formBuilderRef.current.formAsString;
+      const formData = getFormDataAsString(formBuilderRef.current);
       
-      setSections((prev) => {
-        return prev.map((section) => {
-          if (section.section_id === selectedSectionId) {
-            return { ...section, form_json: formData };
-          }
-          return section;
+      if (formData) {
+        setSections((prev) => {
+          return prev.map((section) => {
+            if (section.section_id === selectedSectionId) {
+              return { ...section, form_json: formData };
+            }
+            return section;
+          });
         });
-      });
+      }
     }
   };
 
@@ -114,11 +277,16 @@ function NewForm() {
     // Small delay to ensure save completes
     setTimeout(() => {
       setSelectedSectionId(sectionId);
-      // Reload form in builder
+      // Reload form in builder with clean data
       if (formBuilderRef.current) {
         const selectedSection = sections.find((s) => s.section_id === sectionId);
         if (selectedSection) {
-          formBuilderRef.current.parseForm(selectedSection.form_json);
+          const cleanForm = cleanFormJson(selectedSection.form_json);
+          try {
+            formBuilderRef.current.parseForm(cleanForm);
+          } catch (e) {
+            console.error("Error parsing form when switching sections:", e);
+          }
         }
       }
     }, 100);
@@ -164,7 +332,12 @@ function NewForm() {
     if (selectedSectionId === sectionId) {
       setSelectedSectionId(reordered[0].section_id);
       if (formBuilderRef.current && reordered[0]) {
-        formBuilderRef.current.parseForm(reordered[0].form_json);
+        const cleanForm = cleanFormJson(reordered[0].form_json);
+        try {
+          formBuilderRef.current.parseForm(cleanForm);
+        } catch (e) {
+          console.error("Error parsing form after section delete:", e);
+        }
       }
     }
     
@@ -177,14 +350,44 @@ function NewForm() {
   // Update section name
   const handleUpdateSectionName = (sectionId, newName) => {
     if (newName.trim()) {
-      setSections((prev) =>
-        prev.map((s) =>
-          s.section_id === sectionId
-            ? { ...s, section_name: newName.trim() }
-            : s
-        )
-      );
+      // CRITICAL: Save current form data to section BEFORE updating the name
+      // This ensures form fields are preserved when FormBuilder re-renders with new formName
+      let savedFormData = null;
+      if (formBuilderRef.current && sectionId === selectedSectionId) {
+        savedFormData = getFormDataAsString(formBuilderRef.current);
+      }
+      
+      // Update section name AND preserve form_json in a single state update
+      setSections((prev) => {
+        return prev.map((s) => {
+          if (s.section_id === sectionId) {
+            // If this is the selected section, preserve the current form data
+            if (savedFormData && sectionId === selectedSectionId) {
+              return { ...s, section_name: newName.trim(), form_json: savedFormData };
+            }
+            // Otherwise, just update the name and keep existing form_json
+            return { ...s, section_name: newName.trim() };
+          }
+          return s;
+        });
+      });
+      
       setEditingSectionName(null);
+      
+      // Restore form after name update to ensure it persists
+      // This is needed because FormBuilder might re-render when formName prop changes
+      if (sectionId === selectedSectionId && formBuilderRef.current && savedFormData) {
+        setTimeout(() => {
+          if (formBuilderRef.current) {
+            try {
+              const cleanForm = cleanFormJson(savedFormData);
+              formBuilderRef.current.parseForm(cleanForm);
+            } catch (e) {
+              console.error("Error restoring form after section name update:", e);
+            }
+          }
+        }, 100);
+      }
     }
   };
 
@@ -445,7 +648,8 @@ function NewForm() {
                 setTimeout(() => {
                   if (formBuilderRef.current && formattedSections[0]) {
                     try {
-                      formBuilderRef.current.parseForm(formattedSections[0].form_json);
+                      const cleanForm = cleanFormJson(formattedSections[0].form_json);
+                      formBuilderRef.current.parseForm(cleanForm);
                     } catch (e) {
                       console.error("Error parsing form JSON:", e);
                     }
@@ -468,7 +672,8 @@ function NewForm() {
               setTimeout(() => {
                 if (formBuilderRef.current) {
                   try {
-                    formBuilderRef.current.parseForm(formJsonString);
+                    const cleanForm = cleanFormJson(formJsonString);
+                    formBuilderRef.current.parseForm(cleanForm);
                   } catch (e) {
                     console.error("Error parsing form JSON:", e);
                   }
@@ -499,6 +704,9 @@ function NewForm() {
   // Handle opening modal after form is saved to sections
   // This ensures the form data is in sections state before FormBuilder re-renders
   useEffect(() => {
+    // Prevent infinite loops by checking if we're already processing
+    if (isProcessingFormRef.current) return;
+    
     if (pendingModalOpenRef.current && !showSaveModal) {
       // Reset the flag first to prevent re-triggering
       pendingModalOpenRef.current = false;
@@ -512,23 +720,38 @@ function NewForm() {
 
   // Restore form when modal closes to ensure form persists
   useEffect(() => {
-    if (!showSaveModal && formBuilderRef.current) {
+    if (!showSaveModal && formBuilderRef.current && !isProcessingFormRef.current) {
       // Modal just closed - restore form from sections to ensure it's displayed
-      const currentForm = getForm();
-      if (currentForm) {
-        try {
+      isProcessingFormRef.current = true;
+      try {
+        const currentForm = formJsonString;
+        if (currentForm) {
           // Small delay to ensure modal close animation completes
           setTimeout(() => {
-            if (formBuilderRef.current) {
-              formBuilderRef.current.parseForm(currentForm);
+            if (formBuilderRef.current && !isProcessingFormRef.current) {
+              isProcessingFormRef.current = true;
+              try {
+                const cleanForm = cleanFormJson(currentForm);
+                formBuilderRef.current.parseForm(cleanForm);
+              } catch (e) {
+                console.error("Error restoring form after modal close:", e);
+              } finally {
+                setTimeout(() => {
+                  isProcessingFormRef.current = false;
+                }, 0);
+              }
             }
           }, 100);
-        } catch (e) {
-          console.error("Error restoring form after modal close:", e);
         }
+      } catch (e) {
+        console.error("Error restoring form after modal close:", e);
+      } finally {
+        setTimeout(() => {
+          isProcessingFormRef.current = false;
+        }, 0);
       }
     }
-  }, [showSaveModal, getForm]);
+  }, [showSaveModal, formJsonString, cleanFormJson]);
 
   const handleBack = () => {
     navigate("/home");
@@ -971,3 +1194,4 @@ function NewForm() {
 }
 
 export default NewForm;
+
