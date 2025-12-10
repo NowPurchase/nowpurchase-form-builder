@@ -414,15 +414,6 @@ function NewForm() {
   };
 
   const handleSaveFormClick = () => {
-    console.log('[NewForm] Opening save modal with state:', {
-      customerId,
-      customerName,
-      templateName,
-      sheetId,
-      status,
-      description
-    });
-    
     // CRITICAL: Save current form to sections BEFORE opening modal
     // This ensures the form data is preserved when FormBuilder re-renders
     saveCurrentFormToSection();
@@ -704,8 +695,23 @@ function NewForm() {
   // Handle opening modal after form is saved to sections
   // This ensures the form data is in sections state before FormBuilder re-renders
   useEffect(() => {
-    // Prevent infinite loops by checking if we're already processing
-    if (isProcessingFormRef.current) return;
+    // If we're processing form data, wait for it to complete before checking
+    // The getFormDataAsString function resets isProcessingFormRef in a setTimeout(0),
+    // so we need to wait a bit for that to complete
+    if (isProcessingFormRef.current) {
+      // Wait for the setTimeout in getFormDataAsString to reset the flag
+      // Use a small delay to let the async reset happen
+      setTimeout(() => {
+        // Check again if we should open the modal
+        if (pendingModalOpenRef.current && !showSaveModal) {
+          pendingModalOpenRef.current = false;
+          setFieldErrors({});
+          setShowSaveModal(true);
+        }
+      }, 100); // Wait 100ms for the flag to reset
+      
+      return;
+    }
     
     if (pendingModalOpenRef.current && !showSaveModal) {
       // Reset the flag first to prevent re-triggering
@@ -759,7 +765,6 @@ function NewForm() {
 
   // Memoized callbacks for CustomerDropdown to prevent re-renders
   const handleCustomerChange = useCallback((id) => {
-    console.log('[NewForm] CustomerDropdown onChange called with:', id);
     setCustomerId(id);
     // Clear error when user selects a customer
     setFieldErrors(prev => {
@@ -773,7 +778,6 @@ function NewForm() {
   }, []);
 
   const handleCustomerSelect = useCallback((customer) => {
-    console.log('[NewForm] CustomerDropdown onSelect called with:', customer);
     // Update customer name when selected
     if (customer && customer.customer_name) {
       setCustomerName(customer.customer_name);
