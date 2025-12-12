@@ -14,15 +14,15 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.5",
-    "@react-form-builder/components-rsuite": "^7.5.0",
-    "@react-form-builder/core": "^7.5.0",
-    "@react-form-builder/designer": "^7.5.0",
+    "@react-form-builder/components-rsuite": "^7.9.0",
+    "@react-form-builder/core": "^7.9.0",
+    "@react-form-builder/designer": "^7.9.0",
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.553.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
-    "rsuite": "^5.83.3"
+    "rsuite": "^5.83.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
