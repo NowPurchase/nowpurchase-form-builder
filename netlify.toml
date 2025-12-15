@@ -1,7 +1,7 @@
 # Netlify configuration file
 [build]
-  # Build command
-  command = "npm run build:prod"
+  # Build command - reinstall to ensure optional dependencies are included
+  command = "npm install --legacy-peer-deps --include=optional && npm run build:prod"
   # Directory to publish (build output)
   publish = "dist"
 
