@@ -6,6 +6,7 @@ import {
   RsLocalizationWrapper,
   rSuiteComponents,
 } from "@react-form-builder/components-rsuite";
+import { rSuiteTableComponents } from "@react-form-builder/components-rsuite-table";
 import { BiDi } from "@react-form-builder/core";
 import { BuilderView, FormBuilder } from "@react-form-builder/designer";
 import { createDynamicLog, updateDynamicLog, getDynamicLog, getCustomerDropdown } from "../../services/dynamicLogApi";
@@ -39,7 +40,7 @@ const defaultForm = {
   defaultLanguage: "en-US",
 };
 
-const builderComponents = rSuiteComponents.map((c) => c.build());
+const builderComponents = [...rSuiteComponents, ...rSuiteTableComponents].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
   .withCssLoader(BiDi.LTR, ltrCssLoader)
