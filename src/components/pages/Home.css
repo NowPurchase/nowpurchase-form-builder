@@ -621,6 +621,42 @@
   overflow: hidden;
 }
 
+.table-container table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Column widths - using semantic classes */
+.col-template-name {
+  width: 25%;
+}
+
+.col-customer {
+  width: 25%;
+}
+
+.col-status {
+  width: 15%;
+}
+
+.col-version {
+  width: 10%;
+}
+
+.col-created-at {
+  width: 15%;
+}
+
+.col-actions {
+  width: 20%;
+}
+
+.table-container td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-row-clickable {
   cursor: pointer;
   transition: all 0.2s ease;
@@ -633,7 +669,6 @@
 .forms-table tbody tr:last-child {
   border-bottom: none;
 }
-
 
 .no-data {
   text-align: center;
@@ -679,6 +714,19 @@
 .status-badge.status-completed {
   background: #d1fae5;
   color: #065f46;
+}
+
+.version-cell {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .version-badge {
@@ -831,4 +879,3 @@
   opacity: 0.8 !important;
   color: #94a3af !important;
 }
-

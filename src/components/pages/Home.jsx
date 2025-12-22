@@ -35,7 +35,7 @@ function Home({ onLogout }) {
   const [allForms, setAllForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     page_size: 20,
@@ -43,7 +43,7 @@ function Home({ onLogout }) {
     next: null,
     previous: null,
   });
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -51,95 +51,104 @@ function Home({ onLogout }) {
   const [customerFilter, setCustomerFilter] = useState(null);
   const [customerFilterName, setCustomerFilterName] = useState("");
 
-  const fetchForms = useCallback(async (page = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const params = {
-        page,
-        page_size: pagination.page_size,
-        ...(statusFilter && { status: statusFilter }),
-        ...(customerFilter && { customer: customerFilter }),
-        ...(debouncedSearchQuery && debouncedSearchQuery.trim() && { search: debouncedSearchQuery.trim() }),
-      };
+  const fetchForms = useCallback(
+    async (page = 1, pageSize = pagination.page_size) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const response = await listDynamicLogs(params);
-      
-      let formsList = [];
-      let paginationData = {
-        count: 0,
-        next: null,
-        previous: null,
-        page_size: pagination.page_size,
-      };
-
-      if (Array.isArray(response)) {
-        const totalCount = response.length;
-        const pageSize = pagination.page_size;
-        
-        if (totalCount > pageSize) {
-          const startIndex = (page - 1) * pageSize;
-          const endIndex = startIndex + pageSize;
-          formsList = response.slice(startIndex, endIndex);
-          
-          const totalPages = Math.ceil(totalCount / pageSize);
-          paginationData = {
-            count: totalCount,
-            next: page < totalPages ? page + 1 : null,
-            previous: page > 1 ? page - 1 : null,
-            page_size: pageSize,
-          };
-        } 
-        else if (totalCount === pageSize) {
-          formsList = response;
-          paginationData = {
-            count: totalCount,
-            next: page + 1,
-            previous: page > 1 ? page - 1 : null,
-            page_size: pageSize,
-          };
-        }
-        else {
-          formsList = response;
-          paginationData = {
-            count: totalCount,
-            next: null,
-            previous: page > 1 ? page - 1 : null,
-            page_size: pageSize,
-          };
-        }
-      } else if (response.results) {
-        formsList = response.results;
-        const totalCount = typeof response.count === "number" ? response.count : 0;
-        const resolvedPageSize = params.page_size || pagination.page_size;
-        const nextPage = parsePageFromUrl(response.next);
-        const previousPage = parsePageFromUrl(response.previous);
-
-        paginationData = {
-          count: totalCount,
-          next: nextPage,
-          previous: previousPage,
-          page_size: resolvedPageSize,
+        const params = {
+          page_no: page,
+          page_size: pageSize,
+          ...(statusFilter && { status: statusFilter }),
+          ...(customerFilter && { customer: customerFilter }),
+          ...(debouncedSearchQuery &&
+            debouncedSearchQuery.trim() && {
+              search: debouncedSearchQuery.trim(),
+            }),
         };
+
+        console.log('[Home] Fetching templates with params:', params);
+
+        const response = await listDynamicLogs(params);
+
+        console.log('[Home] API Response:', response);
+
+        let formsList = [];
+        let paginationData = {
+          count: 0,
+          next: null,
+          previous: null,
+          page_size: pageSize,
+        };
+
+        if (Array.isArray(response)) {
+          const totalCount = response.length;
+
+          if (totalCount > pageSize) {
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            formsList = response.slice(startIndex, endIndex);
+
+            const totalPages = Math.ceil(totalCount / pageSize);
+            paginationData = {
+              count: totalCount,
+              next: page < totalPages ? page + 1 : null,
+              previous: page > 1 ? page - 1 : null,
+              page_size: pageSize,
+            };
+          } else if (totalCount === pageSize) {
+            formsList = response;
+            paginationData = {
+              count: totalCount,
+              next: page + 1,
+              previous: page > 1 ? page - 1 : null,
+              page_size: pageSize,
+            };
+          } else {
+            formsList = response;
+            paginationData = {
+              count: totalCount,
+              next: null,
+              previous: page > 1 ? page - 1 : null,
+              page_size: pageSize,
+            };
+          }
+        } else if (response.results) {
+          formsList = response.results;
+          const totalCount =
+            typeof response.count === "number" ? response.count : 0;
+          const resolvedPageSize = params.page_size || pageSize;
+          const nextPage = parsePageFromUrl(response.next);
+          const previousPage = parsePageFromUrl(response.previous);
+
+          paginationData = {
+            count: totalCount,
+            next: nextPage,
+            previous: previousPage,
+            page_size: resolvedPageSize,
+          };
+        }
+
+        const transformedForms = formsList.map(apiToLocal);
+        setAllForms(transformedForms);
+        setPagination({
+          page: page,
+          page_size: pageSize,
+          ...paginationData,
+        });
+      } catch (err) {
+        console.error('[Home] Error fetching forms:', err);
+        const errorMsg = formatErrorMessage(err);
+        setError(errorMsg);
+        toast.error(errorMsg);
+        setAllForms([]);
+      } finally {
+        setLoading(false);
       }
-      
-      const transformedForms = formsList.map(apiToLocal);
-      setAllForms(transformedForms);
-      setPagination((prev) => ({
-        page: page,
-        page_size: paginationData.page_size ?? prev.page_size,
-        ...paginationData,
-      }));
-    } catch (err) {
-      const errorMsg = formatErrorMessage(err);
-      setError(errorMsg);
-      toast.error(errorMsg);
-      setAllForms([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, customerFilter, debouncedSearchQuery, pagination.page_size]);
+    },
+    [statusFilter, customerFilter, debouncedSearchQuery, pagination.page_size]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -159,9 +168,17 @@ function Home({ onLogout }) {
     filtered.sort((a, b) => {
       const aValue = new Date(a.created_at || 0).getTime();
       const bValue = new Date(b.created_at || 0).getTime();
-      return sortOrder === "asc" 
-        ? (aValue > bValue ? 1 : aValue < bValue ? -1 : 0)
-        : (aValue < bValue ? 1 : aValue > bValue ? -1 : 0);
+      return sortOrder === "asc"
+        ? aValue > bValue
+          ? 1
+          : aValue < bValue
+          ? -1
+          : 0
+        : aValue < bValue
+        ? 1
+        : aValue > bValue
+        ? -1
+        : 0;
     });
 
     return filtered;
@@ -184,17 +201,17 @@ function Home({ onLogout }) {
   };
 
   const handleRowClick = (form) => {
-    navigate(`/form/${form.form_id}`);
+    navigate(`/form/${form.template_id}`);
   };
 
   const handleDuplicate = (e, form) => {
     e.stopPropagation();
-    navigate(`/new-form?duplicate=${form.form_id}`);
+    navigate(`/new-form?duplicate=${form.template_id}`);
   };
 
   const handleEdit = (e, form) => {
     e.stopPropagation();
-    navigate(`/new-form?edit=${form.form_id}`);
+    navigate(`/new-form?edit=${form.template_id}`);
   };
 
   const handleClearFilters = () => {
@@ -220,13 +237,25 @@ function Home({ onLogout }) {
   const getActiveFilterChips = () => {
     const chips = [];
     if (searchQuery) {
-      chips.push({ key: "search", label: `Search: "${searchQuery}"`, value: searchQuery });
+      chips.push({
+        key: "search",
+        label: `Search: "${searchQuery}"`,
+        value: searchQuery,
+      });
     }
     if (statusFilter) {
-      chips.push({ key: "status", label: `Status: ${statusFilter}`, value: statusFilter });
+      chips.push({
+        key: "status",
+        label: `Status: ${statusFilter}`,
+        value: statusFilter,
+      });
     }
     if (customerFilter && customerFilterName) {
-      chips.push({ key: "customer", label: `Customer: ${customerFilterName}`, value: customerFilter });
+      chips.push({
+        key: "customer",
+        label: `Customer: ${customerFilterName}`,
+        value: customerFilter,
+      });
     }
     return chips;
   };
@@ -243,9 +272,11 @@ function Home({ onLogout }) {
   };
 
   const getSortIcon = () => {
-    return sortOrder === "asc" 
-      ? <ChevronUp size={14} className="sort-icon-active" />
-      : <ChevronDown size={14} className="sort-icon-active" />;
+    return sortOrder === "asc" ? (
+      <ChevronUp size={14} className="sort-icon-active" />
+    ) : (
+      <ChevronDown size={14} className="sort-icon-active" />
+    );
   };
 
   const hasActiveFilters = searchQuery || statusFilter || customerFilter;
@@ -313,19 +344,25 @@ function Home({ onLogout }) {
             <div className="status-toggle-buttons">
               <button
                 onClick={() => setStatusFilter("")}
-                className={`status-toggle-btn ${statusFilter === "" ? "active" : ""}`}
+                className={`status-toggle-btn ${
+                  statusFilter === "" ? "active" : ""
+                }`}
               >
                 All
               </button>
               <button
                 onClick={() => setStatusFilter("draft")}
-                className={`status-toggle-btn ${statusFilter === "draft" ? "active" : ""}`}
+                className={`status-toggle-btn ${
+                  statusFilter === "draft" ? "active" : ""
+                }`}
               >
                 Draft
               </button>
               <button
                 onClick={() => setStatusFilter("completed")}
-                className={`status-toggle-btn ${statusFilter === "completed" ? "active" : ""}`}
+                className={`status-toggle-btn ${
+                  statusFilter === "completed" ? "active" : ""
+                }`}
               >
                 Completed
               </button>
@@ -378,7 +415,10 @@ function Home({ onLogout }) {
                   </button>
                 </div>
               ))}
-              <button onClick={handleClearFilters} className="clear-all-chips-btn">
+              <button
+                onClick={handleClearFilters}
+                className="clear-all-chips-btn"
+              >
                 Clear all
               </button>
             </div>
@@ -387,7 +427,14 @@ function Home({ onLogout }) {
             <div className="results-info">
               Showing {filteredForms.length} of {pagination.count} forms
               {(totalPages > 1 || pagination.next || pagination.previous) && (
-                <span> ({totalPages > 0 ? `Page ${pagination.page} of ${totalPages}` : `Page ${pagination.page}`})</span>
+                <span>
+                  {" "}
+                  (
+                  {totalPages > 0
+                    ? `Page ${pagination.page} of ${totalPages}`
+                    : `Page ${pagination.page}`}
+                  )
+                </span>
               )}
             </div>
           )}
@@ -397,27 +444,24 @@ function Home({ onLogout }) {
           <Table>
             {filteredForms.length === 0 && (
               <TableCaption>
-                {hasActiveFilters 
-                  ? "No forms match your filters" 
+                {hasActiveFilters
+                  ? "No forms match your filters"
                   : "No forms found"}
               </TableCaption>
             )}
             <TableHeader>
               <TableRow>
-                <TableHead>Form ID</TableHead>
-                <TableHead>Template Name</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead 
-                  className="sortable-header"
-                  onClick={handleSort}
-                >
+                <TableHead className="col-template-name">Template Name</TableHead>
+                <TableHead className="col-customer">Customer</TableHead>
+                <TableHead className="col-status">Status</TableHead>
+                <TableHead className="col-version">Version</TableHead>
+                <TableHead className="col-created-at sortable-header" onClick={handleSort}>
                   <span className="header-content">
                     Created At
                     {getSortIcon()}
                   </span>
                 </TableHead>
-                <TableHead className="actions-header">Actions</TableHead>
+                <TableHead className="col-actions actions-header">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -428,16 +472,29 @@ function Home({ onLogout }) {
                     onClick={() => handleRowClick(form)}
                     className="table-row-clickable"
                   >
-                    <TableCell className="font-medium">{form.form_id}</TableCell>
-                    <TableCell>{form.template_name || form["from-name"] || "N/A"}</TableCell>
+                    <TableCell>
+                      {form.template_name || form["from-name"] || "N/A"}
+                    </TableCell>
                     <TableCell>{form.customer_name || "N/A"}</TableCell>
                     <TableCell>
-                      <span className={`status-badge status-${(form.status || "draft").toLowerCase()}`}>
+                      <span
+                        className={`status-badge status-${(
+                          form.status || "draft"
+                        ).toLowerCase()}`}
+                      >
                         {form.status || "draft"}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      <span className="version-cell">
+                        {form.version ? `v${form.version}` : "—"}
+                      </span>
+                    </TableCell>
                     <TableCell>{formatDate(form.created_at)}</TableCell>
-                    <TableCell className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                    <TableCell
+                      className="actions-cell"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="row-actions">
                         <button
                           className="action-btn edit-btn"
@@ -462,7 +519,9 @@ function Home({ onLogout }) {
               ) : (
                 <TableRow>
                   <TableCell colSpan="6" className="no-data text-center">
-                    {hasActiveFilters ? "No forms match your filters" : "No forms found"}
+                    {hasActiveFilters
+                      ? "No forms match your filters"
+                      : "No forms found"}
                   </TableCell>
                 </TableRow>
               )}
@@ -473,7 +532,11 @@ function Home({ onLogout }) {
         {(totalPages > 1 || pagination.next || pagination.previous) && (
           <div className="pagination-controls">
             <Pagination
-              count={totalPages > 0 ? totalPages : pagination.page + (pagination.next ? 1 : 0)}
+              count={
+                totalPages > 0
+                  ? totalPages
+                  : pagination.page + (pagination.next ? 1 : 0)
+              }
               page={pagination.page}
               onChange={(event, value) => handlePageChange(value)}
               disabled={loading}
@@ -481,24 +544,24 @@ function Home({ onLogout }) {
               showFirstButton
               showLastButton
               sx={{
-                '& .MuiPaginationItem-root': {
-                  color: '#1f2937',
-                  '&.Mui-selected': {
-                    backgroundColor: '#0f172a',
-                    color: '#ffffff',
-                    '&:hover': {
-                      backgroundColor: '#1e293b',
+                "& .MuiPaginationItem-root": {
+                  color: "#1f2937",
+                  "&.Mui-selected": {
+                    backgroundColor: "#0f172a",
+                    color: "#ffffff",
+                    "&:hover": {
+                      backgroundColor: "#1e293b",
                     },
                   },
-                  '&:hover': {
-                    backgroundColor: '#f3f4f6',
+                  "&:hover": {
+                    backgroundColor: "#f3f4f6",
                   },
                 },
-                '& .MuiPaginationItem-icon': {
-                  color: '#64748b',
+                "& .MuiPaginationItem-icon": {
+                  color: "#64748b",
                 },
-                '& .Mui-disabled': {
-                  color: '#d1d5db',
+                "& .Mui-disabled": {
+                  color: "#d1d5db",
                 },
               }}
             />

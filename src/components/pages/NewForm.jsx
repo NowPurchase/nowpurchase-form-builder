@@ -9,7 +9,8 @@ import {
 import { rSuiteTableComponents } from "@react-form-builder/components-rsuite-table";
 import { BiDi } from "@react-form-builder/core";
 import { BuilderView, FormBuilder } from "@react-form-builder/designer";
-import { createDynamicLog, updateDynamicLog, getDynamicLog, getCustomerDropdown } from "../../services/dynamicLogApi";
+import { createDynamicLog, updateDynamicLog, getDynamicLog } from "../../services/dynamicLogApi";
+import { getCustomerDropdown } from "../../services/customerApi";
 import { formatErrorMessage, getFieldErrors } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import CustomerDropdown from "../shared/CustomerDropdown";
@@ -76,6 +77,7 @@ function NewForm() {
   const [customerId, setCustomerId] = useState(null);
   const [customerName, setCustomerName] = useState("");
   const [status, setStatus] = useState("completed");
+  const [version, setVersion] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -469,21 +471,33 @@ function NewForm() {
         };
       }
 
-      const apiData = {
-        template_name: templateName.trim(),
-        sheet_id: sheetId.trim(),
-        form_json: formJson,
-        customer: customerId,
-        status: status.toUpperCase(),
-        description: description?.trim() || '',
-      };
-
       // Use PUT for edit mode, POST for duplicate/new mode
       if (isEditMode && editId) {
-        await updateDynamicLog(editId, apiData);
+        // Update payload - only send what's needed
+        const updateData = {
+          form_json: formJson, // Required
+          template_name: templateName.trim(), // Optional
+          customer_name: customerName, // Save customer name
+          sheet_url: sheetId.trim(), // Save sheet URL
+          description: description?.trim() || '', // Optional
+          status: status, // Status is now a direct field
+        };
+        await updateDynamicLog(editId, updateData);
         toast.success("Form updated successfully!");
       } else {
-        await createDynamicLog(apiData);
+        // Create payload - needs customer_id and config
+        const createData = {
+          customer_id: customerId, // Required (FK to old API)
+          customer_name: customerName, // Save customer name
+          template_name: templateName.trim(), // Required
+          sheet_url: sheetId.trim(), // Save sheet URL
+          status: status, // Status is now a direct field
+          config: {}, // Required by API (empty object)
+          form_json: formJson, // Optional
+          description: description?.trim() || '', // Optional
+          platforms: [], // Optional but must be array if present
+        };
+        await createDynamicLog(createData);
         toast.success("Form saved successfully!");
       }
       
@@ -535,52 +549,49 @@ function NewForm() {
         if (response) {
           // Set template name (for duplicate, user will change it)
           setTemplateName(response.template_name || "");
-          
-          // Only prefill modal fields (customer, status, description, sheet_id) when in EDIT mode
+
+          // Set version (always, for both edit and duplicate)
+          if (response.version) {
+            setVersion(response.version);
+          }
+
+          // Only prefill modal fields (customer, description, sheet_url) when in EDIT mode
           // In DUPLICATE mode, these fields should remain empty
           if (isEditMode) {
-            // Set sheet_id
-            setSheetId(response.sheet_id || "");
+            // Set sheet URL from config
+            setSheetId(response.config?.sheet_url || response.sheet_url || "");
             // Set description
             setDescription(response.description ?? "");
+            // Set status from direct field
+            if (response.status) {
+              setStatus(response.status);
+            }
             
             // Set customer ID and name
-            if (response.customer) {
-              const customerIdValue = typeof response.customer === 'object' 
-                ? response.customer.id 
-                : response.customer;
-              
-              console.log('[NewForm] Setting customer ID:', customerIdValue);
-              setCustomerId(customerIdValue);
-              
-              // Set customer name if available in response
-              // API can return customer_name directly, or company_name in customer object
+            // New API returns customer_id (integer FK to old API)
+            if (response.customer_id) {
+              console.log('[NewForm] Setting customer ID:', response.customer_id);
+              setCustomerId(response.customer_id);
+
+              // Check if customer_name is in the response, otherwise fetch from dropdown API
               if (response.customer_name) {
-                console.log('[NewForm] Setting customer name from response.customer_name:', response.customer_name);
+                console.log('[NewForm] Found customer_name in response:', response.customer_name);
                 setCustomerName(response.customer_name);
-              } else if (typeof response.customer === 'object' && response.customer.customer_name) {
-                console.log('[NewForm] Setting customer name from response.customer.customer_name:', response.customer.customer_name);
-                setCustomerName(response.customer.customer_name);
-              } else if (typeof response.customer === 'object' && response.customer.company_name) {
-                console.log('[NewForm] Setting customer name from response.customer.company_name:', response.customer.company_name);
-                setCustomerName(response.customer.company_name);
               } else {
-                console.log('[NewForm] No customer name found in response, will fetch it using customer ID:', customerIdValue);
-                // Fetch customer name using the customer ID
-                if (customerIdValue) {
-                  try {
-                    const customersResponse = await getCustomerDropdown("");
-                    const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
-                    const foundCustomer = customersList.find(c => c.id === customerIdValue);
-                    if (foundCustomer && foundCustomer.customer_name) {
-                      console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
-                      setCustomerName(foundCustomer.customer_name);
-                    } else {
-                      console.log('[NewForm] Customer not found in dropdown list');
-                    }
-                  } catch (err) {
-                    console.error('[NewForm] Failed to fetch customer name:', err);
+                console.log('[NewForm] customer_name not in response, fetching from dropdown API');
+                // Fetch customer name from dropdown API
+                try {
+                  const customersResponse = await getCustomerDropdown("");
+                  const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
+                  const foundCustomer = customersList.find(c => c.id === response.customer_id);
+                  if (foundCustomer && foundCustomer.customer_name) {
+                    console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
+                    setCustomerName(foundCustomer.customer_name);
+                  } else {
+                    console.log('[NewForm] Customer not found in dropdown list');
                   }
+                } catch (err) {
+                  console.error('[NewForm] Failed to fetch customer name:', err);
                 }
               }
             } else {
@@ -779,9 +790,23 @@ function NewForm() {
   }, []);
 
   const handleCustomerSelect = useCallback((customer) => {
-    // Update customer name when selected
-    if (customer && customer.customer_name) {
-      setCustomerName(customer.customer_name);
+    // Update both customer ID and name when selected to ensure they're in sync
+    if (customer) {
+      if (customer.customer_id) {
+        setCustomerId(customer.customer_id);
+      }
+      if (customer.customer_name) {
+        setCustomerName(customer.customer_name);
+      }
+      // Clear error when user selects a customer
+      setFieldErrors(prev => {
+        if (prev.customer) {
+          const newErrors = { ...prev };
+          delete newErrors.customer;
+          return newErrors;
+        }
+        return prev;
+      });
     }
   }, []);
 
@@ -872,6 +897,11 @@ function NewForm() {
             {isSidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
           </button>
           <h1>{isEditMode ? "Edit Form" : isDuplicateMode ? "Duplicate Form" : "Form Builder"}</h1>
+          {version && (
+            <span className="version-badge" title="Template Version">
+              v{version}
+            </span>
+          )}
         </div>
         <div className="header-actions">
           {!isEditMode && (
@@ -1187,7 +1217,7 @@ function NewForm() {
           <Button
             onClick={handleSaveForm}
             className="modal-submit-btn"
-            disabled={saving || !templateName.trim() || !sheetId.trim() || !customerId}
+            disabled={saving || !templateName.trim() || !customerId}
             loading={saving}
           >
             {saving ? "Saving..." : "Save & Submit"}

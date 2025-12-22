@@ -94,36 +94,7 @@
   font-style: italic;
 }
 
-/* Column width classes for consistent spacing */
-.table-head:first-child,
-.table-cell:first-child {
-  width: 10%;
-}
-
-.table-head:nth-child(2),
-.table-cell:nth-child(2) {
-  width: 25%;
-}
-
-.table-head:nth-child(3),
-.table-cell:nth-child(3) {
-  width: 25%;
-}
-
-.table-head:nth-child(4),
-.table-cell:nth-child(4) {
-  width: 12%;
-}
-
-.table-head:nth-child(5),
-.table-cell:nth-child(5) {
-  width: 18%;
-}
-
-.table-head:nth-child(6),
-.table-cell:nth-child(6) {
-  width: 10%;
-}
+/* Column width classes are now defined per-page using semantic class names */
 
 /* Responsive */
 @media (max-width: 768px) {
