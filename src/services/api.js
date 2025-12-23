@@ -10,14 +10,16 @@ if (!AUTH_BASE_URL && import.meta.env.DEV) {
   console.warn('VITE_AUTH_BASE_URL is not set in .env file');
 }
 
-export const getToken = () => localStorage.getItem('auth') || sessionStorage.getItem('auth');
+export const getToken = () => localStorage.getItem('dlms_auth_token') || sessionStorage.getItem('dlms_auth_token');
 
 export const setToken = (token, persist = true) => {
   const storage = persist ? localStorage : sessionStorage;
-  storage.setItem('auth', token);
+  storage.setItem('dlms_auth_token', token);
 };
 
 export const removeToken = () => {
+  localStorage.removeItem('dlms_auth_token');
+  sessionStorage.removeItem('dlms_auth_token');
   localStorage.removeItem('auth');
   sessionStorage.removeItem('auth');
   localStorage.removeItem('nowpurchase_token');
@@ -33,6 +35,18 @@ export const getNowPurchaseToken = () => localStorage.getItem('nowpurchase_token
 export const setNowPurchaseToken = (token, persist = true) => {
   const storage = persist ? localStorage : sessionStorage;
   storage.setItem('nowpurchase_token', token);
+};
+
+// Validate that both tokens are present for authenticated requests
+export const validateAuth = () => {
+  const dlmsToken = getToken();
+  const nowpurchaseToken = getNowPurchaseToken();
+  return !!(dlmsToken && nowpurchaseToken);
+};
+
+// Check if user is fully authenticated with both tokens
+export const isAuthenticated = () => {
+  return validateAuth();
 };
 
 const parseError = async (response) => {
@@ -112,6 +126,19 @@ const parseJson = async (response) => {
 const request = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getToken();
+  const nowpurchaseToken = getNowPurchaseToken();
+
+  // Validate both tokens are present for authenticated requests
+  if (token && !nowpurchaseToken) {
+    removeToken();
+    if (window.location.pathname !== '/') window.location.href = '/';
+    throw {
+      code: 'auth_error',
+      message: 'Authentication failed: Missing required tokens',
+      details: {},
+      status: 401,
+    };
+  }
 
   const config = {
     ...options,
