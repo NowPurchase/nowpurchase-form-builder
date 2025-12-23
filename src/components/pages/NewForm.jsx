@@ -7,7 +7,7 @@ import {
   rSuiteComponents,
 } from "@react-form-builder/components-rsuite";
 import { rSuiteTableComponents } from "@react-form-builder/components-rsuite-table";
-import { BiDi } from "@react-form-builder/core";
+import { BiDi, ActionDefinition } from "@react-form-builder/core";
 import { BuilderView, FormBuilder } from "@react-form-builder/designer";
 import { createDynamicLog, updateDynamicLog, getDynamicLog } from "../../services/dynamicLogApi";
 import { getCustomerDropdown } from "../../services/customerApi";
@@ -22,6 +22,12 @@ import "./NewForm.css";
 const defaultForm = {
   version: "1",
   errorType: "RsErrorMessage",
+  actions: {
+    onSubmit: {
+      body: `    console.log("Form Submitted")`,
+      params: {}
+    }
+  },
   form: {
     key: "Screen",
     type: "Screen",
@@ -859,6 +865,29 @@ function NewForm() {
 
   const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
 
+  // Define actions for the form builder
+  const actions = useMemo(() => ({
+    onSubmit: ActionDefinition.functionalAction(async (e) => {
+      try {
+        await e.store.formData.validate();
+      } catch (error) {
+        console.warn("Validation error:", error);
+      }
+
+      if (Object.keys(e.store.formData.errors).length < 1) {
+        // No errors - form is valid
+        console.log("Form submitted successfully!");
+        console.log("Form data:", e.store.formData.data);
+        toast.success("Form submitted successfully!");
+        // You can add your custom submit logic here
+      } else {
+        // Has errors
+        console.error("Form has errors:", e.store.formData.errors);
+        toast.error("Please fix the errors in the form");
+      }
+    }),
+  }), []);
+
   // Show loading state while fetching form data
   if (loadingForm) {
     return (
@@ -1041,6 +1070,7 @@ function NewForm() {
             view={builderView}
             formName={selectedSection?.section_name || "NewForm"}
             getForm={getForm}
+            actions={actions}
           />
         </div>
       </div>
