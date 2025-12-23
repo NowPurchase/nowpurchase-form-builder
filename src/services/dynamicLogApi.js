@@ -1,43 +1,61 @@
-import { apiGet, apiPost, apiPut, apiGetText } from './api';
+import { apiGet, apiPost, apiPut, apiGetOldText } from './api';
 
-const BASE_ENDPOINT = '/admin/dynamic_form';
+const BASE_ENDPOINT = '/api/v1/templates';
 
 export const createDynamicLog = async (data) => {
   const payload = {
-    template_name: data.template_name,
-    sheet_id: data.sheet_id || '',
-    form_json: data.form_json || {},
-    customer: data.customer || null,
-    status: data.status || 'draft',
-    description: data.description || '',
+    customer_id: data.customer_id, // Required
+    customer_name: data.customer_name, // Save customer name
+    template_name: data.template_name, // Required
+    sheet_url: data.sheet_url, // Save sheet URL
+    status: data.status, // Direct field (not in config)
+    config: data.config, // Required
+    form_json: data.form_json, // Optional
+    description: data.description, // Optional
+    platforms: data.platforms, // Optional
   };
 
-  return await apiPost(BASE_ENDPOINT + '/', payload);
+  // Remove undefined fields
+  Object.keys(payload).forEach(key => {
+    if (payload[key] === undefined) {
+      delete payload[key];
+    }
+  });
+
+  return await apiPost(BASE_ENDPOINT, payload);
 };
 
-export const updateDynamicLog = async (id, data) => {
+export const updateDynamicLog = async (template_id, data) => {
   const payload = {
-    id: id,
-    template_name: data.template_name,
-    sheet_id: data.sheet_id || '',
-    form_json: data.form_json || {},
-    customer: data.customer || null,
-    status: data.status || 'draft',
-    description: data.description || '',
+    form_json: data.form_json, // Required for update
+    template_name: data.template_name, // Optional
+    customer_name: data.customer_name, // Save customer name
+    sheet_url: data.sheet_url, // Save sheet URL
+    status: data.status, // Direct field (not in config)
+    description: data.description, // Optional
+    config: data.config, // Optional
+    platforms: data.platforms, // Optional
   };
 
-  return await apiPut(`${BASE_ENDPOINT}/${id}/`, payload);
+  // Remove undefined fields
+  Object.keys(payload).forEach(key => {
+    if (payload[key] === undefined) {
+      delete payload[key];
+    }
+  });
+
+  return await apiPut(`${BASE_ENDPOINT}/${template_id}`, payload);
 };
 
-export const getDynamicLog = async (id) => {
-  return await apiGet(`${BASE_ENDPOINT}/${id}/`);
+export const getDynamicLog = async (template_id) => {
+  return await apiGet(`${BASE_ENDPOINT}/${template_id}`);
 };
 
 export const listDynamicLogs = async (params = {}) => {
   const queryParams = [];
-  
-  if (params.page !== undefined && params.page !== null) {
-    queryParams.push(`page=${params.page}`);
+
+  if (params.page_no !== undefined && params.page_no !== null) {
+    queryParams.push(`page_no=${params.page_no}`);
   }
   if (params.page_size !== undefined && params.page_size !== null) {
     queryParams.push(`page_size=${params.page_size}`);
@@ -45,7 +63,13 @@ export const listDynamicLogs = async (params = {}) => {
   if (params.status) {
     queryParams.push(`status=${encodeURIComponent(params.status)}`);
   }
-  if (params.customer !== undefined && params.customer !== null) {
+  if (params.is_active !== undefined && params.is_active !== null) {
+    queryParams.push(`is_active=${params.is_active}`);
+  }
+  if (params.platform) {
+    queryParams.push(`platform=${encodeURIComponent(params.platform)}`);
+  }
+  if (params.customer) {
     queryParams.push(`customer=${params.customer}`);
   }
   if (params.search) {
@@ -53,29 +77,15 @@ export const listDynamicLogs = async (params = {}) => {
   }
 
   const queryString = queryParams.length > 0 ? queryParams.join('&') : '';
-  const endpoint = queryString 
-    ? `${BASE_ENDPOINT}/?${queryString}`
-    : `${BASE_ENDPOINT}/`;
-
-  return await apiGet(endpoint);
-};
-
-export const getCustomerDropdown = async (search = '') => {
-  const queryParams = new URLSearchParams();
-  if (search) {
-    queryParams.append('search', search);
-  }
-
-  const queryString = queryParams.toString();
   const endpoint = queryString
-    ? `${BASE_ENDPOINT}/customers/dropdown/?${queryString}`
-    : `${BASE_ENDPOINT}/customers/dropdown/`;
+    ? `${BASE_ENDPOINT}?${queryString}`
+    : BASE_ENDPOINT;
 
   return await apiGet(endpoint);
 };
 
 export const getSheetPreview = async (templateId) => {
-  // This endpoint returns HTML, so we fetch as text
-  return await apiGetText(`/admin/dynamic_logsheet/preview/?template_id=${templateId}`);
+  // Sheet preview uses old NowPurchase API, returns HTML as text
+  return await apiGetOldText(`/api/admin/dynamic_logsheet/preview/?template_id=${templateId}`);
 };
 

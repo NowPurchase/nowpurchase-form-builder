@@ -20,9 +20,19 @@ export const setToken = (token, persist = true) => {
 export const removeToken = () => {
   localStorage.removeItem('auth');
   sessionStorage.removeItem('auth');
+  localStorage.removeItem('nowpurchase_token');
+  sessionStorage.removeItem('nowpurchase_token');
   // Also remove legacy authToken if it exists
   localStorage.removeItem('authToken');
   sessionStorage.removeItem('authToken');
+};
+
+// Store NowPurchase token separately for old API calls
+export const getNowPurchaseToken = () => localStorage.getItem('nowpurchase_token') || sessionStorage.getItem('nowpurchase_token');
+
+export const setNowPurchaseToken = (token, persist = true) => {
+  const storage = persist ? localStorage : sessionStorage;
+  storage.setItem('nowpurchase_token', token);
 };
 
 const parseError = async (response) => {
@@ -109,7 +119,7 @@ const request = async (endpoint, options = {}) => {
       'Content-Type': 'application/json',
       ...options.headers,
       // Always set Authorization header if token exists, overriding any existing one
-      ...(token && { Authorization: `Token ${token}` }),
+      ...(token && { Authorization: `Bearer ${token}` }),
     },
   };
 
@@ -154,6 +164,46 @@ export const apiPut = async (endpoint, data = {}, options = {}) => {
     body: JSON.stringify(data),
   });
   return parseJson(response);
+};
+
+// Request function for old NowPurchase API (for customer data, etc.)
+const requestOldApi = async (endpoint, options = {}) => {
+  const url = `${AUTH_BASE_URL}${endpoint}`;
+  const token = getNowPurchaseToken(); // Use NowPurchase token for old API
+
+  const config = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      // Old API uses Token format
+      ...(token && { Authorization: `Token ${token}` }),
+    },
+  };
+
+  try {
+    const response = await fetch(url, config);
+    const handledResponse = await handleResponse(response);
+    return handledResponse;
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: error.message || 'Network request failed',
+      details: {},
+      status: 0,
+    };
+  }
+};
+
+export const apiGetOld = async (endpoint, options = {}) => {
+  const response = await requestOldApi(endpoint, { ...options, method: 'GET' });
+  return parseJson(response);
+};
+
+export const apiGetOldText = async (endpoint, options = {}) => {
+  const response = await requestOldApi(endpoint, { ...options, method: 'GET' });
+  return await response.text();
 };
 
 // Generate or retrieve device ID (consistent per browser)
@@ -217,12 +267,12 @@ export const sendOTP = async (mobile) => {
   }
 };
 
-// Verify OTP and get authentication token
+// Verify OTP and get NowPurchase authentication token
 export const verifyOTP = async (mobile, token) => {
   const baseUrl = getAuthBaseUrl();
   const url = `${baseUrl}/a/auth/token/`;
   const deviceId = getDeviceId();
-  
+
   const config = {
     method: 'POST',
     headers: {
@@ -248,6 +298,36 @@ export const verifyOTP = async (mobile, token) => {
     throw {
       code: 'network_error',
       message: error.message || 'Failed to verify OTP',
+      details: {},
+      status: 0,
+    };
+  }
+};
+
+// Login to DLMS API with NowPurchase token and get JWT token
+export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
+  const url = `${API_BASE_URL}/api/v1/auth/login`;
+
+  const config = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ nowpurchase_token }),
+  };
+
+  try {
+    const response = await fetch(url, config);
+    if (!response.ok) {
+      const error = await parseError(response);
+      throw error;
+    }
+    return await parseJson(response);
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: error.message || 'Failed to login with NowPurchase token',
       details: {},
       status: 0,
     };

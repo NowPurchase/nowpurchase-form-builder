@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { getCustomerDropdown } from "../../services/dynamicLogApi";
+import { getCustomerDropdown } from "../../services/customerApi";
 import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "./Toast";
 import "./CustomerDropdown.css";

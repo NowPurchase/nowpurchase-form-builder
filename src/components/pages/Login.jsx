@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { setToken, sendOTP, verifyOTP } from "../../services/api";
+import { setToken, setNowPurchaseToken, sendOTP, verifyOTP, loginWithNowPurchaseToken } from "../../services/api";
 import "./Login.css";
 
 function Login({ onLogin }) {
@@ -56,7 +56,7 @@ function Login({ onLogin }) {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!otp || otp.length !== 4) {
       setError("Please enter a valid 4-digit OTP");
       return;
@@ -66,15 +66,27 @@ function Login({ onLogin }) {
 
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
-      const response = await verifyOTP(mobileWithPrefix, otp);
-      
-      const token = response?.token;
-      
-      if (token) {
-        setToken(token, true);
+
+      // Step 1: Verify OTP and get NowPurchase token
+      const otpResponse = await verifyOTP(mobileWithPrefix, otp);
+      const nowpurchaseToken = otpResponse?.token;
+
+      if (!nowpurchaseToken) {
+        setError("Verification successful but no token received from server");
+        return;
+      }
+
+      // Step 2: Login to DLMS API with NowPurchase token to get JWT
+      const loginResponse = await loginWithNowPurchaseToken(nowpurchaseToken);
+      const jwtToken = loginResponse?.access_token;
+
+      if (jwtToken) {
+        // Store both tokens
+        setToken(jwtToken, true); // JWT for new DLMS API
+        setNowPurchaseToken(nowpurchaseToken, true); // NowPurchase token for old API
         onLogin();
       } else {
-        setError("Verification successful but no token received from server");
+        setError("Login successful but no JWT token received");
       }
     } catch (err) {
       setError(err.message || "Invalid OTP. Please check and try again.");

@@ -36,6 +36,7 @@ function ViewForm() {
   const [loadingSheetPreview, setLoadingSheetPreview] = useState(false);
   const sheetPreviewRef = useRef(null);
   const hasFetchedFormRef = useRef(false);
+  const hasFetchedSheetPreviewRef = useRef(false);
 
   useEffect(() => {
     if (!formId) return;
@@ -102,8 +103,9 @@ function ViewForm() {
 
   // Fetch sheet preview when Sheet Preview tab is clicked
   useEffect(() => {
-    if (activeTab === "sheet-preview" && formId && !sheetPreviewHtml && !loadingSheetPreview) {
+    if (activeTab === "sheet-preview" && formId && !hasFetchedSheetPreviewRef.current) {
       const fetchSheetPreview = async () => {
+        hasFetchedSheetPreviewRef.current = true;
         try {
           setLoadingSheetPreview(true);
           const html = await getSheetPreview(formId);
@@ -119,7 +121,7 @@ function ViewForm() {
       };
       fetchSheetPreview();
     }
-  }, [activeTab, formId, sheetPreviewHtml, loadingSheetPreview]);
+  }, [activeTab, formId]);
 
   const getFormJson = () => {
     if (!formData) return JSON.stringify({});
