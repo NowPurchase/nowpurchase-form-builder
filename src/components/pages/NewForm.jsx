@@ -16,6 +16,7 @@ import { toast } from "../shared/Toast";
 import CustomerDropdown from "../shared/CustomerDropdown";
 import { Modal, Button } from "rsuite";
 import { Menu, X, Loader2, Save, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { rsCameraCapture } from "../../config/customRsUploader";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -47,7 +48,7 @@ const defaultForm = {
   defaultLanguage: "en-US",
 };
 
-const builderComponents = [...rSuiteComponents, ...rSuiteTableComponents].map((c) => c.build());
+const builderComponents = [...rSuiteComponents, ...rSuiteTableComponents, rsCameraCapture].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
   .withCssLoader(BiDi.LTR, ltrCssLoader)
