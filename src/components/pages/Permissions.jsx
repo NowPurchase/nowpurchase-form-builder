@@ -189,29 +189,9 @@ function Permissions({ onLogout }) {
       toast.success("Permissions saved successfully");
       console.log("Permissions Data:", permissionsData);
 
-      // Refetch data to ensure sync with server
-      const [templatesData, refreshedPermissions] = await Promise.all([
-        getTemplatesDropdown(),
-        getUserPermissions()
-      ]);
-
-      // Update templates
+      // Refetch templates to ensure sync with server
+      const templatesData = await getTemplatesDropdown();
       setTemplates(templatesData);
-
-      // Update permissions and rebuild order arrays
-      if (refreshedPermissions && Object.keys(refreshedPermissions).length > 0) {
-        setPermissionsData(refreshedPermissions);
-
-        const userIds = Object.keys(refreshedPermissions);
-        setUserIdsOrder(userIds);
-
-        const templateOrderMap = {};
-        userIds.forEach(userId => {
-          const userTemplates = refreshedPermissions[userId] || {};
-          templateOrderMap[userId] = Object.keys(userTemplates);
-        });
-        setTemplateOrder(templateOrderMap);
-      }
     } catch (error) {
       console.error("Error saving permissions:", error);
       toast.error("Failed to save permissions");
@@ -229,10 +209,10 @@ function Permissions({ onLogout }) {
     if (loadingTemplates || templates.length === 0) {
       return templateId;
     }
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find(t => t.id == templateId);
     if (!template) return templateId;
     return template.version
-      ? `${template.template_name} (${template.version})`
+      ? `${template.template_name} (v${template.version})`
       : template.template_name;
   };
 
