@@ -6,11 +6,12 @@ export const getTemplatesDropdown = async () => {
     const response = await apiGet('/api/v1/templates?page_no=1&page_size=100');
 
     // Response is an array of template objects
-    // Extract id and template_name from each
+    // Extract id, template_name, and version from each
     if (Array.isArray(response)) {
       return response.map(template => ({
         id: template.id,
-        template_name: template.template_name
+        template_name: template.template_name,
+        version: template.version
       }));
     }
 
@@ -18,7 +19,8 @@ export const getTemplatesDropdown = async () => {
     if (response?.results && Array.isArray(response.results)) {
       return response.results.map(template => ({
         id: template.id,
-        template_name: template.template_name
+        template_name: template.template_name,
+        version: template.version
       }));
     }
 

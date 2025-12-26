@@ -24,7 +24,13 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
   );
 
   const selectedTemplate = templates.find((t) => t.id === value);
-  const displayName = selectedTemplate ? selectedTemplate.template_name : placeholder;
+  const getDisplayName = (template) => {
+    if (!template) return placeholder;
+    return template.version
+      ? `${template.template_name} (${template.version})`
+      : template.template_name;
+  };
+  const displayName = getDisplayName(selectedTemplate);
   const isPlaceholder = !selectedTemplate;
 
   const handleSelect = (template) => {
@@ -72,7 +78,7 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
                   } ${excludeIds.includes(template.id) ? "disabled" : ""}`}
                   onClick={() => handleSelect(template)}
                 >
-                  {template.template_name}
+                  {getDisplayName(template)}
                   {excludeIds.includes(template.id) && (
                     <span className="already-selected-badge">Selected</span>
                   )}
