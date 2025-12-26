@@ -9,7 +9,7 @@ export const getTemplatesDropdown = async () => {
     // Extract id, template_name, and version from each
     if (Array.isArray(response)) {
       return response.map(template => ({
-        id: template.id,
+        id: template.template_id,
         template_name: template.template_name,
         version: template.version
       }));
