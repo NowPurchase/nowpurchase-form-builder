@@ -226,8 +226,14 @@ function Permissions({ onLogout }) {
   };
 
   const getTemplateName = (templateId) => {
+    if (loadingTemplates || templates.length === 0) {
+      return templateId;
+    }
     const template = templates.find(t => t.id === templateId);
-    return template ? template.template_name : templateId;
+    if (!template) return templateId;
+    return template.version
+      ? `${template.template_name} (${template.version})`
+      : template.template_name;
   };
 
   // Build table rows
@@ -271,7 +277,7 @@ function Permissions({ onLogout }) {
 
   const rows = buildTableRows();
 
-  if (loadingPermissions) {
+  if (loadingPermissions || loadingTemplates) {
     return (
       <div className="permissions-container">
         <div className="permissions-header">
@@ -279,7 +285,9 @@ function Permissions({ onLogout }) {
         </div>
         <div className="permissions-content">
           <div className="loading-container">
-            <div className="loading-text">Loading permissions...</div>
+            <div className="loading-text">
+              {loadingTemplates ? "Loading templates..." : "Loading permissions..."}
+            </div>
           </div>
         </div>
       </div>
