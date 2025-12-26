@@ -200,6 +200,10 @@ function Home({ onLogout }) {
     navigate("/new-form");
   };
 
+  const handlePermissions = () => {
+    navigate("/permissions");
+  };
+
   const handleRowClick = (form) => {
     navigate(`/form/${form.template_id}`);
   };
@@ -303,6 +307,9 @@ function Home({ onLogout }) {
         <div className="header-actions">
           <button onClick={handleNewForm} className="new-form-button">
             + New form
+          </button>
+          <button onClick={handlePermissions} className="permissions-button">
+            Permissions
           </button>
           <button onClick={onLogout} className="logout-button">
             Logout

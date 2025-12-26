@@ -26,7 +26,8 @@
   gap: 12px;
 }
 
-.new-form-button {
+.new-form-button,
+.permissions-button {
   padding: 6px 14px;
   background: #0f172a;
   color: white;
@@ -39,13 +40,15 @@
   letter-spacing: 0.1px;
 }
 
-.new-form-button:hover {
+.new-form-button:hover,
+.permissions-button:hover {
   background: #1e293b;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
 }
 
-.new-form-button:active {
+.new-form-button:active,
+.permissions-button:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
