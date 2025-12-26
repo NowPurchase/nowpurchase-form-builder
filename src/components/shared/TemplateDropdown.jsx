@@ -27,7 +27,7 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
   const getDisplayName = (template) => {
     if (!template) return placeholder;
     return template.version
-      ? `${template.template_name} (${template.version})`
+      ? `${template.template_name} (v${template.version})`
       : template.template_name;
   };
   const displayName = getDisplayName(selectedTemplate);
