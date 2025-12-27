@@ -53,11 +53,15 @@
 
 /* Column widths */
 .col-user-id {
-  width: 15%;
+  width: 12%;
+}
+
+.col-admin {
+  width: 8%;
 }
 
 .col-template-name {
-  width: 50%;
+  width: 45%;
 }
 
 .col-permissions {
@@ -132,6 +136,30 @@
   background: #f8fafc !important;
   border-right: 1px solid #cbd5e1 !important;
   padding: 12px !important;
+}
+
+/* Admin cell */
+.admin-cell {
+  vertical-align: top !important;
+  background: #f8fafc !important;
+  border-right: 1px solid #cbd5e1 !important;
+  padding: 12px !important;
+  text-align: center;
+}
+
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #0f172a;
 }
 
 /* Make table cell borders more prominent */

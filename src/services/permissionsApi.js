@@ -36,8 +36,37 @@ export const getUserPermissions = async () => {
   try {
     const response = await apiGet('/api/v1/user-permissions');
 
-    // Extract permissions from response
-    return response?.permissions || {};
+    // Response format: { users: [...], total: number }
+    // Transform to frontend format: {userId: {isAdmin: bool, permissions: {...}}}
+    if (response?.users && Array.isArray(response.users)) {
+      const transformedData = {};
+      response.users.forEach(user => {
+        if (user.user_id) {
+          transformedData[user.user_id] = {
+            isAdmin: user.is_admin || false,
+            permissions: user.permissions || {}
+          };
+        }
+      });
+      return transformedData;
+    }
+
+    // Fallback: if response is directly an array (for backward compatibility)
+    if (Array.isArray(response)) {
+      const transformedData = {};
+      response.forEach(user => {
+        if (user.user_id) {
+          transformedData[user.user_id] = {
+            isAdmin: user.is_admin || false,
+            permissions: user.permissions || {}
+          };
+        }
+      });
+      return transformedData;
+    }
+
+    // Fallback for empty response
+    return {};
   } catch (error) {
     console.error('Error fetching user permissions:', error);
     // Return empty object if no permissions exist yet (404 or other errors)
@@ -46,9 +75,18 @@ export const getUserPermissions = async () => {
 };
 
 // Save user permissions to API
-export const saveUserPermissions = async (permissions) => {
+export const saveUserPermissions = async (permissionsData) => {
   try {
-    const response = await apiPost('/api/v1/user-permissions', permissions);
+    // Transform from frontend format: {userId: {isAdmin: bool, permissions: {...}}}
+    // To API format: {users: [{user_id: string, is_admin: bool, permissions: {...}}]}
+    const users = Object.keys(permissionsData).map(userId => ({
+      user_id: userId,
+      is_admin: permissionsData[userId].isAdmin || false,
+      permissions: permissionsData[userId].permissions || {}
+    }));
+
+    const payload = { users };
+    const response = await apiPost('/api/v1/user-permissions', payload);
     return response;
   } catch (error) {
     console.error('Error saving user permissions:', error);

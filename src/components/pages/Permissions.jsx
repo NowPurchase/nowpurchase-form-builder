@@ -13,7 +13,7 @@ import { toast } from "../shared/Toast";
 import "./Permissions.css";
 
 function Permissions({ onLogout }) {
-  // State structure: {<userId>: {<templateId>: {"all": bool, "view": bool, "create": bool, "edit": bool}}}
+  // State structure: {<userId>: {isAdmin: bool, permissions: {<templateId>: {"all": bool, "view": bool, "create": bool, "edit": bool}}}}
   const [permissionsData, setPermissionsData] = useState({});
 
   // Track insertion order
@@ -54,8 +54,8 @@ function Permissions({ onLogout }) {
 
           const templateOrderMap = {};
           userIds.forEach(userId => {
-            const userTemplates = permissionsData[userId] || {};
-            templateOrderMap[userId] = Object.keys(userTemplates);
+            const userPermissions = permissionsData[userId]?.permissions || {};
+            templateOrderMap[userId] = Object.keys(userPermissions);
           });
           setTemplateOrder(templateOrderMap);
         }
@@ -85,10 +85,13 @@ function Permissions({ onLogout }) {
       return;
     }
 
-    // Initialize user with empty templates
+    // Initialize user with empty templates and isAdmin false
     setPermissionsData((prev) => ({
       ...prev,
-      [userId]: {}
+      [userId]: {
+        isAdmin: false,
+        permissions: {}
+      }
     }));
 
     // Track user order
@@ -106,11 +109,18 @@ function Permissions({ onLogout }) {
       const newData = { ...prev };
 
       if (!newData[userId]) {
-        newData[userId] = {};
+        newData[userId] = {
+          isAdmin: false,
+          permissions: {}
+        };
       }
 
-      if (!newData[userId][template.id]) {
-        newData[userId][template.id] = {
+      if (!newData[userId].permissions) {
+        newData[userId].permissions = {};
+      }
+
+      if (!newData[userId].permissions[template.id]) {
+        newData[userId].permissions[template.id] = {
           all: false,
           view: false,
           create: false,
@@ -133,10 +143,23 @@ function Permissions({ onLogout }) {
       ...prev,
       [userId]: {
         ...prev[userId],
-        [templateId]: {
-          ...prev[userId][templateId],
-          [permission]: !prev[userId][templateId][permission]
+        permissions: {
+          ...prev[userId].permissions,
+          [templateId]: {
+            ...prev[userId].permissions[templateId],
+            [permission]: !prev[userId].permissions[templateId][permission]
+          }
         }
+      }
+    }));
+  };
+
+  const handleAdminToggle = (userId) => {
+    setPermissionsData((prev) => ({
+      ...prev,
+      [userId]: {
+        ...prev[userId],
+        isAdmin: !prev[userId].isAdmin
       }
     }));
   };
@@ -161,10 +184,13 @@ function Permissions({ onLogout }) {
     setPermissionsData((prev) => {
       const newData = { ...prev };
 
-      if (newData[userId]) {
-        const userTemplates = { ...newData[userId] };
-        delete userTemplates[templateId];
-        newData[userId] = userTemplates;
+      if (newData[userId]?.permissions) {
+        const userPermissions = { ...newData[userId].permissions };
+        delete userPermissions[templateId];
+        newData[userId] = {
+          ...newData[userId],
+          permissions: userPermissions
+        };
       }
 
       return newData;
@@ -201,8 +227,8 @@ function Permissions({ onLogout }) {
   };
 
   const getSelectedTemplatesForUser = (userId) => {
-    const userTemplates = permissionsData[userId] || {};
-    return Object.keys(userTemplates);
+    const userPermissions = permissionsData[userId]?.permissions || {};
+    return Object.keys(userPermissions);
   };
 
   const getTemplateName = (templateId) => {
@@ -222,7 +248,8 @@ function Permissions({ onLogout }) {
 
     // Add rows for existing users
     userIds.forEach((userId) => {
-      const userTemplates = permissionsData[userId] || {};
+      const userData = permissionsData[userId] || { isAdmin: false, permissions: {} };
+      const userPermissions = userData.permissions || {};
       const templateIds = templateOrder[userId] || [];
       const totalRows = templateIds.length + 1; // +1 for dropdown row
 
@@ -234,7 +261,8 @@ function Permissions({ onLogout }) {
           templateId,
           isFirstRow: index === 0,
           rowSpan: totalRows,
-          permissions: userTemplates[templateId],
+          permissions: userPermissions[templateId],
+          isAdmin: userData.isAdmin,
         });
       });
 
@@ -244,6 +272,7 @@ function Permissions({ onLogout }) {
         userId,
         isFirstRow: templateIds.length === 0,
         rowSpan: totalRows,
+        isAdmin: userData.isAdmin,
       });
     });
 
@@ -286,6 +315,7 @@ function Permissions({ onLogout }) {
             <TableHeader>
               <TableRow>
                 <TableHead className="col-user-id">User ID</TableHead>
+                <TableHead className="col-admin">Admin</TableHead>
                 <TableHead className="col-template-name">Template Name</TableHead>
                 <TableHead className="col-permissions">Permissions</TableHead>
               </TableRow>
@@ -318,7 +348,7 @@ function Permissions({ onLogout }) {
                           </button>
                         </div>
                       </TableCell>
-                      <TableCell colSpan="2" className="empty-cell">
+                      <TableCell colSpan="3" className="empty-cell">
                         <span className="empty-text">Enter a user ID to start</span>
                       </TableCell>
                     </TableRow>
@@ -327,18 +357,29 @@ function Permissions({ onLogout }) {
                   return (
                     <TableRow key={`${row.userId}-${row.templateId}`}>
                       {row.isFirstRow && (
-                        <TableCell rowSpan={row.rowSpan} className="user-id-cell">
-                          <div className="user-id-display-container">
-                            <span className="user-id-number">{row.userId}</span>
-                            <button
-                              className="remove-user-btn"
-                              onClick={() => handleRemoveUser(row.userId)}
-                              title="Remove user"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </TableCell>
+                        <>
+                          <TableCell rowSpan={row.rowSpan} className="user-id-cell">
+                            <div className="user-id-display-container">
+                              <span className="user-id-number">{row.userId}</span>
+                              <button
+                                className="remove-user-btn"
+                                onClick={() => handleRemoveUser(row.userId)}
+                                title="Remove user"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </TableCell>
+                          <TableCell rowSpan={row.rowSpan} className="admin-cell">
+                            <label className="admin-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={row.isAdmin}
+                                onChange={() => handleAdminToggle(row.userId)}
+                              />
+                            </label>
+                          </TableCell>
+                        </>
                       )}
                       <TableCell>
                         <div className="template-name-with-remove">
@@ -404,18 +445,29 @@ function Permissions({ onLogout }) {
                   return (
                     <TableRow key={`dropdown-${row.userId}`} className="dropdown-row">
                       {row.isFirstRow && (
-                        <TableCell rowSpan={row.rowSpan} className="user-id-cell">
-                          <div className="user-id-display-container">
-                            <span className="user-id-number">{row.userId}</span>
-                            <button
-                              className="remove-user-btn"
-                              onClick={() => handleRemoveUser(row.userId)}
-                              title="Remove user"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </TableCell>
+                        <>
+                          <TableCell rowSpan={row.rowSpan} className="user-id-cell">
+                            <div className="user-id-display-container">
+                              <span className="user-id-number">{row.userId}</span>
+                              <button
+                                className="remove-user-btn"
+                                onClick={() => handleRemoveUser(row.userId)}
+                                title="Remove user"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </TableCell>
+                          <TableCell rowSpan={row.rowSpan} className="admin-cell">
+                            <label className="admin-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={row.isAdmin}
+                                onChange={() => handleAdminToggle(row.userId)}
+                              />
+                            </label>
+                          </TableCell>
+                        </>
                       )}
                       <TableCell className="dropdown-cell">
                         {loadingTemplates ? (
@@ -439,7 +491,7 @@ function Permissions({ onLogout }) {
 
               {rows.length === 1 && (
                 <TableRow>
-                  <TableCell colSpan="3" className="empty-cell">
+                  <TableCell colSpan="4" className="empty-cell">
                     <span className="empty-text">No users added yet. Enter a user ID to start.</span>
                   </TableCell>
                 </TableRow>
