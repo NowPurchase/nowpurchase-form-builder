@@ -5,25 +5,40 @@
 
 .home-header {
   background: white;
-  padding: 12px 24px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.home-header > div {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 56px;
 }
 
 .home-header h1 {
   margin: 0;
-  color: #0f172a;
+  color: #0f172a !important;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.3px;
+  flex: 1;
+  display: block;
+  visibility: visible;
+  opacity: 1;
 }
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .new-form-button,
@@ -38,6 +53,10 @@
   cursor: pointer;
   transition: all 0.15s ease;
   letter-spacing: 0.1px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .new-form-button:hover,
@@ -90,6 +109,8 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e7eb;
   margin-bottom: 16px;
+  margin-left: -16px;
+  margin-right: -16px;
 }
 
 .filters-row {
@@ -608,7 +629,7 @@
 
 /* Results Info */
 .results-info {
-  padding: 10px 0 0 0;
+  padding: 10px 0 8px 0;
   font-size: 12px;
   color: #64748b;
   font-weight: 500;
@@ -622,6 +643,8 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e7eb;
   overflow: hidden;
+  margin-left: -16px;
+  margin-right: -16px;
 }
 
 .table-container table {
@@ -800,6 +823,12 @@
   background: #f0fdf4;
   border-color: #22c55e;
   color: #22c55e;
+}
+
+.config-btn:hover {
+  background: #fef3f2;
+  border-color: #f97316;
+  color: #f97316;
 }
 
 .error-banner {

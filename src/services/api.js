@@ -193,6 +193,15 @@ export const apiPut = async (endpoint, data = {}, options = {}) => {
   return parseJson(response);
 };
 
+export const apiPatch = async (endpoint, data = {}, options = {}) => {
+  const response = await request(endpoint, {
+    ...options,
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  return parseJson(response);
+};
+
 // Request function for old NowPurchase API (for customer data, etc.)
 const requestOldApi = async (endpoint, options = {}) => {
   const url = `${AUTH_BASE_URL}${endpoint}`;

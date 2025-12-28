@@ -6,6 +6,7 @@ import Home from "./components/pages/Home";
 import NewForm from "./components/pages/NewForm";
 import ViewForm from "./components/pages/ViewForm";
 import Permissions from "./components/pages/Permissions";
+import TemplateConfig from "./components/pages/TemplateConfig";
 import ToastContainer from "./components/shared/Toast";
 
 function AppContent() {
@@ -93,6 +94,16 @@ function AppContent() {
           element={
             isAuthenticated ? (
               <Permissions onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/config/:templateId"
+          element={
+            isAuthenticated ? (
+              <TemplateConfig />
             ) : (
               <Navigate to="/" replace />
             )

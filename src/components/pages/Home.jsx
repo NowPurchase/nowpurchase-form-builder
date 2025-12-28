@@ -6,7 +6,7 @@ import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import CustomerDropdown from "../shared/CustomerDropdown";
-import { X, Search, ChevronUp, ChevronDown, Copy, Pencil } from "lucide-react";
+import { X, Search, ChevronUp, ChevronDown, Copy, Pencil, Settings } from "lucide-react";
 import { Pagination } from "@mui/material";
 import {
   Table,
@@ -218,6 +218,11 @@ function Home({ onLogout }) {
     navigate(`/new-form?edit=${form.template_id}`);
   };
 
+  const handleConfigure = (e, form) => {
+    e.stopPropagation();
+    navigate(`/config/${form.template_id}`);
+  };
+
   const handleClearFilters = () => {
     setSearchQuery("");
     setDebouncedSearchQuery("");
@@ -303,17 +308,19 @@ function Home({ onLogout }) {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h1>Dynamic Form Engine</h1>
-        <div className="header-actions">
-          <button onClick={handleNewForm} className="new-form-button">
-            + New form
-          </button>
-          <button onClick={handlePermissions} className="permissions-button">
-            Permissions
-          </button>
-          <button onClick={onLogout} className="logout-button">
-            Logout
-          </button>
+        <div>
+          <h1>Dynamic Form Engine</h1>
+          <div className="header-actions">
+            <button onClick={handleNewForm} className="new-form-button">
+              + New form
+            </button>
+            <button onClick={handlePermissions} className="permissions-button">
+              Permissions
+            </button>
+            <button onClick={onLogout} className="logout-button">
+              Logout
+            </button>
+          </div>
         </div>
       </div>
       <div className="home-content">
@@ -518,6 +525,14 @@ function Home({ onLogout }) {
                           aria-label="Duplicate form"
                         >
                           <Copy size={14} />
+                        </button>
+                        <button
+                          className="action-btn config-btn"
+                          onClick={(e) => handleConfigure(e, form)}
+                          title="Configure template"
+                          aria-label="Configure template"
+                        >
+                          <Settings size={14} />
                         </button>
                       </div>
                     </TableCell>
