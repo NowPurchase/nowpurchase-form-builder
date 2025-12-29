@@ -49,6 +49,11 @@
   letter-spacing: 0.3px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .back-button {
   padding: 10px 24px;
   background: #0f172a;
@@ -436,3 +441,4 @@
 .sheet-preview-download-btn-top svg {
   display: block;
 }
+

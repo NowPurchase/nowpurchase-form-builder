@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,8 +13,6 @@ import { toast } from "../shared/Toast";
 import "./Permissions.css";
 
 function Permissions({ onLogout }) {
-  const navigate = useNavigate();
-
   // State structure: {<userId>: {isAdmin: bool, permissions: {<templateId>: {"all": bool, "view": bool, "create": bool, "edit": bool}}}}
   const [permissionsData, setPermissionsData] = useState({});
 
@@ -294,18 +290,7 @@ function Permissions({ onLogout }) {
     return (
       <div className="permissions-container">
         <div className="permissions-header">
-          <div>
-            <h1>User Permissions</h1>
-            <div className="header-actions">
-              <button onClick={() => navigate('/home')} className="back-button">
-                <ArrowLeft size={16} />
-                <span>Back to Home</span>
-              </button>
-              <button onClick={onLogout} className="logout-button">
-                Logout
-              </button>
-            </div>
-          </div>
+          <h1>User Permissions</h1>
         </div>
         <div className="permissions-content">
           <div className="loading-container">
@@ -321,18 +306,7 @@ function Permissions({ onLogout }) {
   return (
     <div className="permissions-container">
       <div className="permissions-header">
-        <div>
-          <h1>User Permissions</h1>
-          <div className="header-actions">
-            <button onClick={() => navigate('/home')} className="back-button">
-              <ArrowLeft size={16} />
-              <span>Back to Home</span>
-            </button>
-            <button onClick={onLogout} className="logout-button">
-              Logout
-            </button>
-          </div>
-        </div>
+        <h1>User Permissions</h1>
       </div>
 
       <div className="permissions-content">
@@ -528,11 +502,9 @@ function Permissions({ onLogout }) {
       </div>
 
       <div className="permissions-footer">
-        <div>
-          <button onClick={handleSubmit} className="submit-button" disabled={saving}>
-            {saving ? "Saving..." : "Submit"}
-          </button>
-        </div>
+        <button onClick={handleSubmit} className="submit-button" disabled={saving}>
+          {saving ? "Saving..." : "Submit"}
+        </button>
       </div>
     </div>
   );

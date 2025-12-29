@@ -9,25 +9,13 @@ import {
 import { rSuiteTableComponents } from "@react-form-builder/components-rsuite-table";
 import { BiDi, ActionDefinition } from "@react-form-builder/core";
 import { BuilderView, FormBuilder } from "@react-form-builder/designer";
-import {
-  createDynamicLog,
-  updateDynamicLog,
-  getDynamicLog,
-} from "../../services/dynamicLogApi";
+import { createDynamicLog, updateDynamicLog, getDynamicLog } from "../../services/dynamicLogApi";
 import { getCustomerDropdown } from "../../services/customerApi";
 import { formatErrorMessage, getFieldErrors } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import CustomerDropdown from "../shared/CustomerDropdown";
 import { Modal, Button } from "rsuite";
-import {
-  Menu,
-  X,
-  Loader2,
-  Save,
-  ArrowLeft,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Menu, X, Loader2, Save, ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { rsCameraCapture } from "../../config/customRsUploader";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
@@ -38,8 +26,8 @@ const defaultForm = {
   actions: {
     onSubmit: {
       body: `    console.log("Form Submitted")`,
-      params: {},
-    },
+      params: {}
+    }
   },
   form: {
     key: "Screen",
@@ -60,11 +48,7 @@ const defaultForm = {
   defaultLanguage: "en-US",
 };
 
-const builderComponents = [
-  ...rSuiteComponents,
-  ...rSuiteTableComponents,
-  rsCameraCapture,
-].map((c) => c.build());
+const builderComponents = [...rSuiteComponents, ...rSuiteTableComponents, rsCameraCapture].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
   .withCssLoader(BiDi.LTR, ltrCssLoader)
@@ -74,13 +58,13 @@ function NewForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const formBuilderRef = useRef(null);
-
-  const editId = searchParams.get("edit");
-  const duplicateId = searchParams.get("duplicate");
+  
+  const editId = searchParams.get('edit');
+  const duplicateId = searchParams.get('duplicate');
   const isEditMode = !!editId;
   const isDuplicateMode = !!duplicateId;
   const formId = editId || duplicateId;
-
+  
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [formType, setFormType] = useState("single");
   const [sections, setSections] = useState([
@@ -114,21 +98,21 @@ function NewForm() {
   // MUST be defined before getFormDataAsString to avoid initialization errors
   const cleanFormJson = useCallback((formJson) => {
     if (!formJson) return JSON.stringify(defaultForm);
-
+    
     try {
       let parsed;
-
+      
       // If it's already a string, parse it first
-      if (typeof formJson === "string") {
+      if (typeof formJson === 'string') {
         parsed = JSON.parse(formJson);
       } else {
         parsed = formJson;
       }
-
+      
       // Use structuredClone if available (handles circular refs better)
       // Otherwise use JSON parse/stringify with circular reference detection
       let cleaned;
-      if (typeof structuredClone !== "undefined") {
+      if (typeof structuredClone !== 'undefined') {
         try {
           cleaned = structuredClone(parsed);
         } catch {
@@ -139,10 +123,10 @@ function NewForm() {
         // Fallback: use JSON with circular reference handler
         const seen = new WeakSet();
         const jsonString = JSON.stringify(parsed, (key, value) => {
-          if (typeof value === "function" || typeof value === "symbol") {
+          if (typeof value === 'function' || typeof value === 'symbol') {
             return undefined;
           }
-          if (typeof value === "object" && value !== null) {
+          if (typeof value === 'object' && value !== null) {
             if (seen.has(value)) {
               return undefined; // Remove circular references
             }
@@ -152,7 +136,7 @@ function NewForm() {
         });
         cleaned = JSON.parse(jsonString);
       }
-
+      
       // Final validation and stringification
       const result = JSON.stringify(cleaned);
       JSON.parse(result); // Validate it's valid JSON
@@ -165,48 +149,32 @@ function NewForm() {
 
   // Helper function to safely get form data as string, handling circular references
   // Defined after cleanFormJson to avoid initialization errors
-  const getFormDataAsString = useCallback(
-    (formBuilder) => {
-      if (!formBuilder) return null;
-
-      // Prevent recursive calls
-      if (isProcessingFormRef.current) {
-        return lastFormDataRef.current || JSON.stringify(defaultForm);
-      }
-
-      isProcessingFormRef.current = true;
-      try {
-        let formData = formBuilder.formAsString;
-
-        // If formAsString returns an object instead of string, stringify it
-        if (typeof formData !== "string") {
-          // Use structuredClone if available, otherwise use JSON with circular ref handler
-          if (typeof structuredClone !== "undefined") {
-            try {
-              formData = JSON.stringify(structuredClone(formData));
-            } catch {
-              // Fallback to JSON method
-              const seen = new WeakSet();
-              formData = JSON.stringify(formData, (key, value) => {
-                if (typeof value === "function" || typeof value === "symbol") {
-                  return undefined;
-                }
-                if (typeof value === "object" && value !== null) {
-                  if (seen.has(value)) {
-                    return undefined;
-                  }
-                  seen.add(value);
-                }
-                return value;
-              });
-            }
-          } else {
+  const getFormDataAsString = useCallback((formBuilder) => {
+    if (!formBuilder) return null;
+    
+    // Prevent recursive calls
+    if (isProcessingFormRef.current) {
+      return lastFormDataRef.current || JSON.stringify(defaultForm);
+    }
+    
+    isProcessingFormRef.current = true;
+    try {
+      let formData = formBuilder.formAsString;
+      
+      // If formAsString returns an object instead of string, stringify it
+      if (typeof formData !== 'string') {
+        // Use structuredClone if available, otherwise use JSON with circular ref handler
+        if (typeof structuredClone !== 'undefined') {
+          try {
+            formData = JSON.stringify(structuredClone(formData));
+          } catch {
+            // Fallback to JSON method
             const seen = new WeakSet();
             formData = JSON.stringify(formData, (key, value) => {
-              if (typeof value === "function" || typeof value === "symbol") {
+              if (typeof value === 'function' || typeof value === 'symbol') {
                 return undefined;
               }
-              if (typeof value === "object" && value !== null) {
+              if (typeof value === 'object' && value !== null) {
                 if (seen.has(value)) {
                   return undefined;
                 }
@@ -215,39 +183,49 @@ function NewForm() {
               return value;
             });
           }
+        } else {
+          const seen = new WeakSet();
+          formData = JSON.stringify(formData, (key, value) => {
+            if (typeof value === 'function' || typeof value === 'symbol') {
+              return undefined;
+            }
+            if (typeof value === 'object' && value !== null) {
+              if (seen.has(value)) {
+                return undefined;
+              }
+              seen.add(value);
+            }
+            return value;
+          });
         }
-
-        // Validate and clean the JSON
-        const parsed = JSON.parse(formData);
-        const cleaned = cleanFormJson(JSON.stringify(parsed));
-        lastFormDataRef.current = cleaned;
-        return cleaned;
-      } catch (error) {
-        console.error("Error getting form data as string:", error);
-        // Try to get a fresh copy from the builder if available
-        try {
-          if (
-            formBuilder.formAsString &&
-            typeof formBuilder.formAsString === "string"
-          ) {
-            const cleaned = cleanFormJson(formBuilder.formAsString);
-            lastFormDataRef.current = cleaned;
-            return cleaned;
-          }
-        } catch {
-          // If that fails, return default form
-        }
-        const defaultFormJson = JSON.stringify(defaultForm);
-        lastFormDataRef.current = defaultFormJson;
-        return defaultFormJson;
-      } finally {
-        setTimeout(() => {
-          isProcessingFormRef.current = false;
-        }, 0);
       }
-    },
-    [cleanFormJson]
-  );
+      
+      // Validate and clean the JSON
+      const parsed = JSON.parse(formData);
+      const cleaned = cleanFormJson(JSON.stringify(parsed));
+      lastFormDataRef.current = cleaned;
+      return cleaned;
+    } catch (error) {
+      console.error("Error getting form data as string:", error);
+      // Try to get a fresh copy from the builder if available
+      try {
+        if (formBuilder.formAsString && typeof formBuilder.formAsString === 'string') {
+          const cleaned = cleanFormJson(formBuilder.formAsString);
+          lastFormDataRef.current = cleaned;
+          return cleaned;
+        }
+      } catch {
+        // If that fails, return default form
+      }
+      const defaultFormJson = JSON.stringify(defaultForm);
+      lastFormDataRef.current = defaultFormJson;
+      return defaultFormJson;
+    } finally {
+      setTimeout(() => {
+        isProcessingFormRef.current = false;
+      }, 0);
+    }
+  }, [cleanFormJson]);
 
   // Memoize getForm to prevent unnecessary re-renders and infinite loops
   // Use useMemo to cache the form JSON string to prevent recreation on every render
@@ -256,12 +234,10 @@ function NewForm() {
     if (formType === "single") {
       formJson = sections[0]?.form_json || JSON.stringify(defaultForm);
     } else {
-      const selectedSection = sections.find(
-        (s) => s.section_id === selectedSectionId
-      );
+      const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
       formJson = selectedSection?.form_json || JSON.stringify(defaultForm);
     }
-
+    
     // Always return clean, serializable JSON
     return cleanFormJson(formJson);
   }, [formType, sections, selectedSectionId, cleanFormJson]);
@@ -272,7 +248,7 @@ function NewForm() {
     if (isProcessingFormRef.current) {
       return lastFormDataRef.current || JSON.stringify(defaultForm);
     }
-
+    
     isProcessingFormRef.current = true;
     try {
       const result = formJsonString;
@@ -289,7 +265,7 @@ function NewForm() {
   const saveCurrentFormToSection = () => {
     if (formBuilderRef.current) {
       const formData = getFormDataAsString(formBuilderRef.current);
-
+      
       if (formData) {
         setSections((prev) => {
           return prev.map((section) => {
@@ -307,15 +283,13 @@ function NewForm() {
   const handleSectionSelect = (sectionId) => {
     // Save current form before switching
     saveCurrentFormToSection();
-
+    
     // Small delay to ensure save completes
     setTimeout(() => {
       setSelectedSectionId(sectionId);
       // Reload form in builder with clean data
       if (formBuilderRef.current) {
-        const selectedSection = sections.find(
-          (s) => s.section_id === sectionId
-        );
+        const selectedSection = sections.find((s) => s.section_id === sectionId);
         if (selectedSection) {
           const cleanForm = cleanFormJson(selectedSection.form_json);
           try {
@@ -337,11 +311,11 @@ function NewForm() {
         order: sections.length + 1,
         form_json: JSON.stringify(defaultForm),
       };
-
+      
       setSections((prev) => [...prev, newSection]);
       setNewSectionName("");
       setFormType("multi-step");
-
+      
       // Select the new section
       setTimeout(() => {
         handleSectionSelect(newSection.section_id);
@@ -355,7 +329,7 @@ function NewForm() {
       alert("Cannot delete the last section!");
       return;
     }
-
+    
     const filtered = sections.filter((s) => s.section_id !== sectionId);
     // Recalculate order numbers to be sequential (1, 2, 3, ...)
     const reordered = filtered.map((section, index) => ({
@@ -363,7 +337,7 @@ function NewForm() {
       order: index + 1,
     }));
     setSections(reordered);
-
+    
     // If deleted section was selected, select first one
     if (selectedSectionId === sectionId) {
       setSelectedSectionId(reordered[0].section_id);
@@ -376,7 +350,7 @@ function NewForm() {
         }
       }
     }
-
+    
     // If only one section left, switch to single form
     if (reordered.length === 1) {
       setFormType("single");
@@ -392,18 +366,14 @@ function NewForm() {
       if (formBuilderRef.current && sectionId === selectedSectionId) {
         savedFormData = getFormDataAsString(formBuilderRef.current);
       }
-
+      
       // Update section name AND preserve form_json in a single state update
       setSections((prev) => {
         return prev.map((s) => {
           if (s.section_id === sectionId) {
             // If this is the selected section, preserve the current form data
             if (savedFormData && sectionId === selectedSectionId) {
-              return {
-                ...s,
-                section_name: newName.trim(),
-                form_json: savedFormData,
-              };
+              return { ...s, section_name: newName.trim(), form_json: savedFormData };
             }
             // Otherwise, just update the name and keep existing form_json
             return { ...s, section_name: newName.trim() };
@@ -411,26 +381,19 @@ function NewForm() {
           return s;
         });
       });
-
+      
       setEditingSectionName(null);
-
+      
       // Restore form after name update to ensure it persists
       // This is needed because FormBuilder might re-render when formName prop changes
-      if (
-        sectionId === selectedSectionId &&
-        formBuilderRef.current &&
-        savedFormData
-      ) {
+      if (sectionId === selectedSectionId && formBuilderRef.current && savedFormData) {
         setTimeout(() => {
           if (formBuilderRef.current) {
             try {
               const cleanForm = cleanFormJson(savedFormData);
               formBuilderRef.current.parseForm(cleanForm);
             } catch (e) {
-              console.error(
-                "Error restoring form after section name update:",
-                e
-              );
+              console.error("Error restoring form after section name update:", e);
             }
           }
         }, 100);
@@ -464,7 +427,7 @@ function NewForm() {
     // CRITICAL: Save current form to sections BEFORE opening modal
     // This ensures the form data is preserved when FormBuilder re-renders
     saveCurrentFormToSection();
-
+    
     // Mark that we want to open modal after sections state updates
     pendingModalOpenRef.current = true;
   };
@@ -474,12 +437,12 @@ function NewForm() {
       toast.error("Customer is required");
       return;
     }
-
+    
     if (!templateName.trim()) {
       toast.error("Template name is required");
       return;
     }
-
+    
     if (!sheetId.trim()) {
       toast.error("Sheet URL is required");
       return;
@@ -495,12 +458,12 @@ function NewForm() {
       }
 
       let formJson;
-
+      
       if (formType === "single") {
-        formJson = sections[0]?.form_json
-          ? typeof sections[0].form_json === "string"
-            ? JSON.parse(sections[0].form_json)
-            : sections[0].form_json
+        formJson = sections[0]?.form_json 
+          ? (typeof sections[0].form_json === 'string' 
+              ? JSON.parse(sections[0].form_json) 
+              : sections[0].form_json)
           : defaultForm;
       } else {
         formJson = {
@@ -508,10 +471,9 @@ function NewForm() {
             section_id: s.section_id,
             section_name: s.section_name,
             order: s.order,
-            form_json:
-              typeof s.form_json === "string"
-                ? JSON.parse(s.form_json)
-                : s.form_json,
+            form_json: typeof s.form_json === 'string' 
+              ? JSON.parse(s.form_json) 
+              : s.form_json,
           })),
         };
       }
@@ -524,7 +486,7 @@ function NewForm() {
           template_name: templateName.trim(), // Optional
           customer_name: customerName, // Save customer name
           sheet_url: sheetId.trim(), // Save sheet URL
-          description: description?.trim() || "", // Optional
+          description: description?.trim() || '', // Optional
           status: status, // Status is now a direct field
         };
         await updateDynamicLog(editId, updateData);
@@ -539,31 +501,28 @@ function NewForm() {
           status: status, // Status is now a direct field
           config: {}, // Required by API (empty object)
           form_json: formJson, // Optional
-          description: description?.trim() || "", // Optional
+          description: description?.trim() || '', // Optional
           platforms: [], // Optional but must be array if present
         };
         await createDynamicLog(createData);
         toast.success("Form saved successfully!");
       }
-
+      
       setShowSaveModal(false);
       setFieldErrors({});
       navigate("/home");
     } catch (err) {
       console.error("Save form error:", err);
-
+      
       const errors = getFieldErrors(err);
       setFieldErrors(errors);
-
+      
       // Format and show error message
       const errorMsg = formatErrorMessage(err);
-
+      
       // Show toast with error message (longer duration for errors)
-      toast.error(
-        errorMsg || "Failed to save form. Please check the errors below.",
-        5000
-      );
-
+      toast.error(errorMsg || "Failed to save form. Please check the errors below.", 5000);
+      
       // Keep modal open so user can see the errors
     } finally {
       setSaving(false);
@@ -574,28 +533,26 @@ function NewForm() {
   useEffect(() => {
     // Prevent duplicate calls
     if (!formId) return;
-
+    
     // Check if we've already fetched this formId
     if (hasFetchedFormRef.current === formId) return;
-
+    
     const fetchFormData = async () => {
       hasFetchedFormRef.current = formId;
       setLoadingForm(true);
       try {
         const response = await getDynamicLog(formId);
-
-        console.log("[NewForm] API Response:", response);
-        console.log("[NewForm] Customer data:", {
+        
+        console.log('[NewForm] API Response:', response);
+        console.log('[NewForm] Customer data:', {
           customer: response?.customer,
           customer_name: response?.customer_name,
           company_name: response?.customer?.company_name,
           customer_customer_name: response?.customer?.customer_name,
           customerType: typeof response?.customer,
-          isObject:
-            typeof response?.customer === "object" &&
-            response?.customer !== null,
+          isObject: typeof response?.customer === 'object' && response?.customer !== null
         });
-
+        
         if (response) {
           // Set template name (for duplicate, user will change it)
           setTemplateName(response.template_name || "");
@@ -616,138 +573,92 @@ function NewForm() {
             if (response.status) {
               setStatus(response.status);
             }
-
+            
             // Set customer ID and name
             // New API returns customer_id (integer FK to old API)
             if (response.customer_id) {
-              console.log(
-                "[NewForm] Setting customer ID:",
-                response.customer_id
-              );
+              console.log('[NewForm] Setting customer ID:', response.customer_id);
               setCustomerId(response.customer_id);
 
               // Check if customer_name is in the response, otherwise fetch from dropdown API
               if (response.customer_name) {
-                console.log(
-                  "[NewForm] Found customer_name in response:",
-                  response.customer_name
-                );
+                console.log('[NewForm] Found customer_name in response:', response.customer_name);
                 setCustomerName(response.customer_name);
               } else {
-                console.log(
-                  "[NewForm] customer_name not in response, fetching from dropdown API"
-                );
+                console.log('[NewForm] customer_name not in response, fetching from dropdown API');
                 // Fetch customer name from dropdown API
                 try {
                   const customersResponse = await getCustomerDropdown("");
-                  const customersList = Array.isArray(customersResponse)
-                    ? customersResponse
-                    : customersResponse.customers || [];
-                  const foundCustomer = customersList.find(
-                    (c) => c.id === response.customer_id
-                  );
+                  const customersList = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
+                  const foundCustomer = customersList.find(c => c.id === response.customer_id);
                   if (foundCustomer && foundCustomer.customer_name) {
-                    console.log(
-                      "[NewForm] Found customer name from dropdown API:",
-                      foundCustomer.customer_name
-                    );
+                    console.log('[NewForm] Found customer name from dropdown API:', foundCustomer.customer_name);
                     setCustomerName(foundCustomer.customer_name);
                   } else {
-                    console.log(
-                      "[NewForm] Customer not found in dropdown list"
-                    );
+                    console.log('[NewForm] Customer not found in dropdown list');
                   }
                 } catch (err) {
-                  console.error(
-                    "[NewForm] Failed to fetch customer name:",
-                    err
-                  );
+                  console.error('[NewForm] Failed to fetch customer name:', err);
                 }
               }
             } else {
-              console.log("[NewForm] No customer in response");
+              console.log('[NewForm] No customer in response');
             }
-
+            
             // Set status (normalize to lowercase for dropdown)
             if (response.status) {
               const normalizedStatus = response.status.toLowerCase();
-              console.log(
-                "[NewForm] Setting status from API:",
-                response.status,
-                "->",
-                normalizedStatus
-              );
+              console.log('[NewForm] Setting status from API:', response.status, '->', normalizedStatus);
               setStatus(normalizedStatus);
             } else {
-              console.log(
-                "[NewForm] No status in API response, keeping default"
-              );
+              console.log('[NewForm] No status in API response, keeping default');
             }
           } else {
             // Duplicate mode - clear modal fields
-            console.log(
-              "[NewForm] Duplicate mode - clearing modal fields (customer, status, description, sheet_id)"
-            );
+            console.log('[NewForm] Duplicate mode - clearing modal fields (customer, status, description, sheet_id)');
             setSheetId("");
             setDescription("");
             setCustomerId(null);
             setCustomerName("");
             setStatus("completed"); // Reset to default
           }
-
-          console.log("[NewForm] Form data set:", {
+          
+          console.log('[NewForm] Form data set:', {
             templateName: response.template_name || "",
-            customerId: response.customer
-              ? typeof response.customer === "object"
-                ? response.customer.id
-                : response.customer
-              : null,
-            customerName:
-              response.customer_name ||
-              (typeof response.customer === "object" &&
-                response.customer?.customer_name) ||
-              "",
-            status: response.status
-              ? response.status.toLowerCase()
-              : "completed",
-            description: response.description ?? "",
+            customerId: response.customer ? (typeof response.customer === 'object' ? response.customer.id : response.customer) : null,
+            customerName: response.customer_name || (typeof response.customer === 'object' && response.customer?.customer_name) || "",
+            status: response.status ? response.status.toLowerCase() : "completed",
+            description: response.description ?? ""
           });
-
+          
           // Prefill form JSON
           if (response.form_json) {
-            const formJsonString =
-              typeof response.form_json === "string"
-                ? response.form_json
-                : JSON.stringify(response.form_json);
-
+            const formJsonString = typeof response.form_json === 'string' 
+              ? response.form_json 
+              : JSON.stringify(response.form_json);
+            
             // Check if it's a multi-step form (has sections)
-            const hasSections =
-              response.form_json.sections &&
-              Array.isArray(response.form_json.sections);
-
+            const hasSections = response.form_json.sections && Array.isArray(response.form_json.sections);
+            
             if (hasSections) {
               // Multi-step form
               setFormType("multi-step");
-              const formattedSections = response.form_json.sections.map(
-                (section, index) => ({
-                  section_id: section.section_id || `section_${index + 1}`,
-                  section_name: section.section_name || `Section ${index + 1}`,
-                  order: section.order || index + 1,
-                  form_json: JSON.stringify(section.form_json || defaultForm),
-                })
-              );
+              const formattedSections = response.form_json.sections.map((section, index) => ({
+                section_id: section.section_id || `section_${index + 1}`,
+                section_name: section.section_name || `Section ${index + 1}`,
+                order: section.order || index + 1,
+                form_json: JSON.stringify(section.form_json || defaultForm),
+              }));
               setSections(formattedSections);
               if (formattedSections.length > 0) {
                 const firstSectionId = formattedSections[0].section_id;
                 setSelectedSectionId(firstSectionId);
-
+                
                 // Load first section in builder after state updates
                 setTimeout(() => {
                   if (formBuilderRef.current && formattedSections[0]) {
                     try {
-                      const cleanForm = cleanFormJson(
-                        formattedSections[0].form_json
-                      );
+                      const cleanForm = cleanFormJson(formattedSections[0].form_json);
                       formBuilderRef.current.parseForm(cleanForm);
                     } catch (e) {
                       console.error("Error parsing form JSON:", e);
@@ -766,7 +677,7 @@ function NewForm() {
                   form_json: formJsonString,
                 },
               ]);
-
+              
               // Update builder after state updates
               setTimeout(() => {
                 if (formBuilderRef.current) {
@@ -780,10 +691,10 @@ function NewForm() {
               }, 500);
             }
           }
-
+          
           // For duplicate mode, clear template name so user must enter a new one
           if (isDuplicateMode) {
-            console.log("[NewForm] Duplicate mode - clearing template name");
+            console.log('[NewForm] Duplicate mode - clearing template name');
             setTemplateName("");
           }
         }
@@ -817,10 +728,10 @@ function NewForm() {
           setShowSaveModal(true);
         }
       }, 100); // Wait 100ms for the flag to reset
-
+      
       return;
     }
-
+    
     if (pendingModalOpenRef.current && !showSaveModal) {
       // Reset the flag first to prevent re-triggering
       pendingModalOpenRef.current = false;
@@ -834,11 +745,7 @@ function NewForm() {
 
   // Restore form when modal closes to ensure form persists
   useEffect(() => {
-    if (
-      !showSaveModal &&
-      formBuilderRef.current &&
-      !isProcessingFormRef.current
-    ) {
+    if (!showSaveModal && formBuilderRef.current && !isProcessingFormRef.current) {
       // Modal just closed - restore form from sections to ensure it's displayed
       isProcessingFormRef.current = true;
       try {
@@ -879,7 +786,7 @@ function NewForm() {
   const handleCustomerChange = useCallback((id) => {
     setCustomerId(id);
     // Clear error when user selects a customer
-    setFieldErrors((prev) => {
+    setFieldErrors(prev => {
       if (prev.customer) {
         const newErrors = { ...prev };
         delete newErrors.customer;
@@ -899,7 +806,7 @@ function NewForm() {
         setCustomerName(customer.customer_name);
       }
       // Clear error when user selects a customer
-      setFieldErrors((prev) => {
+      setFieldErrors(prev => {
         if (prev.customer) {
           const newErrors = { ...prev };
           delete newErrors.customer;
@@ -914,18 +821,12 @@ function NewForm() {
   const handleClearForm = () => {
     // Don't allow clearing in edit mode (user should use back button)
     if (isEditMode) {
-      toast.warning(
-        "Cannot clear form in edit mode. Use back button to cancel."
-      );
+      toast.warning("Cannot clear form in edit mode. Use back button to cancel.");
       return;
     }
 
     // Show confirmation dialog
-    if (
-      !window.confirm(
-        "Are you sure you want to clear the form? All unsaved changes will be lost."
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to clear the form? All unsaved changes will be lost.")) {
       return;
     }
 
@@ -948,7 +849,7 @@ function NewForm() {
     setSelectedSectionId("section_1");
     setFieldErrors({});
     setShowSaveModal(false);
-
+    
     // Reset form builder
     setTimeout(() => {
       if (formBuilderRef.current) {
@@ -963,50 +864,43 @@ function NewForm() {
     toast.success("Form cleared successfully");
   };
 
-  const selectedSection = sections.find(
-    (s) => s.section_id === selectedSectionId
-  );
+  const selectedSection = sections.find((s) => s.section_id === selectedSectionId);
 
   // Define actions for the form builder
-  const actions = useMemo(
-    () => ({
-      onSubmit: ActionDefinition.functionalAction(async (e) => {
-        try {
-          await e.store.formData.validate();
-        } catch (error) {
-          console.warn("Validation error:", error);
-        }
+  const actions = useMemo(() => ({
+    onSubmit: ActionDefinition.functionalAction(async (e) => {
+      try {
+        await e.store.formData.validate();
+      } catch (error) {
+        console.warn("Validation error:", error);
+      }
 
-        if (Object.keys(e.store.formData.errors).length < 1) {
-          // No errors - form is valid
-          console.log("Form submitted successfully!");
-          console.log("Form data:", e.store.formData.data);
-          toast.success("Form submitted successfully!");
-          // You can add your custom submit logic here
-        } else {
-          // Has errors
-          console.error("Form has errors:", e.store.formData.errors);
-          toast.error("Please fix the errors in the form");
-        }
-      }),
+      if (Object.keys(e.store.formData.errors).length < 1) {
+        // No errors - form is valid
+        console.log("Form submitted successfully!");
+        console.log("Form data:", e.store.formData.data);
+        toast.success("Form submitted successfully!");
+        // You can add your custom submit logic here
+      } else {
+        // Has errors
+        console.error("Form has errors:", e.store.formData.errors);
+        toast.error("Please fix the errors in the form");
+      }
     }),
-    []
-  );
+  }), []);
 
   // Show loading state while fetching form data
   if (loadingForm) {
     return (
       <div className="new-form-container">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
           <Loader2 className="animate-spin" size={32} />
           <p>Loading form data...</p>
         </div>
@@ -1018,14 +912,12 @@ function NewForm() {
     <div className="new-form-container">
       <div className="new-form-header">
         <div className="header-left">
-          <button
-            onClick={handleBack}
+          <button 
+            onClick={handleBack} 
             className="back-button icon-only"
             title="Back to home"
           >
-            <span className="sidebar-toggle">
-              <ArrowLeft size={18} />
-            </span>
+            <span className="button-icon"><ArrowLeft size={18} /></span>
           </button>
           <button
             className="sidebar-toggle"
@@ -1034,13 +926,7 @@ function NewForm() {
           >
             {isSidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
           </button>
-          <h1>
-            {isEditMode
-              ? "Edit Form"
-              : isDuplicateMode
-              ? "Duplicate Form"
-              : "Form Builder"}
-          </h1>
+          <h1>{isEditMode ? "Edit Form" : isDuplicateMode ? "Duplicate Form" : "Form Builder"}</h1>
           {version && (
             <span className="version-badge" title="Template Version">
               v{version}
@@ -1049,41 +935,29 @@ function NewForm() {
         </div>
         <div className="header-actions">
           {!isEditMode && (
-            <button
-              onClick={handleClearForm}
+            <button 
+              onClick={handleClearForm} 
               className="clear-button icon-only"
               title="Clear form"
             >
-              <span className="button-icon">
-                <Trash2 size={16} />
-              </span>
+              <span className="button-icon"><Trash2 size={16} /></span>
             </button>
           )}
-          <button
-            onClick={handleSaveFormClick}
+          <button 
+            onClick={handleSaveFormClick} 
             className="save-button icon-only"
             disabled={saving}
             title={saving ? "Saving..." : "Save form"}
           >
             <span className="button-icon">
-              {saving ? (
-                <Loader2 size={16} className="spinning" />
-              ) : (
-                <Save size={16} />
-              )}
+              {saving ? <Loader2 size={16} className="spinning" /> : <Save size={16} />}
             </span>
           </button>
         </div>
       </div>
       <div className="new-form-body">
-        <div
-          className={`sidebar-panel ${isSidebarCollapsed ? "collapsed" : ""}`}
-        >
-          <div
-            className={`sidebar-content ${
-              isSidebarCollapsed ? "collapsed" : ""
-            }`}
-          >
+        <div className={`sidebar-panel ${isSidebarCollapsed ? "collapsed" : ""}`}>
+          <div className={`sidebar-content ${isSidebarCollapsed ? "collapsed" : ""}`}>
             <div className="form-type-toggle">
               <button
                 className={`type-btn ${formType === "single" ? "active" : ""}`}
@@ -1092,9 +966,7 @@ function NewForm() {
                 Single Form
               </button>
               <button
-                className={`type-btn ${
-                  formType === "multi-step" ? "active" : ""
-                }`}
+                className={`type-btn ${formType === "multi-step" ? "active" : ""}`}
                 onClick={() => handleToggleFormType("multi-step")}
               >
                 Multi-Step
@@ -1120,18 +992,12 @@ function NewForm() {
                         value={newSectionName}
                         onChange={(e) => setNewSectionName(e.target.value)}
                         onBlur={() => {
-                          handleUpdateSectionName(
-                            section.section_id,
-                            newSectionName
-                          );
+                          handleUpdateSectionName(section.section_id, newSectionName);
                           setNewSectionName("");
                         }}
                         onKeyPress={(e) => {
                           if (e.key === "Enter") {
-                            handleUpdateSectionName(
-                              section.section_id,
-                              newSectionName
-                            );
+                            handleUpdateSectionName(section.section_id, newSectionName);
                             setNewSectionName("");
                           }
                         }}
@@ -1145,9 +1011,7 @@ function NewForm() {
                       onClick={() => handleSectionSelect(section.section_id)}
                     >
                       <span className="section-number">{section.order}</span>
-                      <span className="section-name">
-                        {section.section_name}
-                      </span>
+                      <span className="section-name">{section.section_name}</span>
                       <div className="section-actions">
                         <button
                           className="edit-btn"
@@ -1221,19 +1085,17 @@ function NewForm() {
       >
         <Modal.Header className="modal-header-custom">
           <Modal.Title className="modal-title-custom">Save Form</Modal.Title>
-          <p className="modal-subtitle">
-            Fill in the details below to save your form
-          </p>
+          <p className="modal-subtitle">Fill in the details below to save your form</p>
         </Modal.Header>
         <Modal.Body className="modal-body-custom">
           {Object.keys(fieldErrors).length > 0 && (
             <div className="modal-general-error">
               <strong>Please fix the following errors:</strong>
               <ul>
-                {Object.keys(fieldErrors).map((field) => (
+                {Object.keys(fieldErrors).map(field => (
                   <li key={field}>
-                    {Array.isArray(fieldErrors[field])
-                      ? fieldErrors[field].join(", ")
+                    {Array.isArray(fieldErrors[field]) 
+                      ? fieldErrors[field].join(', ')
                       : fieldErrors[field]}
                   </li>
                 ))}
@@ -1254,15 +1116,15 @@ function NewForm() {
               />
               {fieldErrors.customer && (
                 <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.customer)
-                    ? fieldErrors.customer.join(", ")
+                  {Array.isArray(fieldErrors.customer) 
+                    ? fieldErrors.customer.join(', ')
                     : fieldErrors.customer}
                 </div>
               )}
               {fieldErrors.form_json && (
                 <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.form_json)
-                    ? fieldErrors.form_json.join(", ")
+                  {Array.isArray(fieldErrors.form_json) 
+                    ? fieldErrors.form_json.join(', ')
                     : fieldErrors.form_json}
                 </div>
               )}
@@ -1279,7 +1141,7 @@ function NewForm() {
                   setTemplateName(e.target.value);
                   // Clear error when user starts typing
                   if (fieldErrors.template_name) {
-                    setFieldErrors((prev) => {
+                    setFieldErrors(prev => {
                       const newErrors = { ...prev };
                       delete newErrors.template_name;
                       return newErrors;
@@ -1287,16 +1149,14 @@ function NewForm() {
                   }
                 }}
                 placeholder="Enter template name..."
-                className={`modal-input ${
-                  fieldErrors.template_name ? "modal-input-error" : ""
-                }`}
+                className={`modal-input ${fieldErrors.template_name ? 'modal-input-error' : ''}`}
                 required
                 autoFocus
               />
               {fieldErrors.template_name && (
                 <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.template_name)
-                    ? fieldErrors.template_name.join(", ")
+                  {Array.isArray(fieldErrors.template_name) 
+                    ? fieldErrors.template_name.join(', ')
                     : fieldErrors.template_name}
                 </div>
               )}
@@ -1313,7 +1173,7 @@ function NewForm() {
                   setSheetId(e.target.value);
                   // Clear error when user starts typing
                   if (fieldErrors.sheet_id) {
-                    setFieldErrors((prev) => {
+                    setFieldErrors(prev => {
                       const newErrors = { ...prev };
                       delete newErrors.sheet_id;
                       return newErrors;
@@ -1321,15 +1181,13 @@ function NewForm() {
                   }
                 }}
                 placeholder="Enter sheet URL..."
-                className={`modal-input ${
-                  fieldErrors.sheet_id ? "modal-input-error" : ""
-                }`}
+                className={`modal-input ${fieldErrors.sheet_id ? 'modal-input-error' : ''}`}
                 required
               />
               {fieldErrors.sheet_id && (
                 <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.sheet_id)
-                    ? fieldErrors.sheet_id.join(", ")
+                  {Array.isArray(fieldErrors.sheet_id) 
+                    ? fieldErrors.sheet_id.join(', ')
                     : fieldErrors.sheet_id}
                 </div>
               )}
@@ -1358,7 +1216,7 @@ function NewForm() {
                 onChange={(e) => {
                   setDescription(e.target.value);
                   if (fieldErrors.description) {
-                    setFieldErrors((prev) => {
+                    setFieldErrors(prev => {
                       const newErrors = { ...prev };
                       delete newErrors.description;
                       return newErrors;
@@ -1366,15 +1224,13 @@ function NewForm() {
                   }
                 }}
                 placeholder="Add a short description for this form..."
-                className={`modal-textarea ${
-                  fieldErrors.description ? "modal-input-error" : ""
-                }`}
+                className={`modal-textarea ${fieldErrors.description ? 'modal-input-error' : ''}`}
                 rows={4}
               />
               {fieldErrors.description && (
                 <div className="modal-field-error">
                   {Array.isArray(fieldErrors.description)
-                    ? fieldErrors.description.join(", ")
+                    ? fieldErrors.description.join(', ')
                     : fieldErrors.description}
                 </div>
               )}
@@ -1404,3 +1260,4 @@ function NewForm() {
 }
 
 export default NewForm;
+

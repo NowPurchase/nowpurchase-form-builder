@@ -9,8 +9,12 @@
 
 .permissions-header {
   background: white;
+  padding: 12px 24px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   position: fixed;
   top: 0;
   left: 0;
@@ -18,84 +22,12 @@
   z-index: 100;
 }
 
-.permissions-header > div {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 56px;
-}
-
 .permissions-header h1 {
   margin: 0;
-  color: #0f172a !important;
+  color: #0f172a;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.3px;
-}
-
-.permissions-header .header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.permissions-header .back-button {
-  padding: 6px 14px;
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  letter-spacing: 0.1px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.permissions-header .back-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #475569;
-}
-
-.permissions-header .back-button:active {
-  transform: translateY(0);
-}
-
-.permissions-header .logout-button {
-  padding: 6px 14px;
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  letter-spacing: 0.1px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.permissions-header .logout-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #475569;
-}
-
-.permissions-header .logout-button:active {
-  transform: translateY(0);
 }
 
 .permissions-content {
@@ -416,24 +348,16 @@
 /* Permissions footer */
 .permissions-footer {
   background: white;
+  padding: 12px 24px;
   box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
   border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 100;
-}
-
-.permissions-footer > div {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 12px 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  min-height: 56px;
-  align-items: center;
 }
 
 .add-user-button,
