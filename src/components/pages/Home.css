@@ -13,7 +13,6 @@
 }
 
 .home-header > div {
-  max-width: 1600px;
   margin: 0 auto;
   padding: 12px 24px;
   display: flex;
@@ -28,7 +27,6 @@
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.3px;
-  flex: 1;
   display: block;
   visibility: visible;
   opacity: 1;
@@ -97,7 +95,6 @@
 
 .home-content {
   padding: 16px 24px;
-  max-width: 1600px;
   margin: 0 auto;
 }
 

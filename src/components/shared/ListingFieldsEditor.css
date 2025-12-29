@@ -51,11 +51,6 @@
   letter-spacing: 0.5px;
 }
 
-.header-actions {
-  width: 36px;
-  flex-shrink: 0;
-}
-
 .listing-fields-list {
   display: flex;
   flex-direction: column;

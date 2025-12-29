@@ -6,7 +6,7 @@ import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import CustomerDropdown from "../shared/CustomerDropdown";
-import { X, Search, ChevronUp, ChevronDown, Copy, Pencil, Settings } from "lucide-react";
+import { X, Search, Copy, Pencil, Settings } from "lucide-react";
 import { Pagination } from "@mui/material";
 import {
   Table,
@@ -38,7 +38,7 @@ function Home({ onLogout }) {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    page_size: 20,
+    page_size: 40,
     count: 0,
     next: null,
     previous: null,
@@ -46,7 +46,6 @@ function Home({ onLogout }) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
   const [statusFilter, setStatusFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState(null);
   const [customerFilterName, setCustomerFilterName] = useState("");
@@ -163,26 +162,8 @@ function Home({ onLogout }) {
   }, [fetchForms]);
 
   const filteredForms = useMemo(() => {
-    let filtered = [...allForms];
-
-    filtered.sort((a, b) => {
-      const aValue = new Date(a.created_at || 0).getTime();
-      const bValue = new Date(b.created_at || 0).getTime();
-      return sortOrder === "asc"
-        ? aValue > bValue
-          ? 1
-          : aValue < bValue
-          ? -1
-          : 0
-        : aValue < bValue
-        ? 1
-        : aValue > bValue
-        ? -1
-        : 0;
-    });
-
-    return filtered;
-  }, [allForms, sortOrder]);
+    return [...allForms];
+  }, [allForms]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -274,18 +255,6 @@ function Home({ onLogout }) {
       return;
     }
     fetchForms(newPage);
-  };
-
-  const handleSort = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
-
-  const getSortIcon = () => {
-    return sortOrder === "asc" ? (
-      <ChevronUp size={14} className="sort-icon-active" />
-    ) : (
-      <ChevronDown size={14} className="sort-icon-active" />
-    );
   };
 
   const hasActiveFilters = searchQuery || statusFilter || customerFilter;
@@ -469,12 +438,7 @@ function Home({ onLogout }) {
                 <TableHead className="col-customer">Customer</TableHead>
                 <TableHead className="col-status">Status</TableHead>
                 <TableHead className="col-version">Version</TableHead>
-                <TableHead className="col-created-at sortable-header" onClick={handleSort}>
-                  <span className="header-content">
-                    Created At
-                    {getSortIcon()}
-                  </span>
-                </TableHead>
+                <TableHead className="col-created-at">Created At</TableHead>
                 <TableHead className="col-actions actions-header">Actions</TableHead>
               </TableRow>
             </TableHeader>
