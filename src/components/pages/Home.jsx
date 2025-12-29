@@ -6,7 +6,7 @@ import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import CustomerDropdown from "../shared/CustomerDropdown";
-import { X, Search, ChevronUp, ChevronDown, Copy, Pencil } from "lucide-react";
+import { X, Search, Copy, Pencil, Settings } from "lucide-react";
 import { Pagination } from "@mui/material";
 import {
   Table,
@@ -38,7 +38,7 @@ function Home({ onLogout }) {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    page_size: 20,
+    page_size: 40,
     count: 0,
     next: null,
     previous: null,
@@ -46,7 +46,6 @@ function Home({ onLogout }) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
   const [statusFilter, setStatusFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState(null);
   const [customerFilterName, setCustomerFilterName] = useState("");
@@ -163,26 +162,8 @@ function Home({ onLogout }) {
   }, [fetchForms]);
 
   const filteredForms = useMemo(() => {
-    let filtered = [...allForms];
-
-    filtered.sort((a, b) => {
-      const aValue = new Date(a.created_at || 0).getTime();
-      const bValue = new Date(b.created_at || 0).getTime();
-      return sortOrder === "asc"
-        ? aValue > bValue
-          ? 1
-          : aValue < bValue
-          ? -1
-          : 0
-        : aValue < bValue
-        ? 1
-        : aValue > bValue
-        ? -1
-        : 0;
-    });
-
-    return filtered;
-  }, [allForms, sortOrder]);
+    return [...allForms];
+  }, [allForms]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -216,6 +197,11 @@ function Home({ onLogout }) {
   const handleEdit = (e, form) => {
     e.stopPropagation();
     navigate(`/new-form?edit=${form.template_id}`);
+  };
+
+  const handleConfigure = (e, form) => {
+    e.stopPropagation();
+    navigate(`/config/${form.template_id}`);
   };
 
   const handleClearFilters = () => {
@@ -271,18 +257,6 @@ function Home({ onLogout }) {
     fetchForms(newPage);
   };
 
-  const handleSort = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
-
-  const getSortIcon = () => {
-    return sortOrder === "asc" ? (
-      <ChevronUp size={14} className="sort-icon-active" />
-    ) : (
-      <ChevronDown size={14} className="sort-icon-active" />
-    );
-  };
-
   const hasActiveFilters = searchQuery || statusFilter || customerFilter;
   const totalPages =
     pagination.count > 0 && pagination.page_size > 0
@@ -303,17 +277,19 @@ function Home({ onLogout }) {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h1>Dynamic Form Engine</h1>
-        <div className="header-actions">
-          <button onClick={handleNewForm} className="new-form-button">
-            + New form
-          </button>
-          <button onClick={handlePermissions} className="permissions-button">
-            Permissions
-          </button>
-          <button onClick={onLogout} className="logout-button">
-            Logout
-          </button>
+        <div>
+          <h1>Dynamic Form Engine</h1>
+          <div className="header-actions">
+            <button onClick={handleNewForm} className="new-form-button">
+              + New form
+            </button>
+            <button onClick={handlePermissions} className="permissions-button">
+              Permissions
+            </button>
+            <button onClick={onLogout} className="logout-button">
+              Logout
+            </button>
+          </div>
         </div>
       </div>
       <div className="home-content">
@@ -462,12 +438,7 @@ function Home({ onLogout }) {
                 <TableHead className="col-customer">Customer</TableHead>
                 <TableHead className="col-status">Status</TableHead>
                 <TableHead className="col-version">Version</TableHead>
-                <TableHead className="col-created-at sortable-header" onClick={handleSort}>
-                  <span className="header-content">
-                    Created At
-                    {getSortIcon()}
-                  </span>
-                </TableHead>
+                <TableHead className="col-created-at">Created At</TableHead>
                 <TableHead className="col-actions actions-header">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -518,6 +489,14 @@ function Home({ onLogout }) {
                           aria-label="Duplicate form"
                         >
                           <Copy size={14} />
+                        </button>
+                        <button
+                          className="action-btn config-btn"
+                          onClick={(e) => handleConfigure(e, form)}
+                          title="Configure template"
+                          aria-label="Configure template"
+                        >
+                          <Settings size={14} />
                         </button>
                       </div>
                     </TableCell>

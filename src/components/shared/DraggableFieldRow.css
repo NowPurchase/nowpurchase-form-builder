@@ -1,0 +1,201 @@
+.draggable-field-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  cursor: move;
+}
+
+.draggable-field-row:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d4;
+}
+
+.draggable-field-row[draggable="true"]:active {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.field-row-drag-handle {
+  display: flex;
+  align-items: center;
+  color: #aaa;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.field-row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.field-row-number {
+  display: flex;
+  align-items: center;
+  min-width: 32px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.field-row-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.field-key-input-wrapper {
+  position: relative;
+}
+
+.field-row-input-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.field-row-input-group input::placeholder {
+  color: #aaa;
+}
+
+.field-row-input-group input:hover {
+  border-color: #b8b8b8;
+}
+
+.field-row-input-group input:focus {
+  outline: none;
+  border-color: #3498ff;
+  box-shadow: 0 0 0 3px rgba(52, 152, 255, 0.1);
+}
+
+.field-row-input-group input.input-error {
+  border-color: #f44336;
+  background: #fff5f5;
+}
+
+.field-row-input-group input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+}
+
+.field-key-input-wrapper input {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #f44336;
+  margin-top: 2px;
+}
+
+.field-row-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.field-row-delete-btn:hover {
+  background: #fff0f0;
+  color: #f44336;
+}
+
+/* Suggestions Dropdown */
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 4px;
+}
+
+.suggestions-category {
+  padding: 4px 0;
+}
+
+.suggestions-category:not(:last-child) {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.suggestions-category-header {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #fafafa;
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background: #f5f9ff;
+}
+
+.suggestion-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.suggestion-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Drag over effect */
+.draggable-field-row.drag-over {
+  border-color: #3498ff;
+  border-style: dashed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .draggable-field-row {
+    flex-wrap: wrap;
+  }
+
+  .field-row-number,
+  .field-row-drag-handle {
+    display: none;
+  }
+
+  .field-row-input-group {
+    flex-basis: 100%;
+  }
+}
