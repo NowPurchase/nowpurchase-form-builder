@@ -6,22 +6,23 @@ export const getTemplatesDropdown = async () => {
     const response = await apiGet('/api/v1/templates?page_no=1&page_size=100');
 
     // Response is an array of template objects
-    // Extract id, template_name, and version from each
+    // Use template_id as the stable unique identifier (persists across clones/versions)
+    const mapTemplate = (template) => ({
+      id: template.template_id,
+      template_name: template.template_name,
+      version: template.version
+    });
+
+    // Filter out invalid templates (must have template_id and template_name)
+    const filterValid = (template) => template.template_id && template.template_name;
+
     if (Array.isArray(response)) {
-      return response.map(template => ({
-        id: template.template_id,
-        template_name: template.template_name,
-        version: template.version
-      }));
+      return response.filter(filterValid).map(mapTemplate);
     }
 
     // If response has a results array (paginated response)
     if (response?.results && Array.isArray(response.results)) {
-      return response.results.map(template => ({
-        id: template.id,
-        template_name: template.template_name,
-        version: template.version
-      }));
+      return response.results.filter(filterValid).map(mapTemplate);
     }
 
     return [];

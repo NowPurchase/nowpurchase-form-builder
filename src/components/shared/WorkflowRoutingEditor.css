@@ -81,8 +81,8 @@
   color: #f44336;
 }
 
-.template-dropdown {
-  position: absolute;
+.workflow-template-dropdown {
+  position: relative;
   top: 100%;
   left: 0;
   right: 0;
@@ -91,28 +91,27 @@
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   margin-top: 4px;
-  z-index: 1000;
-  overflow: hidden;
+  overflow: scroll;
 }
 
-.template-dropdown-search {
+.workflow-template-dropdown-search {
   padding: 8px;
   border-bottom: 1px solid #f5f5f5;
 }
 
-.template-dropdown-list {
+.workflow-template-dropdown-list {
   max-height: 300px;
   overflow-y: auto;
 }
 
-.template-dropdown-empty {
+.workflow-template-dropdown-empty {
   padding: 20px;
   text-align: center;
   color: #999;
   font-size: 13px;
 }
 
-.template-dropdown-item {
+.workflow-template-dropdown-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -122,19 +121,19 @@
   border-bottom: 1px solid #f5f5f5;
 }
 
-.template-dropdown-item:last-child {
+.workflow-template-dropdown-item:last-child {
   border-bottom: none;
 }
 
-.template-dropdown-item:hover {
+.workflow-template-dropdown-item:hover {
   background: #f5f9ff;
 }
 
-.template-dropdown-item.selected {
+.workflow-template-dropdown-item.selected {
   background: #e3f2fd;
 }
 
-.template-dropdown-item-content {
+.workflow-template-dropdown-item-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -142,13 +141,13 @@
   min-width: 0;
 }
 
-.template-dropdown-item-name {
+.workflow-template-dropdown-item-name {
   font-size: 14px;
   font-weight: 500;
   color: #333;
 }
 
-.template-dropdown-item-id {
+.workflow-template-dropdown-item-id {
   font-size: 11px;
   color: #888;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
@@ -157,7 +156,7 @@
   white-space: nowrap;
 }
 
-.template-dropdown-item-version {
+.workflow-template-dropdown-item-version {
   font-size: 12px;
   color: #666;
   background: #f5f5f5;

@@ -4,7 +4,9 @@ import "./TemplateDropdown.css";
 function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select template...", excludeIds = [], templates = [] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -13,22 +15,41 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
       }
     };
 
+    // Close dropdown when page scrolls (but not when scrolling inside dropdown)
+    const handleScroll = (event) => {
+      // Don't close if scrolling inside the dropdown menu
+      if (dropdownRef.current && dropdownRef.current.contains(event.target)) {
+        return;
+      }
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (isOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isOpen]);
 
   const filteredTemplates = templates.filter(
     (template) =>
-      template.template_name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !excludeIds.includes(template.id)
+      template?.template_name?.toLowerCase()?.includes(searchQuery.toLowerCase()) &&
+      !excludeIds.some(id => String(id) === String(template.id))
   );
 
   const selectedTemplate = templates.find((t) => t.id === value);
   const getDisplayName = (template) => {
     if (!template) return placeholder;
+    const name = template.template_name || 'Unnamed Template';
     return template.version
-      ? `${template.template_name} (v${template.version})`
-      : template.template_name;
+      ? `${name} (v${template.version})`
+      : name;
   };
   const displayName = getDisplayName(selectedTemplate);
   const isPlaceholder = !selectedTemplate;
@@ -44,11 +65,24 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
     setSearchQuery("");
   };
 
+  const handleTriggerClick = () => {
+    if (!isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div className={`template-dropdown ${isOpen ? "open" : ""}`} ref={dropdownRef}>
       <div
         className="template-dropdown-trigger"
-        onClick={() => setIsOpen(!isOpen)}
+        ref={triggerRef}
+        onClick={handleTriggerClick}
       >
         <span className={isPlaceholder ? "placeholder-text" : ""}>
           {displayName}
@@ -57,7 +91,16 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
       </div>
 
       {isOpen && (
-        <div className="template-dropdown-menu">
+        <div
+          className="template-dropdown-menu"
+          style={{
+            position: 'fixed',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            width: menuPosition.width,
+            zIndex: 99999
+          }}
+        >
           <div className="template-search">
             <input
               type="text"
@@ -75,13 +118,10 @@ function TemplateDropdown({ value, onChange, onSelect, placeholder = "Select tem
                   key={template.id}
                   className={`template-dropdown-item ${
                     value === template.id ? "selected" : ""
-                  } ${excludeIds.includes(template.id) ? "disabled" : ""}`}
+                  }`}
                   onClick={() => handleSelect(template)}
                 >
                   {getDisplayName(template)}
-                  {excludeIds.includes(template.id) && (
-                    <span className="already-selected-badge">Selected</span>
-                  )}
                 </div>
               ))}
             </div>

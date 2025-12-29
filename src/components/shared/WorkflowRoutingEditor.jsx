@@ -181,8 +181,8 @@ const WorkflowRoutingEditor = ({
           </div>
 
           {showNextTemplateDropdown && (
-            <div className="template-dropdown">
-              <div className="template-dropdown-search">
+            <div className="workflow-template-dropdown">
+              <div className="workflow-template-dropdown-search">
                 <Input
                   placeholder="Search templates..."
                   value={nextTemplateSearch}
@@ -191,24 +191,24 @@ const WorkflowRoutingEditor = ({
                 />
               </div>
 
-              <div className="template-dropdown-list">
+              <div className="workflow-template-dropdown-list">
                 {filteredNextTemplates.length === 0 ? (
-                  <div className="template-dropdown-empty">No templates found</div>
+                  <div className="workflow-template-dropdown-empty">No templates found</div>
                 ) : (
                   filteredNextTemplates.map(template => (
                     <div
                       key={template.template_id}
-                      className={`template-dropdown-item ${
+                      className={`workflow-template-dropdown-item ${
                         template.template_id === nextTemplate ? 'selected' : ''
                       }`}
                       onClick={() => handleTemplateSelect(template)}
                       title={`ID: ${template.template_id}`}
                     >
-                      <div className="template-dropdown-item-content">
-                        <div className="template-dropdown-item-name">{template.template_name}</div>
-                        <div className="template-dropdown-item-id">{template.template_id}</div>
+                      <div className="workflow-template-dropdown-item-content">
+                        <div className="workflow-template-dropdown-item-name">{template.template_name}</div>
+                        <div className="workflow-template-dropdown-item-id">{template.template_id}</div>
                       </div>
-                      <div className="template-dropdown-item-version">v{template.version}</div>
+                      <div className="workflow-template-dropdown-item-version">v{template.version}</div>
                     </div>
                   ))
                 )}
@@ -254,8 +254,8 @@ const WorkflowRoutingEditor = ({
           </div>
 
           {showPreviousTemplateDropdown && (
-            <div className="template-dropdown">
-              <div className="template-dropdown-search">
+            <div className="workflow-template-dropdown">
+              <div className="workflow-template-dropdown-search">
                 <Input
                   placeholder="Search templates..."
                   value={previousTemplateSearch}
@@ -264,24 +264,24 @@ const WorkflowRoutingEditor = ({
                 />
               </div>
 
-              <div className="template-dropdown-list">
+              <div className="workflow-template-dropdown-list">
                 {filteredPreviousTemplates.length === 0 ? (
-                  <div className="template-dropdown-empty">No templates found</div>
+                  <div className="workflow-template-dropdown-empty">No templates found</div>
                 ) : (
                   filteredPreviousTemplates.map(template => (
                     <div
                       key={template.template_id}
-                      className={`template-dropdown-item ${
+                      className={`workflow-template-dropdown-item ${
                         template.template_id === previousTemplate ? 'selected' : ''
                       }`}
                       onClick={() => handlePreviousTemplateSelect(template)}
                       title={`ID: ${template.template_id}`}
                     >
-                      <div className="template-dropdown-item-content">
-                        <div className="template-dropdown-item-name">{template.template_name}</div>
-                        <div className="template-dropdown-item-id">{template.template_id}</div>
+                      <div className="workflow-template-dropdown-item-content">
+                        <div className="workflow-template-dropdown-item-name">{template.template_name}</div>
+                        <div className="workflow-template-dropdown-item-id">{template.template_id}</div>
                       </div>
-                      <div className="template-dropdown-item-version">v{template.version}</div>
+                      <div className="workflow-template-dropdown-item-version">v{template.version}</div>
                     </div>
                   ))
                 )}
