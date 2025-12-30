@@ -10,7 +10,9 @@ import {
   TableRow,
 } from "../ui/table";
 import TemplateDropdown from "../shared/TemplateDropdown";
+import UserDropdown from "../shared/UserDropdown";
 import { getTemplatesDropdown, getUserPermissions, saveUserPermissions } from "../../services/permissionsApi";
+import { getUsers } from "../../services/userApi";
 import { toast } from "../shared/Toast";
 import "./Permissions.css";
 
@@ -24,8 +26,8 @@ function Permissions({ onLogout }) {
   const [userIdsOrder, setUserIdsOrder] = useState([]);
   const [templateOrder, setTemplateOrder] = useState({}); // {userId: [templateId1, templateId2, ...]}
 
-  // Track new user ID being entered
-  const [newUserId, setNewUserId] = useState("");
+  // Track user data (id -> {id, name, email}) for display
+  const [userData, setUserData] = useState({}); // {userId: {id, name, email}}
 
   // Templates from API
   const [templates, setTemplates] = useState([]);
@@ -62,6 +64,27 @@ function Permissions({ onLogout }) {
             templateOrderMap[userId] = Object.keys(userPermissions);
           });
           setTemplateOrder(templateOrderMap);
+
+          // Fetch user data for existing users
+          const userDataMap = {};
+          for (const userId of userIds) {
+            try {
+              // Fetch user by searching for their ID
+              const users = await getUsers(userId);
+              if (users && users.length > 0) {
+                const user = users[0];
+                userDataMap[userId] = {
+                  id: user.id,
+                  name: user.name,
+                  email: user.email
+                };
+              }
+            } catch (error) {
+              console.error(`Error fetching user ${userId}:`, error);
+              // Keep default display if user fetch fails
+            }
+          }
+          setUserData(userDataMap);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -76,16 +99,16 @@ function Permissions({ onLogout }) {
     fetchData();
   }, []);
 
-  const handleAddUserId = () => {
-    if (!newUserId || newUserId.trim() === "") {
+  const handleAddUser = (user) => {
+    if (!user || !user.id) {
       return;
     }
 
-    const userId = newUserId.trim();
+    const userId = String(user.id);
 
     // Check if user already exists
     if (permissionsData[userId]) {
-      alert("User ID already exists!");
+      alert("User already exists!");
       return;
     }
 
@@ -105,7 +128,15 @@ function Permissions({ onLogout }) {
       [userId]: []
     }));
 
-    setNewUserId("");
+    // Store user data for display
+    setUserData((prev) => ({
+      ...prev,
+      [userId]: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    }));
   };
 
   const handleTemplateSelect = (userId, template) => {
@@ -246,6 +277,12 @@ function Permissions({ onLogout }) {
       : template.template_name;
   };
 
+  const getUserDisplayName = (userId) => {
+    const user = userData[userId];
+    if (!user) return `User ${userId}`;
+    return user.name || `User ${userId}`;
+  };
+
   // Build table rows
   const buildTableRows = () => {
     const rows = [];
@@ -340,7 +377,7 @@ function Permissions({ onLogout }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="col-user-id">User ID</TableHead>
+                <TableHead className="col-user-id">User</TableHead>
                 <TableHead className="col-admin">Admin</TableHead>
                 <TableHead className="col-template-name">Template Name</TableHead>
                 <TableHead className="col-permissions">Permissions</TableHead>
@@ -352,30 +389,16 @@ function Permissions({ onLogout }) {
                   return (
                     <TableRow key="new-user">
                       <TableCell>
-                        <div className="user-id-input-container">
-                          <input
-                            type="number"
-                            placeholder="Enter user ID..."
-                            value={newUserId}
-                            onChange={(e) => setNewUserId(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter") {
-                                handleAddUserId();
-                              }
-                            }}
-                            className="user-id-input"
+                        <div className="user-dropdown-container">
+                          <UserDropdown
+                            placeholder="Search and select user..."
+                            onSelect={handleAddUser}
+                            excludeIds={userIds}
                           />
-                          <button
-                            onClick={handleAddUserId}
-                            className="add-user-button-inline"
-                            disabled={!newUserId || newUserId.trim() === ""}
-                          >
-                            Add User
-                          </button>
                         </div>
                       </TableCell>
                       <TableCell colSpan="3" className="empty-cell">
-                        <span className="empty-text">Enter a user ID to start</span>
+                        <span className="empty-text">Search and select a user to start</span>
                       </TableCell>
                     </TableRow>
                   );
@@ -386,7 +409,7 @@ function Permissions({ onLogout }) {
                         <>
                           <TableCell rowSpan={row.rowSpan} className="user-id-cell">
                             <div className="user-id-display-container">
-                              <span className="user-id-number">{row.userId}</span>
+                              <span className="user-id-number">{getUserDisplayName(row.userId)}</span>
                               <button
                                 className="remove-user-btn"
                                 onClick={() => handleRemoveUser(row.userId)}
@@ -474,7 +497,7 @@ function Permissions({ onLogout }) {
                         <>
                           <TableCell rowSpan={row.rowSpan} className="user-id-cell">
                             <div className="user-id-display-container">
-                              <span className="user-id-number">{row.userId}</span>
+                              <span className="user-id-number">{getUserDisplayName(row.userId)}</span>
                               <button
                                 className="remove-user-btn"
                                 onClick={() => handleRemoveUser(row.userId)}
@@ -518,7 +541,7 @@ function Permissions({ onLogout }) {
               {rows.length === 1 && (
                 <TableRow>
                   <TableCell colSpan="4" className="empty-cell">
-                    <span className="empty-text">No users added yet. Enter a user ID to start.</span>
+                    <span className="empty-text">No users added yet. Search and select a user to start.</span>
                   </TableCell>
                 </TableRow>
               )}
