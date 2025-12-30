@@ -6,11 +6,9 @@ export const getUsers = async (search = '') => {
     // Construct query params
     const params = new URLSearchParams();
 
-    // Hardcoded customer ID filter
+    // Hardcoded customer ID filter (comma-separated for OR logic)
     const allowedCustomerIds = [243, 441];
-    allowedCustomerIds.forEach(customerId => {
-      params.append("customer_id", customerId);
-    });
+    params.append("customer_id", allowedCustomerIds.join(','));
 
     if (search) {
       params.append('search', search);
