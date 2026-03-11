@@ -12,7 +12,7 @@ import {
 import TemplateDropdown from "../shared/TemplateDropdown";
 import UserDropdown from "../shared/UserDropdown";
 import { getTemplatesDropdown, getUserPermissions, saveUserPermissions } from "../../services/permissionsApi";
-import { getUsers } from "../../services/userApi";
+import { getUserById } from "../../services/userApi";
 import { toast } from "../shared/Toast";
 import "./Permissions.css";
 
@@ -67,23 +67,16 @@ function Permissions({ onLogout }) {
 
           // Fetch user data for existing users
           const userDataMap = {};
-          for (const userId of userIds) {
-            try {
-              // Fetch user by searching for their ID
-              const users = await getUsers(userId);
-              if (users && users.length > 0) {
-                const user = users[0];
-                userDataMap[userId] = {
-                  id: user.id,
-                  name: user.name,
-                  email: user.email
-                };
-              }
-            } catch (error) {
-              console.error(`Error fetching user ${userId}:`, error);
-              // Keep default display if user fetch fails
+          await Promise.all(userIds.map(async (userId) => {
+            const user = await getUserById(userId);
+            if (user) {
+              userDataMap[userId] = {
+                id: user.id,
+                name: user.name,
+                email: user.email
+              };
             }
-          }
+          }));
           setUserData(userDataMap);
         }
       } catch (error) {
@@ -279,8 +272,9 @@ function Permissions({ onLogout }) {
 
   const getUserDisplayName = (userId) => {
     const user = userData[userId];
-    if (!user) return `User ${userId}`;
-    return user.name || `User ${userId}`;
+    if (!user) return `User (${userId})`;
+    const name = user.name || 'Unnamed User';
+    return `${name} (${userId})`;
   };
 
   // Build table rows

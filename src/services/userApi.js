@@ -1,5 +1,24 @@
 import { apiGetOld } from './api';
 
+// Fetch a single user by ID
+export const getUserById = async (userId) => {
+  try {
+    const response = await apiGetOld(`/api/r/users/${userId}/`);
+    if (response) {
+      return {
+        id: response.id || response.user_id,
+        name: response.name || response.username || `User ${response.id}`,
+        email: response.email || '',
+        mobile: response.mobile || ''
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error fetching user ${userId}:`, error);
+    return null;
+  }
+};
+
 // Fetch users from NowPurchase API
 export const getUsers = async (search = '') => {
   try {
