@@ -272,8 +272,9 @@ function Permissions({ onLogout }) {
 
   const getUserDisplayName = (userId) => {
     const user = userData[userId];
-    if (!user) return `User ${userId}`;
-    return user.name || `User ${userId}`;
+    if (!user) return `User (${userId})`;
+    const name = user.name || 'Unnamed User';
+    return `${name} (${userId})`;
   };
 
   // Build table rows
