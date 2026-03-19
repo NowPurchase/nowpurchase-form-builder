@@ -1,6 +1,9 @@
+import axios from 'axios';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || '';
 const DEVICE_TYPE = import.meta.env.VITE_DEVICE_TYPE || 'WEB';
+const REFRESH_TOKEN_BASE_URL =  import.meta.env.VITE_REFRESH_TOKEN_BASE_URL || '';
 
 if (!API_BASE_URL && import.meta.env.DEV) {
   console.warn('VITE_API_BASE_URL is not set in .env file');
@@ -122,8 +125,36 @@ const parseJson = async (response) => {
   }
   return null;
 };
-
-const request = async (endpoint, options = {}) => {
+const clearAndRedirect = () => {
+  localStorage.clear();
+  window.location.href = '/';
+};
+const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken || refreshToken === 'undefined') {
+    clearAndRedirect();
+    return null;
+  }
+  let res;
+  try{
+   res = await axios.post(
+      `${REFRESH_TOKEN_BASE_URL}/a/auth/jwt/refresh/`,
+      { refresh_token: refreshToken } 
+    );
+  }catch(e){
+    if (e.response?.status === 401) {
+      clearAndRedirect();
+      return null;
+    }
+  }
+  if (!res.data?.access_token) {
+    clearAndRedirect();
+    return null;
+  }
+  localStorage.setItem('dlms_auth_token', res.data.access_token);
+  return res.data.access_token;
+};
+const request = async (endpoint, options = {}, _retry = false) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getToken();
   const nowpurchaseToken = getNowPurchaseToken();
@@ -152,8 +183,15 @@ const request = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    const handledResponse = await handleResponse(response);
-    return handledResponse;
+
+    if ((response.status === 401 || response.status === 403) && !_retry) {
+      const newToken = await refreshAccessToken(); 
+      if (!newToken) return;
+      return request(endpoint, options, true, newToken); 
+    }
+
+    return await handleResponse(response);
+
   } catch (error) {
     if (error.code) throw error;
     throw {
@@ -328,7 +366,10 @@ export const verifyOTP = async (mobile, token) => {
       const error = await parseError(response);
       throw error;
     }
-    return await parseJson(response);
+    let res = await parseJson(response);
+    localStorage.setItem('dlms_auth_token',res?.access_token)
+    localStorage.setItem('refresh_token',res?.refresh_token)
+    return res
   } catch (error) {
     if (error.code) throw error;
     throw {
