@@ -76,14 +76,9 @@ function Login({ onLogin }) {
         return;
       }
 
-      // Step 2: Login to DLMS API with NowPurchase token to get JWT
-      const loginResponse = await loginWithNowPurchaseToken(nowpurchaseToken);
-      const jwtToken = loginResponse?.access_token;
 
-      if (jwtToken) {
-        // Store both tokens
-        setToken(jwtToken, true); // JWT for new DLMS API
-        setNowPurchaseToken(nowpurchaseToken, true); // NowPurchase token for old API
+      if(nowpurchaseToken) {
+        setNowPurchaseToken(nowpurchaseToken, true);
         onLogin();
       } else {
         setError("Login successful but no JWT token received");

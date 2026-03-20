@@ -42,6 +42,7 @@ function AppContent() {
     // Also remove legacy auth flag if it exists
     localStorage.removeItem("isAuthenticated");
     // Redirect to login page
+    localStorage.clear();
     navigate("/", { replace: true });
   };
 
