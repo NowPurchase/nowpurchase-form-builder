@@ -13,6 +13,7 @@ const URL_MAPPINGS = [
 
 /**
  * Rewrite URL if it matches any mapping
+ * Skips if URL already contains the target domain (prevents double-redirect)
  */
 const rewriteUrl = (url) => {
   if (!url) return url;
@@ -20,6 +21,10 @@ const rewriteUrl = (url) => {
   let newUrl = typeof url === 'string' ? url : url.toString();
 
   for (const mapping of URL_MAPPINGS) {
+    // Skip if already using the target URL
+    if (newUrl.includes(mapping.to)) {
+      return newUrl;
+    }
     if (newUrl.includes(mapping.from)) {
       newUrl = newUrl.replace(mapping.from, mapping.to);
       console.log(`[API Interceptor] Redirected: ${mapping.from} → ${mapping.to}`);
