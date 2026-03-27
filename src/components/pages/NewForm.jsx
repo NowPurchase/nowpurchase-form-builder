@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { rsCameraCapture } from "../../config/customRsUploader";
 import { rsSpectrometerReading } from "../../config/rsSpectrometerReading";
+import { npInput } from "../../config/npInput";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -66,6 +67,7 @@ const builderComponents = [
   ...rSuiteTableComponents,
   rsCameraCapture,
   rsSpectrometerReading,
+  npInput,
 ].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)

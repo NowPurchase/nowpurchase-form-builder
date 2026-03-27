@@ -13,7 +13,7 @@ import {
   object,
   event,
 } from "@react-form-builder/core";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import "./rsSpectrometerReading.css";
 
@@ -181,15 +181,18 @@ const SpectrometerReadingComponent = ({
   columnsPerRow = 4,
   showConnectionStatus = true,
   elements = "C,Si,Mn,S,P,Cr,Cu,Ni",
-  value,
+  value = {},
   onChange,
   className,
 }) => {
 
   // Parse comma-separated elements string into array
-  const elementsList = elements
-    ? elements.split(",").map((e) => e.trim()).filter(Boolean)
-    : [];
+  const elementsList = useMemo(() =>
+    elements
+      ? elements.split(",").map((e) => e.trim()).filter(Boolean)
+      : [],
+    [elements]
+  );
   const [readings, setReadings] = useState([]);
   const [gradeTc, setGradeTc] = useState([]);
   const [bathTc, setBathTc] = useState([]);
@@ -232,10 +235,10 @@ const SpectrometerReadingComponent = ({
       if (reading.reading_avg) {
         reading.reading_avg.forEach((element) => {
           const symbol = element.element_symbol;
-          formData[`${prefix}__elements__${symbol}__value`] = element.recovery_rate;
-          formData[`${prefix}__elements__${symbol}__in_range`] = element.in_range;
-          formData[`${prefix}__elements__${symbol}__in_tolerance`] = element.in_tolerance;
-          formData[`${prefix}__elements__${symbol}__deviation`] = element.deviation;
+          formData[`${prefix}__elements__${symbol}__value`] = element.recovery_rate ?? "";
+          formData[`${prefix}__elements__${symbol}__in_range`] = element.in_range ?? false;
+          formData[`${prefix}__elements__${symbol}__in_tolerance`] = element.in_tolerance ?? false;
+          formData[`${prefix}__elements__${symbol}__deviation`] = element.deviation ?? "";
         });
       }
     });
@@ -414,6 +417,6 @@ export const rsSpectrometerReading = define(
     columnsPerRow: number.default(4),
     showConnectionStatus: boolean.default(true),
     elements: string.default("C,Si,Mn,S,P,Cr,Cu,Ni"),
-    value: object.valued,
+    value: object.valued.default({}),
     onChange: event,
   });
