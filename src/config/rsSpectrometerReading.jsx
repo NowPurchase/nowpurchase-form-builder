@@ -215,7 +215,7 @@ const SpectrometerReadingComponent = ({
   );
 
   // Build form data from readings - calls onChange with flattened data
-  const setFormData = useCallback((heatData, readingsData) => {
+  const setFormData = useCallback((heatData, readingsData, gradeTargetChemistry, bathTargetChemistry) => {
     const formData = {};
 
     readingsData.forEach((reading, index) => {
@@ -239,6 +239,19 @@ const SpectrometerReadingComponent = ({
           formData[`${prefix}__elements__${symbol}__in_range`] = element.in_range ?? false;
           formData[`${prefix}__elements__${symbol}__in_tolerance`] = element.in_tolerance ?? false;
           formData[`${prefix}__elements__${symbol}__deviation`] = element.deviation ?? "";
+
+          // Add min/max from target chemistry (only if they exist)
+          const isBath = reading.sample_type === "Bath";
+          const targetChem = isBath && bathTargetChemistry?.length > 0
+            ? bathTargetChemistry.find((e) => e.element__symbol === symbol)
+            : gradeTargetChemistry?.find((e) => e.element__symbol === symbol);
+
+          if (targetChem?.min != null) {
+            formData[`${prefix}__elements__${symbol}__min`] = targetChem.min;
+          }
+          if (targetChem?.max != null) {
+            formData[`${prefix}__elements__${symbol}__max`] = targetChem.max;
+          }
         });
       }
     });
@@ -266,15 +279,18 @@ const SpectrometerReadingComponent = ({
       setReadings(allReadings);
 
       // Parse target chemistry
-      if (data.cm_data?.cm_target_chemistry) {
-        setGradeTc(parseElementRange(data.cm_data.cm_target_chemistry));
-      }
-      if (data.cm_data?.cm_bath_target_chemistry) {
-        setBathTc(parseElementRange(data.cm_data.cm_bath_target_chemistry));
-      }
+      const parsedGradeTc = data.cm_data?.cm_target_chemistry
+        ? parseElementRange(data.cm_data.cm_target_chemistry)
+        : [];
+      const parsedBathTc = data.cm_data?.cm_bath_target_chemistry
+        ? parseElementRange(data.cm_data.cm_bath_target_chemistry)
+        : [];
 
-      // Set form data directly in rootData
-      setFormData(data, allReadings);
+      setGradeTc(parsedGradeTc);
+      setBathTc(parsedBathTc);
+
+      // Set form data with target chemistry for min/max
+      setFormData(data, allReadings, parsedGradeTc, parsedBathTc);
     }
   }, [lastJsonMessage, setFormData]);
 
