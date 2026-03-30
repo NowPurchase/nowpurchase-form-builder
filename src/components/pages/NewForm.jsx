@@ -30,8 +30,54 @@ import {
 } from "lucide-react";
 import { rsCameraCapture } from "../../config/customRsUploader";
 import { rsChipInput } from "../../config/customChipInput";
+import { rsSpectrometerReading } from "../../config/rsSpectrometerReading";
+import { npInput } from "../../config/npInput";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
+
+/**
+ * Convert a string to a JSON-compatible slug.
+ * Uses only alphanumeric characters and underscores.
+ */
+const slugify = (text) => {
+  let slug = text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')           // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, '')     // Keep only alphanumeric and underscores (JSON safe)
+    .replace(/_+/g, '_')            // Replace multiple underscores with single
+    .replace(/^_+/, '')             // Trim underscores from start
+    .replace(/_+$/, '');            // Trim underscores from end
+
+  // Ensure slug doesn't start with a number (for valid JS identifier)
+  if (/^[0-9]/.test(slug)) {
+    slug = 'section_' + slug;
+  }
+
+  return slug;
+};
+
+/**
+ * Generate a unique section ID based on section name.
+ * Appends a number if the slug already exists.
+ */
+const generateSectionId = (sectionName, existingSections) => {
+  const baseSlug = slugify(sectionName) || 'section';
+  const existingIds = existingSections.map(s => s.section_id);
+
+  // If base slug doesn't exist, use it
+  if (!existingIds.includes(baseSlug)) {
+    return baseSlug;
+  }
+
+  // Otherwise, append a number to make it unique
+  let counter = 1;
+  while (existingIds.includes(`${baseSlug}_${counter}`)) {
+    counter++;
+  }
+  return `${baseSlug}_${counter}`;
+};
 
 const defaultForm = {
   version: "1",
@@ -66,6 +112,8 @@ const builderComponents = [
   ...rSuiteTableComponents,
   rsCameraCapture,
   rsChipInput,
+  rsSpectrometerReading,
+  npInput,
 ].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
@@ -333,8 +381,9 @@ function NewForm() {
   // Add new section
   const handleAddSection = () => {
     if (newSectionName.trim()) {
+      const sectionId = generateSectionId(newSectionName.trim(), sections);
       const newSection = {
-        section_id: `section_${Date.now()}`,
+        section_id: sectionId,
         section_name: newSectionName.trim(),
         order: sections.length + 1,
         form_json: JSON.stringify(defaultForm),
@@ -482,10 +531,7 @@ function NewForm() {
       return;
     }
 
-    if (!sheetId.trim()) {
-      toast.error("Sheet URL is required");
-      return;
-    }
+    // Sheet URL is optional - no validation needed
 
     saveCurrentFormToSection();
     setSaving(true);
@@ -528,6 +574,7 @@ function NewForm() {
           sheet_url: sheetId.trim(), // Save sheet URL
           description: description?.trim() || "", // Optional
           status: status, // Status is now a direct field
+          fetch_html: false, // Don't overwrite html_string when updating
         };
         await updateDynamicLog(editId, updateData);
         toast.success("Form updated successfully!");
@@ -1305,7 +1352,7 @@ function NewForm() {
             </div>
             <div className="modal-field-group">
               <label htmlFor="modal-sheet-url" className="modal-label">
-                Sheet URL <span className="required-asterisk">*</span>
+                Sheet URL (Optional)
               </label>
               <input
                 id="modal-sheet-url"
@@ -1326,7 +1373,6 @@ function NewForm() {
                 className={`modal-input ${
                   fieldErrors.sheet_id ? "modal-input-error" : ""
                 }`}
-                required
               />
               {fieldErrors.sheet_id && (
                 <div className="modal-field-error">

@@ -1,0 +1,206 @@
+/**
+ * RsSpectrometerReading Component Styles
+ * Colors: Success #2BA24C, Error #E43E2B, In Tolerance #D58C00
+ */
+
+.spectro-container {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.spectro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.spectro-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.spectro-connection-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.spectro-no-data {
+  padding: 40px 24px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+.spectro-reading-section {
+  margin-bottom: 20px;
+}
+
+.spectro-reading-section:last-child {
+  margin-bottom: 0;
+}
+
+.spectro-reading-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #eeeeee;
+}
+
+/* Sample type chips */
+.spectro-sample-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6.67px;
+  background: rgba(43, 162, 76, 0.1);
+  color: #2BA24C;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.spectro-sample-type.bath {
+  background: rgba(0, 151, 151, 0.10);
+  color: #009797;
+}
+
+.spectro-sample-type.final {
+  background: #F4EBFC;
+  color: #5A2087;
+}
+
+.spectro-reading-number {
+  font-size: 12px;
+  font-weight: 700;
+  color: #606060;
+  letter-spacing: 0.24px;
+}
+
+.spectro-elements-grid {
+  padding: 16px 20px;
+  background: #fff;
+}
+
+.spectro-elements-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -4px;
+}
+
+.spectro-element-col {
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+/* Element Box - Vertical Card Layout */
+.spectro-element-box {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Content section - symbol and value */
+.spectro-element-content {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+/* Footer section - range */
+.spectro-element-footer {
+  padding: 6px 12px;
+  background: rgba(96, 96, 96, 0.1);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+/* In range - green */
+.spectro-element-box.in-range .spectro-element-content {
+  background: rgba(43, 162, 76, 0.1);
+}
+
+/* In tolerance - yellow */
+.spectro-element-box.in-tolerance .spectro-element-content {
+  background: rgba(213, 140, 0, 0.1);
+}
+
+/* Out of range - red */
+.spectro-element-box.out-of-range .spectro-element-content {
+  background: rgba(228, 62, 43, 0.1);
+}
+
+/* No range data - neutral */
+.spectro-element-box.no-range .spectro-element-content {
+  background: rgba(96, 96, 96, 0.1);
+}
+
+.spectro-element-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.spectro-element-symbol {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3D3D3D;
+  letter-spacing: 0.24px;
+}
+
+.spectro-element-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #3D3D3D;
+  letter-spacing: 0.32px;
+}
+
+.spectro-element-range {
+  font-size: 12px;
+  font-weight: 500;
+  color: #606060;
+  letter-spacing: 0.24px;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .spectro-element-col {
+    width: 50% !important;
+  }
+
+  .spectro-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .spectro-elements-grid {
+    padding: 12px;
+  }
+
+  .spectro-element-content {
+    padding: 8px 10px;
+  }
+
+  .spectro-element-value {
+    font-size: 14px;
+  }
+}
