@@ -1,13 +1,9 @@
 # Netlify configuration file
 [build]
   # Build command - reinstall to ensure optional dependencies are included
-  command = "rm -rf node_modules && npm cache clean --force && npm install --legacy-peer-deps --include=optional && npm run build:prod"
+  command = "npm install --legacy-peer-deps --include=optional && npm run build:prod"
   # Directory to publish (build output)
   publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "16"
-  NPM_FLAGS = "--legacy-peer-deps"
 
 # Redirect rules for Single Page Application (SPA)
 # This ensures all routes are handled by React Router
