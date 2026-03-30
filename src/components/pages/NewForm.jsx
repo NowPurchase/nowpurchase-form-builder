@@ -572,6 +572,7 @@ function NewForm() {
           sheet_url: sheetId.trim(), // Save sheet URL
           description: description?.trim() || "", // Optional
           status: status, // Status is now a direct field
+          fetch_html: false, // Don't overwrite html_string when updating
         };
         await updateDynamicLog(editId, updateData);
         toast.success("Form updated successfully!");
