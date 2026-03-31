@@ -16,37 +16,66 @@
   color: #f44336;
 }
 
-/* Container (base = md) */
+/* Outer border container — position context for absolute scroll layer */
 .chip-input-container {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 11px;
+  position: relative;
+  display: block;
+  width: 100%;
   border: 1px solid #e5e5ea;
   border-radius: 6px;
   background-color: #fff;
-  min-height: 36px;
+  height: 36px;
   cursor: text;
   transition: border-color ease-in-out 0.15s;
-  width: 100%;
   box-sizing: border-box;
 }
 
-/* Size variants — container */
+/* Inner scrollable track — absolute so content never affects parent width */
+.chip-input-scroll {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 11px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chip-input-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Size variants */
 .chip-input-container.chip-input-xs {
+  height: 24px;
+}
+
+.chip-input-xs .chip-input-scroll {
   padding: 1px 11px;
-  min-height: 24px;
 }
 
 .chip-input-container.chip-input-sm {
+  height: 30px;
+}
+
+.chip-input-sm .chip-input-scroll {
   padding: 4px 11px;
-  min-height: 30px;
 }
 
 .chip-input-container.chip-input-lg {
+  height: 42px;
+}
+
+.chip-input-lg .chip-input-scroll {
   padding: 9px 11px;
-  min-height: 42px;
   gap: 5px;
 }
 
@@ -71,6 +100,7 @@
   color: #1a3c5e;
   max-width: 200px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Size variants — chip */
@@ -126,11 +156,6 @@
 .chip-input-xs .chip-input-field {
   font-size: 12px;
   line-height: 1.66666667;
-}
-
-.chip-input-sm .chip-input-field {
-  font-size: 14px;
-  line-height: 1.42857143;
 }
 
 .chip-input-lg .chip-input-field {
