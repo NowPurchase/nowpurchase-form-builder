@@ -136,41 +136,43 @@ const ChipInputComponent = ({
         className={containerClasses}
         onClick={() => isInteractive && inputRef.current?.focus()}
       >
-        {chips.map((chip, index) => (
-          <span key={`${chip}-${index}`} className="chip-input-chip">
-            <span className="chip-input-chip-text">{chip}</span>
-            {isInteractive && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeChip(index);
-                }}
-                className="chip-input-chip-remove"
-                aria-label={`Remove ${chip}`}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
-          </span>
-        ))}
-        {isInteractive && (
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={chips.length === 0 ? placeholder : ""}
-            disabled={isDisabled}
-            readOnly={isReadOnly}
-            className="chip-input-field"
-          />
-        )}
+        <div className="chip-input-scroll">
+          {chips.map((chip, index) => (
+            <span key={`${chip}-${index}`} className="chip-input-chip">
+              <span className="chip-input-chip-text">{chip}</span>
+              {isInteractive && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeChip(index);
+                  }}
+                  className="chip-input-chip-remove"
+                  aria-label={`Remove ${chip}`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </span>
+          ))}
+          {isInteractive && (
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+              placeholder={chips.length === 0 ? placeholder : ""}
+              disabled={isDisabled}
+              readOnly={isReadOnly}
+              className="chip-input-field"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
