@@ -10,33 +10,8 @@ import {
   readOnly as readOnlyProp,
   useComponentData,
 } from "@react-form-builder/core";
-import styled from "@emotion/styled";
 import { useState, useRef, useCallback } from "react";
-
-const sizeMap = {
-  xs: { minHeight: "24px", fontSize: "12px", lineHeight: "1.66666667", chipPadding: "0px 6px", chipFont: "11px", gap: "4px", containerPadding: "1px 11px" },
-  sm: { minHeight: "30px", fontSize: "14px", lineHeight: "1.42857143", chipPadding: "1px 7px", chipFont: "12px", gap: "4px", containerPadding: "4px 11px" },
-  md: { minHeight: "36px", fontSize: "14px", lineHeight: "1.42857143", chipPadding: "2px 8px", chipFont: "13px", gap: "4px", containerPadding: "7px 11px" },
-  lg: { minHeight: "42px", fontSize: "16px", lineHeight: "1.375",      chipPadding: "3px 10px", chipFont: "14px", gap: "5px", containerPadding: "9px 11px" },
-};
-
-const LabeledContainer = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-
-  label {
-    margin-inline-start: 5px;
-    margin-bottom: 2px;
-    text-align: left;
-  }
-
-  &.required > label::after {
-    margin-inline-start: 3px;
-    content: "*";
-    color: #f44336;
-  }
-`;
+import "./customChipInput.css";
 
 const ChipInputComponent = ({
   value,
@@ -53,7 +28,6 @@ const ChipInputComponent = ({
 }) => {
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef(null);
-  const sizeTokens = sizeMap[size] || sizeMap.md;
   const isInteractive = !isDisabled && !isReadOnly;
 
   let isRequired = false;
@@ -143,29 +117,28 @@ const ChipInputComponent = ({
     [commitChip]
   );
 
+  const containerClasses = [
+    "chip-input-container",
+    `chip-input-${size}`,
+    !isInteractive ? "chip-input-disabled" : "",
+  ].filter(Boolean).join(" ");
+
+  const labeledClasses = [
+    "chip-input-labeled",
+    className || "",
+    isRequired ? "required" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <LabeledContainer
-      className={`${className || ""} ${isRequired ? "required" : ""}`.trim()}
-      style={style}
-      role="group"
-    >
+    <div className={labeledClasses} style={style} role="group">
       {label && <label>{label}</label>}
       <div
-        style={{
-          ...containerStyle,
-          padding: sizeTokens.containerPadding,
-          minHeight: sizeTokens.minHeight,
-          gap: sizeTokens.gap,
-          ...(!isInteractive ? disabledContainerStyle : {}),
-        }}
+        className={containerClasses}
         onClick={() => isInteractive && inputRef.current?.focus()}
       >
         {chips.map((chip, index) => (
-          <span
-            key={`${chip}-${index}`}
-            style={{ ...chipStyle, padding: sizeTokens.chipPadding, fontSize: sizeTokens.chipFont }}
-          >
-            <span style={chipTextStyle}>{chip}</span>
+          <span key={`${chip}-${index}`} className="chip-input-chip">
+            <span className="chip-input-chip-text">{chip}</span>
             {isInteractive && (
               <button
                 type="button"
@@ -173,7 +146,7 @@ const ChipInputComponent = ({
                   e.stopPropagation();
                   removeChip(index);
                 }}
-                style={chipRemoveStyle}
+                className="chip-input-chip-remove"
                 aria-label={`Remove ${chip}`}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -195,11 +168,11 @@ const ChipInputComponent = ({
             placeholder={chips.length === 0 ? placeholder : ""}
             disabled={isDisabled}
             readOnly={isReadOnly}
-            style={{ ...inputStyle, fontSize: sizeTokens.fontSize, lineHeight: sizeTokens.lineHeight }}
+            className="chip-input-field"
           />
         )}
       </div>
-    </LabeledContainer>
+    </div>
   );
 };
 
@@ -207,75 +180,6 @@ function parseChips(value) {
   if (!value || typeof value !== "string") return [];
   return value.split(",").map((s) => s.trim()).filter(Boolean);
 }
-
-const containerStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: "4px",
-  padding: "7px 11px",
-  border: "1px solid #e5e5ea",
-  borderRadius: "6px",
-  backgroundColor: "#fff",
-  minHeight: "36px",
-  cursor: "text",
-  transition: "border-color ease-in-out 0.15s",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const disabledContainerStyle = {
-  backgroundColor: "#f7f7fa",
-  cursor: "not-allowed",
-  opacity: 0.7,
-};
-
-const chipStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "4px",
-  padding: "2px 8px",
-  backgroundColor: "#e8f4fd",
-  border: "1px solid #b3d9f2",
-  borderRadius: "4px",
-  fontSize: "13px",
-  lineHeight: "22px",
-  color: "#1a3c5e",
-  maxWidth: "200px",
-  whiteSpace: "nowrap",
-};
-
-const chipTextStyle = {
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const chipRemoveStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-  padding: "0",
-  marginLeft: "2px",
-  color: "#6b7c8d",
-  borderRadius: "2px",
-  lineHeight: 1,
-  flexShrink: 0,
-};
-
-const inputStyle = {
-  flex: 1,
-  minWidth: "80px",
-  border: "none",
-  outline: "none",
-  fontSize: "14px",
-  padding: "0",
-  backgroundColor: "transparent",
-  color: "#343434",
-  lineHeight: "1.42857143",
-};
 
 const size = oneOf("xs", "sm", "md", "lg")
   .labeled("Extra small", "Small", "Medium", "Large")

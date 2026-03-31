@@ -1,0 +1,139 @@
+.chip-input-labeled {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.chip-input-labeled label {
+  margin-inline-start: 5px;
+  margin-bottom: 2px;
+  text-align: left;
+}
+
+.chip-input-labeled.required > label::after {
+  margin-inline-start: 3px;
+  content: "*";
+  color: #f44336;
+}
+
+/* Container (base = md) */
+.chip-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 11px;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  background-color: #fff;
+  min-height: 36px;
+  cursor: text;
+  transition: border-color ease-in-out 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Size variants — container */
+.chip-input-container.chip-input-xs {
+  padding: 1px 11px;
+  min-height: 24px;
+}
+
+.chip-input-container.chip-input-sm {
+  padding: 4px 11px;
+  min-height: 30px;
+}
+
+.chip-input-container.chip-input-lg {
+  padding: 9px 11px;
+  min-height: 42px;
+  gap: 5px;
+}
+
+/* Disabled / ReadOnly */
+.chip-input-container.chip-input-disabled {
+  background-color: #f7f7fa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Chip */
+.chip-input-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background-color: #e8f4fd;
+  border: 1px solid #b3d9f2;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 22px;
+  color: #1a3c5e;
+  max-width: 200px;
+  white-space: nowrap;
+}
+
+/* Size variants — chip */
+.chip-input-xs .chip-input-chip {
+  padding: 0px 6px;
+  font-size: 11px;
+}
+
+.chip-input-sm .chip-input-chip {
+  padding: 1px 7px;
+  font-size: 12px;
+}
+
+.chip-input-lg .chip-input-chip {
+  padding: 3px 10px;
+  font-size: 14px;
+}
+
+.chip-input-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-input-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  color: #6b7c8d;
+  border-radius: 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Input field */
+.chip-input-field {
+  flex: 1;
+  min-width: 80px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 0;
+  background-color: transparent;
+  color: #343434;
+  line-height: 1.42857143;
+}
+
+/* Size variants — input field */
+.chip-input-xs .chip-input-field {
+  font-size: 12px;
+  line-height: 1.66666667;
+}
+
+.chip-input-sm .chip-input-field {
+  font-size: 14px;
+  line-height: 1.42857143;
+}
+
+.chip-input-lg .chip-input-field {
+  font-size: 16px;
+  line-height: 1.375;
+}
