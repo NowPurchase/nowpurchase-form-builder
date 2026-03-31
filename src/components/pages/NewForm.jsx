@@ -29,6 +29,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { rsCameraCapture } from "../../config/customRsUploader";
+import { rsChipInput } from "../../config/customChipInput";
 import { rsSpectrometerReading } from "../../config/rsSpectrometerReading";
 import { npInput } from "../../config/npInput";
 import "rsuite/dist/rsuite.min.css";
@@ -110,6 +111,7 @@ const builderComponents = [
   ...rSuiteComponents,
   ...rSuiteTableComponents,
   rsCameraCapture,
+  rsChipInput,
   rsSpectrometerReading,
   npInput,
 ].map((c) => c.build());

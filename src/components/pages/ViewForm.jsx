@@ -8,6 +8,8 @@ import {
 } from '@react-form-builder/components-rsuite';
 import { rSuiteTableComponents } from '@react-form-builder/components-rsuite-table';
 import { BiDi, createView, FormViewer } from '@react-form-builder/core';
+import { rsCameraCapture } from "../../config/customRsUploader";
+import { rsChipInput } from "../../config/customChipInput";
 import { getDynamicLog, getSheetPreview } from "../../services/dynamicLogApi";
 import { apiToLocal } from "../../utils/dataTransform";
 import { formatErrorMessage } from "../../utils/errorHandler";
@@ -18,9 +20,8 @@ import html2pdf from "html2pdf.js";
 import "rsuite/dist/rsuite.min.css";
 import "./ViewForm.css";
 import { rsSpectrometerReading } from "../../config/rsSpectrometerReading";
-import { rsCameraCapture } from "../../config/customRsUploader";
 
-const customComponents = [rsSpectrometerReading, rsCameraCapture];
+const customComponents = [rsSpectrometerReading, rsCameraCapture,rsChipInput];
 const components = [...rSuiteComponents, ...rSuiteTableComponents, ...customComponents].map((c) => c.build().model);
 
 const viewWithCss = createView(components)
