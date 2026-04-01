@@ -519,6 +519,9 @@ function NewForm() {
   };
 
   const handleSaveForm = async () => {
+    // Prevent double-click submissions
+    if (saving) return;
+
     if (!customerId) {
       toast.error("Customer is required");
       return;
