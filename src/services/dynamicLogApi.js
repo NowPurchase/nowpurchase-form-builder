@@ -35,6 +35,7 @@ export const updateDynamicLog = async (template_id, data) => {
     description: data.description, // Optional
     config: data.config, // Optional
     platforms: data.platforms, // Optional
+    fetch_html: false, // Disable re-fetching HTML from Google Sheets on update
   };
 
   // Remove undefined fields
