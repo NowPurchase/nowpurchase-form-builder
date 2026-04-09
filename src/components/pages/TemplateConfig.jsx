@@ -32,6 +32,8 @@ const TemplateConfig = () => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [allowNewSubmissions, setAllowNewSubmissions] = useState(true);
   const [category, setCategory] = useState('master');
+  const [isJinjaTemplate, setIsJinjaTemplate] = useState(false);
+  const [htmlString, setHtmlString] = useState('');
 
   // Available templates for workflow
   const [availableTemplates, setAvailableTemplates] = useState([]);
@@ -75,6 +77,8 @@ const TemplateConfig = () => {
       setShowCompleted(data.show_completed || false);
       setAllowNewSubmissions(data.allow_new_submissions !== undefined ? data.allow_new_submissions : true);
       setCategory(data.category || 'master'); // Default to 'master' if null
+      setIsJinjaTemplate(data.is_jinja_template || false);
+      setHtmlString(data.html_string || '');
 
       // Store initial values for comparison
       initialConfigRef.current = {
@@ -93,7 +97,9 @@ const TemplateConfig = () => {
         platforms: data.platforms || [],
         show_completed: data.show_completed || false,
         allow_new_submissions: data.allow_new_submissions !== undefined ? data.allow_new_submissions : true,
-        category: data.category || 'master'
+        category: data.category || 'master',
+        is_jinja_template: data.is_jinja_template || false,
+        html_string: data.html_string || ''
       };
 
     } catch (error) {
@@ -160,10 +166,12 @@ const TemplateConfig = () => {
       JSON.stringify(platforms) !== JSON.stringify(initialSettingsRef.current.platforms) ||
       showCompleted !== initialSettingsRef.current.show_completed ||
       allowNewSubmissions !== initialSettingsRef.current.allow_new_submissions ||
-      category !== initialSettingsRef.current.category;
+      category !== initialSettingsRef.current.category ||
+      isJinjaTemplate !== initialSettingsRef.current.is_jinja_template ||
+      htmlString !== initialSettingsRef.current.html_string;
 
     setHasUnsavedChanges(configChanged || routeChanged || settingsChanged);
-  }, [webListingFields, kioskListingFields, mobileListingFields, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, category]);
+  }, [webListingFields, kioskListingFields, mobileListingFields, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, category, isJinjaTemplate, htmlString]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -258,9 +266,11 @@ const TemplateConfig = () => {
     const showCompletedChanged = showCompleted !== initialSettingsRef.current.show_completed;
     const allowNewSubmissionsChanged = allowNewSubmissions !== initialSettingsRef.current.allow_new_submissions;
     const categoryChanged = category !== initialSettingsRef.current.category;
+    const isJinjaTemplateChanged = isJinjaTemplate !== initialSettingsRef.current.is_jinja_template;
+    const htmlStringChanged = htmlString !== initialSettingsRef.current.html_string;
 
     // Always send boolean fields with explicit true/false values, even if unchanged
-    const settingsChanged = platformsChanged || showCompletedChanged || allowNewSubmissionsChanged || categoryChanged;
+    const settingsChanged = platformsChanged || showCompletedChanged || allowNewSubmissionsChanged || categoryChanged || isJinjaTemplateChanged || htmlStringChanged;
 
     if (settingsChanged) {
       if (platformsChanged) {
@@ -272,6 +282,15 @@ const TemplateConfig = () => {
 
       if (categoryChanged) {
         body.category = category;
+      }
+
+      if (isJinjaTemplateChanged) {
+        body.is_jinja_template = isJinjaTemplate;
+      }
+
+      if (htmlStringChanged) {
+        body.html_string = htmlString;
+        body.fetch_html = false; // Don't fetch from Google Sheets when manually setting HTML
       }
     }
 
@@ -320,8 +339,14 @@ const TemplateConfig = () => {
         platforms: updatedTemplate.platforms || [],
         show_completed: updatedTemplate.show_completed || false,
         allow_new_submissions: updatedTemplate.allow_new_submissions !== undefined ? updatedTemplate.allow_new_submissions : true,
-        category: updatedTemplate.category || 'master'
+        category: updatedTemplate.category || 'master',
+        is_jinja_template: updatedTemplate.is_jinja_template || false,
+        html_string: updatedTemplate.html_string || ''
       };
+
+      // Update local state with new values
+      setIsJinjaTemplate(updatedTemplate.is_jinja_template || false);
+      setHtmlString(updatedTemplate.html_string || '');
 
       setHasUnsavedChanges(false);
       toast.success(`Configuration updated to version ${updatedTemplate.version}`);
@@ -503,6 +528,47 @@ const TemplateConfig = () => {
                   <span>Allow new submission from kiosk</span>
                 </label>
                 <p className="field-hint">Enable users to create new entries from kiosk platform</p>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              {/* Is Jinja Template */}
+              <div className="settings-field">
+                <label className="field-label">
+                  <input
+                    type="checkbox"
+                    checked={isJinjaTemplate}
+                    onChange={(e) => setIsJinjaTemplate(e.target.checked)}
+                    className="settings-checkbox"
+                  />
+                  <span>Use Jinja2 Template for Preview</span>
+                </label>
+                <p className="field-hint">Enable Jinja2/Django-style variable replacement in HTML preview</p>
+              </div>
+            </div>
+
+            {/* HTML Template */}
+            <div className="settings-row" style={{ flexDirection: 'column' }}>
+              <div className="settings-field" style={{ width: '100%' }}>
+                <label className="field-label">HTML Template</label>
+                <p className="field-hint" style={{ marginBottom: '8px' }}>
+                  Paste your HTML template here. Use {'{{ variable_name }}'} syntax for dynamic values.
+                </p>
+                <textarea
+                  value={htmlString}
+                  onChange={(e) => setHtmlString(e.target.value)}
+                  placeholder="Paste your HTML template here..."
+                  style={{
+                    width: '100%',
+                    minHeight: '200px',
+                    padding: '12px',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    resize: 'vertical'
+                  }}
+                />
               </div>
             </div>
           </div>
