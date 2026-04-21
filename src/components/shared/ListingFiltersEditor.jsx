@@ -19,7 +19,6 @@ const ListingFiltersEditor = ({ filters, onChange }) => {
       type: 'dropdown',
       placement: 'main',
       field: '',
-      count: false,
       multiSelect: false,
       defaultValue: null,
       options: [],
@@ -138,7 +137,7 @@ const ListingFiltersEditor = ({ filters, onChange }) => {
                     <span className={`filter-placement-badge ${filter.placement || 'main'}`}>
                       {filter.placement === 'more' ? 'More' : 'Main'}
                     </span>
-                    {filter.count && <span className="filter-count-badge">Count</span>}
+                    {filter.show_count && <span className="filter-count-badge">Count</span>}
                     {filter.multiSelect && <span className="filter-multi-badge">Multi</span>}
                   </span>
                 </div>
@@ -216,15 +215,6 @@ const ListingFiltersEditor = ({ filters, onChange }) => {
                   </div>
 
                   <div className="filter-toggles">
-                    <label className="filter-toggle-item">
-                      <Toggle
-                        checked={filter.count}
-                        onChange={(checked) => handleFilterChange(index, 'count', checked)}
-                        size="sm"
-                      />
-                      <span>Enable Count</span>
-                    </label>
-
                     <label className="filter-toggle-item">
                       <Toggle
                         checked={filter.show_count}
