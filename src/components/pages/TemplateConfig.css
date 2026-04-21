@@ -98,6 +98,7 @@
   border-radius: 10px;
   padding: 32px;
   border: 1px solid #e8e8e8;
+  overflow: visible;
 }
 
 .section-header {
@@ -173,6 +174,28 @@
 
 .platform-content {
   padding-top: 8px;
+}
+
+/* Export Fields */
+.export-fields-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.export-fields-hint {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #3498ff;
+}
+
+/* Section Icon with Lucide */
+.section-icon svg {
+  color: #64748b;
 }
 
 /* General Settings */
