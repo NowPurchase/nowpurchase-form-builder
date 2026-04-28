@@ -28,10 +28,12 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { rsCameraCapture } from "../../config/customRsUploader";
-import { rsChipInput } from "../../config/customChipInput";
-import { rsSpectrometerReading } from "../../config/rsSpectrometerReading";
-import { npInput } from "../../config/npInput";
+import {
+  npInput,
+  rsChipInput,
+  rsCameraCapture,
+  rsSpectrometerReading,
+} from "np-dlms-components";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 

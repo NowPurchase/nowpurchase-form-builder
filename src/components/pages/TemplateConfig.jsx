@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Save, Monitor, Tablet, Smartphone, Download, Search, Filter } from 'lucide-react';
 import { Button, Loader, Modal } from 'rsuite';
 import ListingFieldsEditor from '../shared/ListingFieldsEditor';
 import WorkflowRoutingEditor from '../shared/WorkflowRoutingEditor';
+import ApproversEditor from '../shared/ApproversEditor';
+import SearchFieldsEditor from '../shared/SearchFieldsEditor';
+import ListingFiltersEditor from '../shared/ListingFiltersEditor';
 import { getTemplateForConfig, patchTemplateConfig, getTemplatesForWorkflow } from '../../services/templateConfigApi';
 import { toast } from '../shared/Toast';
 import './TemplateConfig.css';
@@ -21,6 +24,10 @@ const TemplateConfig = () => {
   const [webListingFields, setWebListingFields] = useState([]);
   const [kioskListingFields, setKioskListingFields] = useState([]);
   const [mobileListingFields, setMobileListingFields] = useState([]);
+  const [exportFields, setExportFields] = useState([]);
+  const [searchFields, setSearchFields] = useState([]);
+  const [listingFilters, setListingFilters] = useState([]);
+  const [approvers, setApprovers] = useState([]);
 
   // Route state
   const [nextTemplate, setNextTemplate] = useState(null);
@@ -65,6 +72,10 @@ const TemplateConfig = () => {
       setWebListingFields(config.web_listing || []);
       setKioskListingFields(config.kiosk_listing || []);
       setMobileListingFields(config.mobile_listing || []);
+      setExportFields(config.export_fields || []);
+      setSearchFields(config.search_fields || []);
+      setListingFilters(config.listing_filters || []);
+      setApprovers(config.approvers || []);
 
       // Set route fields
       const route = data.route || {};
@@ -84,7 +95,11 @@ const TemplateConfig = () => {
       initialConfigRef.current = {
         web_listing: config.web_listing || [],
         kiosk_listing: config.kiosk_listing || [],
-        mobile_listing: config.mobile_listing || []
+        mobile_listing: config.mobile_listing || [],
+        export_fields: config.export_fields || [],
+        search_fields: config.search_fields || [],
+        listing_filters: config.listing_filters || [],
+        approvers: config.approvers || []
       };
 
       initialRouteRef.current = {
@@ -155,7 +170,11 @@ const TemplateConfig = () => {
     const configChanged =
       JSON.stringify(webListingFields) !== JSON.stringify(initialConfigRef.current.web_listing) ||
       JSON.stringify(kioskListingFields) !== JSON.stringify(initialConfigRef.current.kiosk_listing) ||
-      JSON.stringify(mobileListingFields) !== JSON.stringify(initialConfigRef.current.mobile_listing);
+      JSON.stringify(mobileListingFields) !== JSON.stringify(initialConfigRef.current.mobile_listing) ||
+      JSON.stringify(exportFields) !== JSON.stringify(initialConfigRef.current.export_fields) ||
+      JSON.stringify(searchFields) !== JSON.stringify(initialConfigRef.current.search_fields) ||
+      JSON.stringify(listingFilters) !== JSON.stringify(initialConfigRef.current.listing_filters) ||
+      JSON.stringify(approvers) !== JSON.stringify(initialConfigRef.current.approvers);
 
     const routeChanged =
       nextTemplate !== initialRouteRef.current.next_template ||
@@ -171,7 +190,7 @@ const TemplateConfig = () => {
       htmlString !== initialSettingsRef.current.html_string;
 
     setHasUnsavedChanges(configChanged || routeChanged || settingsChanged);
-  }, [webListingFields, kioskListingFields, mobileListingFields, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, category, isJinjaTemplate, htmlString]);
+  }, [webListingFields, kioskListingFields, mobileListingFields, exportFields, searchFields, listingFilters, approvers, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, category, isJinjaTemplate, htmlString]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -210,6 +229,15 @@ const TemplateConfig = () => {
     validatePlatformFields(kioskListingFields, 'kiosk');
     validatePlatformFields(mobileListingFields, 'mobile');
 
+    // Validate approvers
+    approvers.forEach((approver, index) => {
+      if (!approver.id || !approver.id.trim()) {
+        if (!newErrors.approvers) newErrors.approvers = {};
+        if (!newErrors.approvers[index]) newErrors.approvers[index] = {};
+        newErrors.approvers[index].id = 'Approver is required';
+      }
+    });
+
     // Prevent self-reference in workflow
     if (nextTemplate === templateId) {
       newErrors.next_template = 'Cannot select the same template as next step';
@@ -237,13 +265,21 @@ const TemplateConfig = () => {
     const configChanged =
       JSON.stringify(webListingFields) !== JSON.stringify(initialConfigRef.current.web_listing) ||
       JSON.stringify(kioskListingFields) !== JSON.stringify(initialConfigRef.current.kiosk_listing) ||
-      JSON.stringify(mobileListingFields) !== JSON.stringify(initialConfigRef.current.mobile_listing);
+      JSON.stringify(mobileListingFields) !== JSON.stringify(initialConfigRef.current.mobile_listing) ||
+      JSON.stringify(exportFields) !== JSON.stringify(initialConfigRef.current.export_fields) ||
+      JSON.stringify(searchFields) !== JSON.stringify(initialConfigRef.current.search_fields) ||
+      JSON.stringify(listingFilters) !== JSON.stringify(initialConfigRef.current.listing_filters) ||
+      JSON.stringify(approvers) !== JSON.stringify(initialConfigRef.current.approvers);
 
     if (configChanged) {
       body.config = {
         web_listing: webListingFields,
         kiosk_listing: kioskListingFields,
-        mobile_listing: mobileListingFields
+        mobile_listing: mobileListingFields,
+        export_fields: exportFields,
+        search_fields: searchFields,
+        listing_filters: listingFilters,
+        approvers: approvers
       };
     }
 
@@ -325,8 +361,18 @@ const TemplateConfig = () => {
       initialConfigRef.current = {
         web_listing: config.web_listing || [],
         kiosk_listing: config.kiosk_listing || [],
-        mobile_listing: config.mobile_listing || []
+        mobile_listing: config.mobile_listing || [],
+        export_fields: config.export_fields || [],
+        search_fields: config.search_fields || [],
+        listing_filters: config.listing_filters || [],
+        approvers: config.approvers || []
       };
+
+      // Update config state with new values
+      setExportFields(config.export_fields || []);
+      setSearchFields(config.search_fields || []);
+      setListingFilters(config.listing_filters || []);
+      setApprovers(config.approvers || []);
 
       const route = updatedTemplate.route || {};
       initialRouteRef.current = {
@@ -574,13 +620,13 @@ const TemplateConfig = () => {
           </div>
         </section>
 
-        {/* Listing Configuration Section */}
+        {/* Listing & Export Configuration Section */}
         <section className="config-section">
           <div className="section-header">
             <div className="section-icon">📊</div>
             <div>
-              <h2>Listing Configuration</h2>
-              <p>Configure which columns are displayed in logsheet listings for different platforms</p>
+              <h2>Display & Export Configuration</h2>
+              <p>Configure columns for platform listings and CSV/Excel export</p>
             </div>
           </div>
 
@@ -590,21 +636,28 @@ const TemplateConfig = () => {
               onClick={() => setActiveTab('web')}
             >
               <Monitor size={18} />
-              Web
+              Web Listing
             </button>
             <button
               className={`platform-tab ${activeTab === 'kiosk' ? 'active' : ''}`}
               onClick={() => setActiveTab('kiosk')}
             >
               <Tablet size={18} />
-              Kiosk
+              Kiosk Listing
             </button>
             <button
               className={`platform-tab ${activeTab === 'mobile' ? 'active' : ''}`}
               onClick={() => setActiveTab('mobile')}
             >
               <Smartphone size={18} />
-              Mobile
+              Mobile Listing
+            </button>
+            <button
+              className={`platform-tab ${activeTab === 'export' ? 'active' : ''}`}
+              onClick={() => setActiveTab('export')}
+            >
+              <Download size={18} />
+              Export Fields
             </button>
           </div>
 
@@ -633,7 +686,56 @@ const TemplateConfig = () => {
                 errors={errors.mobile || {}}
               />
             )}
+            {activeTab === 'export' && (
+              <div className="export-fields-wrapper">
+                <p className="export-fields-hint">
+                  Configure fields to include when exporting logsheets to CSV or Excel format.
+                </p>
+                <ListingFieldsEditor
+                  platform="export"
+                  fields={exportFields}
+                  onChange={setExportFields}
+                  errors={errors.export || {}}
+                />
+              </div>
+            )}
           </div>
+        </section>
+
+        {/* Search Configuration Section */}
+        <section className="config-section">
+          <div className="section-header">
+            <div className="section-icon">
+              <Search size={20} />
+            </div>
+            <div>
+              <h2>Search Configuration</h2>
+              <p>Configure which fields can be searched in logsheet listings</p>
+            </div>
+          </div>
+
+          <SearchFieldsEditor
+            fields={searchFields}
+            onChange={setSearchFields}
+          />
+        </section>
+
+        {/* Listing Filters Section */}
+        <section className="config-section">
+          <div className="section-header">
+            <div className="section-icon">
+              <Filter size={20} />
+            </div>
+            <div>
+              <h2>Listing Filters</h2>
+              <p>Configure filter options for logsheet listings</p>
+            </div>
+          </div>
+
+          <ListingFiltersEditor
+            filters={listingFilters}
+            onChange={setListingFilters}
+          />
         </section>
 
         {/* Workflow Routing Section */}
@@ -657,6 +759,23 @@ const TemplateConfig = () => {
             onPushFieldsChange={setPushFields}
             currentTemplateId={templateId}
             errors={errors}
+          />
+        </section>
+
+        {/* Approval Workflow Section */}
+        <section className="config-section">
+          <div className="section-header">
+            <div className="section-icon">✅</div>
+            <div>
+              <h2>Approval Workflow</h2>
+              <p>Configure multi-level approval process for logsheets before completion</p>
+            </div>
+          </div>
+
+          <ApproversEditor
+            approvers={approvers}
+            onChange={setApprovers}
+            errors={errors.approvers || {}}
           />
         </section>
       </div>
