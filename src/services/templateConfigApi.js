@@ -1,6 +1,6 @@
-import { apiGet, apiPatch } from './api';
+import { apiGet, apiPut } from './api';
 
-const BASE_ENDPOINT = '/api/v1/templates';
+const BASE_ENDPOINT = '/api/v2/admin/templates';
 
 /**
  * Fetch a single template by ID for configuration
@@ -25,7 +25,7 @@ export const getTemplateForConfig = async (templateId) => {
  */
 export const patchTemplateConfig = async (templateId, updates) => {
   try {
-    const response = await apiPatch(`${BASE_ENDPOINT}/${templateId}`, updates);
+    const response = await apiPut(`${BASE_ENDPOINT}/${templateId}`, updates);
     return response;
   } catch (error) {
     console.error('Error updating template config:', error);
@@ -41,8 +41,8 @@ export const patchTemplateConfig = async (templateId, updates) => {
 export const getTemplatesForWorkflow = async (excludeId = null) => {
   try {
     const response = await apiGet(`${BASE_ENDPOINT}?page_size=1000`);
-    // Handle both array response and paginated response with results
-    let templates = Array.isArray(response) ? response : (response.results || []);
+    // Handle array response, paginated response with results, or new v2 admin response with templates
+    let templates = Array.isArray(response) ? response : (response.results || response.templates || []);
 
     // Exclude current template
     if (excludeId) {

@@ -2,11 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { listDynamicLogs } from "../../services/dynamicLogApi";
 import { apiToLocal } from "../../utils/dataTransform";
+import { getUserFromToken } from "../../services/api";
 import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "../shared/Toast";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import CustomerDropdown from "../shared/CustomerDropdown";
-import { X, Search, Copy, Pencil, Settings } from "lucide-react";
+import { X, Search, Copy, Pencil, Settings, Lock } from "lucide-react";
 import { Pagination } from "@mui/material";
 import {
   Table,
@@ -36,6 +37,9 @@ function Home({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const user = useMemo(() => getUserFromToken(), []);
+  const isDlmsAdmin = user?.is_dlms_admin === true;
+
   const [pagination, setPagination] = useState({
     page: 1,
     page_size: 40,
@@ -47,8 +51,8 @@ function Home({ onLogout }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState(null);
-  const [customerFilterName, setCustomerFilterName] = useState("");
+  const [customerFilter, setCustomerFilter] = useState(() => user?.customer_id || null);
+  const [customerFilterName, setCustomerFilterName] = useState(() => user?.customer_name || "");
 
   const fetchForms = useCallback(
     async (page = 1, pageSize = pagination.page_size) => {
@@ -113,13 +117,31 @@ function Home({ onLogout }) {
               page_size: pageSize,
             };
           }
-        } else if (response.results) {
-          formsList = response.results;
+        } else if (response.results || response.templates) {
+          formsList = response.results || response.templates;
           const totalCount =
-            typeof response.count === "number" ? response.count : 0;
-          const resolvedPageSize = params.page_size || pageSize;
-          const nextPage = parsePageFromUrl(response.next);
-          const previousPage = parsePageFromUrl(response.previous);
+            typeof response.count === "number" ? response.count : (typeof response.total === "number" ? response.total : (typeof response.total_count === "number" ? response.total_count : 0));
+          const resolvedPageSize = response.page_size || params.page_size || pageSize;
+          const currentPage = response.page_no || response.page || page;
+          const totalPages = totalCount > 0 ? Math.ceil(totalCount / resolvedPageSize) : 0;
+
+          let nextPage = null;
+          let previousPage = null;
+
+          if (response.next) {
+            nextPage = parsePageFromUrl(response.next);
+          } else if (totalPages > 0 && currentPage < totalPages) {
+            nextPage = currentPage + 1;
+          } else if (formsList.length === resolvedPageSize) {
+            // Fallback if no count is provided but we got a full page
+            nextPage = currentPage + 1;
+          }
+
+          if (response.previous) {
+            previousPage = parsePageFromUrl(response.previous);
+          } else if (currentPage > 1) {
+            previousPage = currentPage - 1;
+          }
 
           paginationData = {
             count: totalCount,
@@ -181,8 +203,8 @@ function Home({ onLogout }) {
     navigate("/new-form");
   };
 
-  const handlePermissions = () => {
-    navigate("/permissions");
+  const handleDeployments = () => {
+    navigate("/deploy");
   };
 
   const handleRowClick = (form) => {
@@ -208,8 +230,10 @@ function Home({ onLogout }) {
     setSearchQuery("");
     setDebouncedSearchQuery("");
     setStatusFilter("");
-    setCustomerFilter(null);
-    setCustomerFilterName("");
+    if (isDlmsAdmin) {
+      setCustomerFilter(null);
+      setCustomerFilterName("");
+    }
   };
 
   const removeFilter = (filterKey) => {
@@ -218,7 +242,7 @@ function Home({ onLogout }) {
       setDebouncedSearchQuery("");
     } else if (filterKey === "status") {
       setStatusFilter("");
-    } else if (filterKey === "customer") {
+    } else if (filterKey === "customer" && isDlmsAdmin) {
       setCustomerFilter(null);
       setCustomerFilterName("");
     }
@@ -240,7 +264,7 @@ function Home({ onLogout }) {
         value: statusFilter,
       });
     }
-    if (customerFilter && customerFilterName) {
+    if (customerFilter && customerFilterName && isDlmsAdmin) {
       chips.push({
         key: "customer",
         label: `Customer: ${customerFilterName}`,
@@ -283,9 +307,19 @@ function Home({ onLogout }) {
             <button onClick={handleNewForm} className="new-form-button">
               + New form
             </button>
-            <button onClick={handlePermissions} className="permissions-button">
-              Permissions
-            </button>
+            <div className="deployment-btn-wrapper">
+              <button 
+                onClick={handleDeployments} 
+                className="deployments-button"
+                disabled={!isDlmsAdmin}
+              >
+                {!isDlmsAdmin && <Lock size={12} className="lock-icon" />}
+                Deployments
+              </button>
+              {!isDlmsAdmin && (
+                <span className="admin-only-text">Only admins can deploy</span>
+              )}
+            </div>
             <button onClick={onLogout} className="logout-button">
               Logout
             </button>
@@ -367,8 +401,11 @@ function Home({ onLogout }) {
                     setCustomerFilterName(customer.customer_name);
                   }}
                   placeholder="Filter by customer..."
+                  initialCustomerName={customerFilterName}
+                  disabled={!isDlmsAdmin}
+                  title={!isDlmsAdmin ? "Must be admin to change customer" : undefined}
                 />
-                {customerFilter && (
+                {customerFilter && isDlmsAdmin && (
                   <button
                     onClick={() => {
                       setCustomerFilter(null);
@@ -409,7 +446,7 @@ function Home({ onLogout }) {
           {pagination.count > 0 && (
             <div className="results-info">
               Showing {filteredForms.length} of {pagination.count} forms
-              {(totalPages > 1 || pagination.next || pagination.previous) && (
+              {(pagination.count > 0) && (
                 <span>
                   {" "}
                   (
@@ -435,7 +472,6 @@ function Home({ onLogout }) {
             <TableHeader>
               <TableRow>
                 <TableHead className="col-template-name">Template Name</TableHead>
-                <TableHead className="col-customer">Customer</TableHead>
                 <TableHead className="col-status">Status</TableHead>
                 <TableHead className="col-version">Version</TableHead>
                 <TableHead className="col-created-at">Created At</TableHead>
@@ -453,7 +489,6 @@ function Home({ onLogout }) {
                     <TableCell>
                       {form.template_name || form["from-name"] || "N/A"}
                     </TableCell>
-                    <TableCell>{form.customer_name || "N/A"}</TableCell>
                     <TableCell>
                       <span
                         className={`status-badge status-${(
@@ -504,7 +539,7 @@ function Home({ onLogout }) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan="6" className="no-data text-center">
+                  <TableCell colSpan="5" className="no-data text-center">
                     {hasActiveFilters
                       ? "No forms match your filters"
                       : "No forms found"}
@@ -515,7 +550,7 @@ function Home({ onLogout }) {
           </Table>
         </div>
 
-        {(totalPages > 1 || pagination.next || pagination.previous) && (
+        {(pagination.count > 0 || pagination.next || pagination.page > 1 || filteredForms.length >= pagination.page_size) && (
           <div className="pagination-controls">
             <Pagination
               count={
