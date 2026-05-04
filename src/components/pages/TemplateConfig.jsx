@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Monitor, Tablet, Smartphone, Download, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Save, Monitor, Tablet, Smartphone, Download, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Loader, Modal } from 'rsuite';
 import ListingFieldsEditor from '../shared/ListingFieldsEditor';
 import WorkflowRoutingEditor from '../shared/WorkflowRoutingEditor';
@@ -38,9 +38,20 @@ const TemplateConfig = () => {
   const [platforms, setPlatforms] = useState([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const [allowNewSubmissions, setAllowNewSubmissions] = useState(true);
+  const [allowReject, setAllowReject] = useState(false);
   const [category, setCategory] = useState('master');
   const [isJinjaTemplate, setIsJinjaTemplate] = useState(false);
   const [htmlString, setHtmlString] = useState('');
+
+  // Advanced flow config
+  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchInputField, setBatchInputField] = useState('');
+  const [fanOutOnComplete, setFanOutOnComplete] = useState(false);
+  const [splitOnComplete, setSplitOnComplete] = useState(false);
+  const [splitField, setSplitField] = useState('');
+  const [groupingMode, setGroupingMode] = useState(false);
+  const [groupingField, setGroupingField] = useState('');
 
   // Available templates for workflow
   const [availableTemplates, setAvailableTemplates] = useState([]);
@@ -87,9 +98,18 @@ const TemplateConfig = () => {
       setPlatforms(data.platforms || []);
       setShowCompleted(data.show_completed || false);
       setAllowNewSubmissions(data.allow_new_submissions !== undefined ? data.allow_new_submissions : true);
+      setAllowReject(data.allow_reject || false);
       setCategory(data.category || 'master'); // Default to 'master' if null
       setIsJinjaTemplate(data.is_jinja_template || false);
       setHtmlString(data.html_string || '');
+
+      setBatchMode(data.batch_mode || false);
+      setBatchInputField(data.batch_input_field || '');
+      setFanOutOnComplete(data.fan_out_on_complete || false);
+      setSplitOnComplete(data.split_on_complete || false);
+      setSplitField(data.split_field || '');
+      setGroupingMode(data.grouping_mode || false);
+      setGroupingField(data.grouping_field || '');
 
       // Store initial values for comparison
       initialConfigRef.current = {
@@ -112,9 +132,17 @@ const TemplateConfig = () => {
         platforms: data.platforms || [],
         show_completed: data.show_completed || false,
         allow_new_submissions: data.allow_new_submissions !== undefined ? data.allow_new_submissions : true,
+        allow_reject: data.allow_reject || false,
         category: data.category || 'master',
         is_jinja_template: data.is_jinja_template || false,
-        html_string: data.html_string || ''
+        html_string: data.html_string || '',
+        batch_mode: data.batch_mode || false,
+        batch_input_field: data.batch_input_field || '',
+        fan_out_on_complete: data.fan_out_on_complete || false,
+        split_on_complete: data.split_on_complete || false,
+        split_field: data.split_field || '',
+        grouping_mode: data.grouping_mode || false,
+        grouping_field: data.grouping_field || ''
       };
 
     } catch (error) {
@@ -185,12 +213,20 @@ const TemplateConfig = () => {
       JSON.stringify(platforms) !== JSON.stringify(initialSettingsRef.current.platforms) ||
       showCompleted !== initialSettingsRef.current.show_completed ||
       allowNewSubmissions !== initialSettingsRef.current.allow_new_submissions ||
+      allowReject !== initialSettingsRef.current.allow_reject ||
       category !== initialSettingsRef.current.category ||
       isJinjaTemplate !== initialSettingsRef.current.is_jinja_template ||
-      htmlString !== initialSettingsRef.current.html_string;
+      htmlString !== initialSettingsRef.current.html_string ||
+      batchMode !== initialSettingsRef.current.batch_mode ||
+      batchInputField !== initialSettingsRef.current.batch_input_field ||
+      fanOutOnComplete !== initialSettingsRef.current.fan_out_on_complete ||
+      splitOnComplete !== initialSettingsRef.current.split_on_complete ||
+      splitField !== initialSettingsRef.current.split_field ||
+      groupingMode !== initialSettingsRef.current.grouping_mode ||
+      groupingField !== initialSettingsRef.current.grouping_field;
 
     setHasUnsavedChanges(configChanged || routeChanged || settingsChanged);
-  }, [webListingFields, kioskListingFields, mobileListingFields, exportFields, searchFields, listingFilters, approvers, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, category, isJinjaTemplate, htmlString]);
+  }, [webListingFields, kioskListingFields, mobileListingFields, exportFields, searchFields, listingFilters, approvers, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, allowReject, category, isJinjaTemplate, htmlString, batchMode, batchInputField, fanOutOnComplete, splitOnComplete, splitField, groupingMode, groupingField]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -259,20 +295,8 @@ const TemplateConfig = () => {
 
   // Prepare request body
   const prepareRequestBody = () => {
-    const body = {};
-
-    // Check if config changed
-    const configChanged =
-      JSON.stringify(webListingFields) !== JSON.stringify(initialConfigRef.current.web_listing) ||
-      JSON.stringify(kioskListingFields) !== JSON.stringify(initialConfigRef.current.kiosk_listing) ||
-      JSON.stringify(mobileListingFields) !== JSON.stringify(initialConfigRef.current.mobile_listing) ||
-      JSON.stringify(exportFields) !== JSON.stringify(initialConfigRef.current.export_fields) ||
-      JSON.stringify(searchFields) !== JSON.stringify(initialConfigRef.current.search_fields) ||
-      JSON.stringify(listingFilters) !== JSON.stringify(initialConfigRef.current.listing_filters) ||
-      JSON.stringify(approvers) !== JSON.stringify(initialConfigRef.current.approvers);
-
-    if (configChanged) {
-      body.config = {
+    const body = {
+      config: {
         web_listing: webListingFields,
         kiosk_listing: kioskListingFields,
         mobile_listing: mobileListingFields,
@@ -280,54 +304,31 @@ const TemplateConfig = () => {
         search_fields: searchFields,
         listing_filters: listingFilters,
         approvers: approvers
-      };
-    }
-
-    // Check if route changed
-    const routeChanged =
-      nextTemplate !== initialRouteRef.current.next_template ||
-      previousTemplate !== initialRouteRef.current.previous_template ||
-      JSON.stringify(pushFields) !== JSON.stringify(initialRouteRef.current.next_template_push_fields);
-
-    if (routeChanged) {
-      body.route = {
+      },
+      route: {
         next_template: nextTemplate,
         previous_template: previousTemplate,
         next_template_push_fields: pushFields
-      };
-    }
+      },
+      platforms: platforms,
+      show_completed: showCompleted,
+      allow_new_submissions: allowNewSubmissions,
+      allow_reject: allowReject,
+      batch_mode: batchMode,
+      fan_out_on_complete: fanOutOnComplete,
+      split_on_complete: splitOnComplete,
+      grouping_mode: groupingMode,
+      batch_input_field: batchInputField,
+      split_field: splitField,
+      grouping_field: groupingField,
+      category: category,
+      is_jinja_template: isJinjaTemplate,
+      html_string: htmlString
+    };
 
-    // Check if settings changed
-    const platformsChanged = JSON.stringify(platforms) !== JSON.stringify(initialSettingsRef.current.platforms);
-    const showCompletedChanged = showCompleted !== initialSettingsRef.current.show_completed;
-    const allowNewSubmissionsChanged = allowNewSubmissions !== initialSettingsRef.current.allow_new_submissions;
-    const categoryChanged = category !== initialSettingsRef.current.category;
-    const isJinjaTemplateChanged = isJinjaTemplate !== initialSettingsRef.current.is_jinja_template;
-    const htmlStringChanged = htmlString !== initialSettingsRef.current.html_string;
-
-    // Always send boolean fields with explicit true/false values, even if unchanged
-    const settingsChanged = platformsChanged || showCompletedChanged || allowNewSubmissionsChanged || categoryChanged || isJinjaTemplateChanged || htmlStringChanged;
-
-    if (settingsChanged) {
-      if (platformsChanged) {
-        body.platforms = platforms;
-      }
-      // Always include boolean fields when any setting changes to ensure explicit true/false values
-      body.show_completed = showCompleted;
-      body.allow_new_submissions = allowNewSubmissions;
-
-      if (categoryChanged) {
-        body.category = category;
-      }
-
-      if (isJinjaTemplateChanged) {
-        body.is_jinja_template = isJinjaTemplate;
-      }
-
-      if (htmlStringChanged) {
-        body.html_string = htmlString;
-        body.fetch_html = false; // Don't fetch from Google Sheets when manually setting HTML
-      }
+    // Only set fetch_html to false if the HTML string actually changed manually
+    if (initialSettingsRef.current && htmlString !== initialSettingsRef.current.html_string) {
+      body.fetch_html = false;
     }
 
     return body;
@@ -341,13 +342,13 @@ const TemplateConfig = () => {
       return;
     }
 
-    const requestBody = prepareRequestBody();
-
     // Check if there are any changes
-    if (Object.keys(requestBody).length === 0) {
+    if (!hasUnsavedChanges) {
       toast.warning('No changes to save');
       return;
     }
+
+    const requestBody = prepareRequestBody();
 
     try {
       setSaving(true);
@@ -385,9 +386,17 @@ const TemplateConfig = () => {
         platforms: updatedTemplate.platforms || [],
         show_completed: updatedTemplate.show_completed || false,
         allow_new_submissions: updatedTemplate.allow_new_submissions !== undefined ? updatedTemplate.allow_new_submissions : true,
+        allow_reject: updatedTemplate.allow_reject || false,
         category: updatedTemplate.category || 'master',
         is_jinja_template: updatedTemplate.is_jinja_template || false,
-        html_string: updatedTemplate.html_string || ''
+        html_string: updatedTemplate.html_string || '',
+        batch_mode: updatedTemplate.batch_mode || false,
+        batch_input_field: updatedTemplate.batch_input_field || '',
+        fan_out_on_complete: updatedTemplate.fan_out_on_complete || false,
+        split_on_complete: updatedTemplate.split_on_complete || false,
+        split_field: updatedTemplate.split_field || '',
+        grouping_mode: updatedTemplate.grouping_mode || false,
+        grouping_field: updatedTemplate.grouping_field || ''
       };
 
       // Update local state with new values
@@ -575,6 +584,20 @@ const TemplateConfig = () => {
                 </label>
                 <p className="field-hint">Enable users to create new entries from kiosk platform</p>
               </div>
+
+              {/* Allow Reject */}
+              <div className="settings-field">
+                <label className="field-label">
+                  <input
+                    type="checkbox"
+                    checked={allowReject}
+                    onChange={(e) => setAllowReject(e.target.checked)}
+                    className="settings-checkbox"
+                  />
+                  <span>Allow Reject</span>
+                </label>
+                <p className="field-hint">Enable rejection of forms</p>
+              </div>
             </div>
 
             <div className="settings-row">
@@ -617,6 +640,101 @@ const TemplateConfig = () => {
                 />
               </div>
             </div>
+            
+            {/* Advanced Configuration Section */}
+            <div className="advanced-config-section">
+              <div 
+                className="advanced-config-header"
+                onClick={() => setShowAdvancedConfig(!showAdvancedConfig)}
+              >
+                <span>Advanced Configuration (Batch, Split, Grouping Flows)</span>
+                {showAdvancedConfig ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+              
+              {showAdvancedConfig && (
+                <div className="advanced-config-content">
+                  {/* Batch Flow */}
+                  <div className="config-subsection" title="Configure how this template behaves when processing multiple items at once">
+                    <h4 className="subsection-title">Batch Flow</h4>
+                    <label className="field-label" style={{ fontWeight: 500, fontSize: '13px' }} title="Enable processing multiple entries at once as a single batch">
+                      <input
+                        type="checkbox"
+                        checked={batchMode}
+                        onChange={(e) => setBatchMode(e.target.checked)}
+                        className="settings-checkbox"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Enable Batch Mode</span>
+                    </label>
+                    <label className="field-label" style={{ fontWeight: 500, fontSize: '13px' }} title="Automatically create individual downstream workflows for each item in the batch when completed">
+                      <input
+                        type="checkbox"
+                        checked={fanOutOnComplete}
+                        onChange={(e) => setFanOutOnComplete(e.target.checked)}
+                        className="settings-checkbox"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Fan Out On Complete</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={batchInputField}
+                      onChange={(e) => setBatchInputField(e.target.value)}
+                      placeholder="Batch Input Field (e.g. batch_id)"
+                      className="settings-input"
+                      title="The specific field used to identify or group the batch items (e.g. batch_id)"
+                    />
+                  </div>
+
+                  {/* Split Flow */}
+                  <div className="config-subsection" title="Configure how this template splits into multiple workflows">
+                    <h4 className="subsection-title">Split Flow</h4>
+                    <label className="field-label" style={{ fontWeight: 500, fontSize: '13px' }} title="Split this single submission into multiple downstream workflows based on a specified field">
+                      <input
+                        type="checkbox"
+                        checked={splitOnComplete}
+                        onChange={(e) => setSplitOnComplete(e.target.checked)}
+                        className="settings-checkbox"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Split On Complete</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={splitField}
+                      onChange={(e) => setSplitField(e.target.value)}
+                      placeholder="Split Field Name"
+                      className="settings-input"
+                      title="The field containing an array or count that determines how the workflow splits"
+                    />
+                  </div>
+
+                  {/* Grouping Mode */}
+                  <div className="config-subsection" title="Configure how this template groups multiple items into a single workflow">
+                    <h4 className="subsection-title">Grouping Mode</h4>
+                    <label className="field-label" style={{ fontWeight: 500, fontSize: '13px' }} title="Group multiple submissions into a single downstream workflow based on a matching field">
+                      <input
+                        type="checkbox"
+                        checked={groupingMode}
+                        onChange={(e) => setGroupingMode(e.target.checked)}
+                        className="settings-checkbox"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Enable Grouping Mode</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={groupingField}
+                      onChange={(e) => setGroupingField(e.target.value)}
+                      placeholder="Grouping Field Name"
+                      className="settings-input"
+                      title="The field used to match and group submissions together"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
           </div>
         </section>
 

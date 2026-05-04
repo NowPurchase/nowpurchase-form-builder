@@ -27,6 +27,8 @@ import {
   ArrowLeft,
   Pencil,
   Trash2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import {
   npInput,
@@ -153,6 +155,7 @@ function NewForm() {
   const [customerName, setCustomerName] = useState("");
   const [status, setStatus] = useState("completed");
   const [version, setVersion] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -576,7 +579,6 @@ function NewForm() {
           form_json: formJson, // Required
           template_name: templateName.trim(), // Optional
           customer_name: customerName, // Save customer name
-          sheet_url: sheetId.trim(), // Save sheet URL
           description: description?.trim() || "", // Optional
           status: status, // Status is now a direct field
           fetch_html: false, // Don't overwrite html_string when updating
@@ -589,12 +591,10 @@ function NewForm() {
           customer_id: customerId, // Required (FK to old API)
           customer_name: customerName, // Save customer name
           template_name: templateName.trim(), // Required
-          sheet_url: sheetId.trim(), // Save sheet URL
           status: status, // Status is now a direct field
           config: {}, // Required by API (empty object)
           form_json: formJson, // Optional
           description: description?.trim() || "", // Optional
-          platforms: [], // Optional but must be array if present
         };
         await createDynamicLog(createData);
         toast.success("Form saved successfully!");
@@ -662,8 +662,6 @@ function NewForm() {
           // Only prefill modal fields (customer, description, sheet_url) when in EDIT mode
           // In DUPLICATE mode, these fields should remain empty
           if (isEditMode) {
-            // Set sheet URL from config
-            setSheetId(response.config?.sheet_url || response.sheet_url || "");
             // Set description
             setDescription(response.description ?? "");
             // Set status from direct field
@@ -671,72 +669,6 @@ function NewForm() {
               setStatus(response.status);
             }
 
-            // Set customer ID and name
-            // New API returns customer_id (integer FK to old API)
-            if (response.customer_id) {
-              console.log(
-                "[NewForm] Setting customer ID:",
-                response.customer_id
-              );
-              setCustomerId(response.customer_id);
-
-              // Check if customer_name is in the response, otherwise fetch from dropdown API
-              if (response.customer_name) {
-                console.log(
-                  "[NewForm] Found customer_name in response:",
-                  response.customer_name
-                );
-                setCustomerName(response.customer_name);
-              } else {
-                console.log(
-                  "[NewForm] customer_name not in response, fetching from dropdown API"
-                );
-                // Fetch customer name from dropdown API
-                try {
-                  const customersResponse = await getCustomerDropdown("");
-                  const customersList = Array.isArray(customersResponse)
-                    ? customersResponse
-                    : customersResponse.customers || [];
-                  const foundCustomer = customersList.find(
-                    (c) => c.id === response.customer_id
-                  );
-                  if (foundCustomer && foundCustomer.customer_name) {
-                    console.log(
-                      "[NewForm] Found customer name from dropdown API:",
-                      foundCustomer.customer_name
-                    );
-                    setCustomerName(foundCustomer.customer_name);
-                  } else {
-                    console.log(
-                      "[NewForm] Customer not found in dropdown list"
-                    );
-                  }
-                } catch (err) {
-                  console.error(
-                    "[NewForm] Failed to fetch customer name:",
-                    err
-                  );
-                }
-              }
-            } else {
-              console.log("[NewForm] No customer in response");
-            }
-
-            // Set status (normalize to lowercase for dropdown)
-            if (response.status) {
-              const normalizedStatus = response.status.toLowerCase();
-              console.log(
-                "[NewForm] Setting status from API:",
-                response.status,
-                "->",
-                normalizedStatus
-              );
-              setStatus(normalizedStatus);
-            } else {
-              console.log(
-                "[NewForm] No status in API response, keeping default"
-              );
-            }
           } else {
             // Duplicate mode - clear modal fields
             console.log(
@@ -747,6 +679,18 @@ function NewForm() {
             setCustomerId(null);
             setCustomerName("");
             setStatus("completed"); // Reset to default
+            setCategory("");
+            setPlatforms(["web", "kiosk", "mobile"]);
+            setAllowNewSubmissions(true);
+            setAllowReject(false);
+            setShowCompleted(false);
+            setBatchMode(false);
+            setBatchInputField("");
+            setFanOutOnComplete(false);
+            setSplitOnComplete(false);
+            setSplitField("");
+            setGroupingMode(false);
+            setGroupingField("");
           }
 
           console.log("[NewForm] Form data set:", {
@@ -991,6 +935,18 @@ function NewForm() {
     setCustomerName("");
     setStatus("completed");
     setFormType("single");
+    setCategory("");
+    setPlatforms(["web", "kiosk", "mobile"]);
+    setAllowNewSubmissions(true);
+    setAllowReject(false);
+    setShowCompleted(false);
+    setBatchMode(false);
+    setBatchInputField("");
+    setFanOutOnComplete(false);
+    setSplitOnComplete(false);
+    setSplitField("");
+    setGroupingMode(false);
+    setGroupingField("");
     setSections([
       {
         section_id: "section_1",
@@ -1356,38 +1312,6 @@ function NewForm() {
               )}
             </div>
             <div className="modal-field-group">
-              <label htmlFor="modal-sheet-url" className="modal-label">
-                Sheet URL (Optional)
-              </label>
-              <input
-                id="modal-sheet-url"
-                type="text"
-                value={sheetId}
-                onChange={(e) => {
-                  setSheetId(e.target.value);
-                  // Clear error when user starts typing
-                  if (fieldErrors.sheet_id) {
-                    setFieldErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.sheet_id;
-                      return newErrors;
-                    });
-                  }
-                }}
-                placeholder="Enter sheet URL..."
-                className={`modal-input ${
-                  fieldErrors.sheet_id ? "modal-input-error" : ""
-                }`}
-              />
-              {fieldErrors.sheet_id && (
-                <div className="modal-field-error">
-                  {Array.isArray(fieldErrors.sheet_id)
-                    ? fieldErrors.sheet_id.join(", ")
-                    : fieldErrors.sheet_id}
-                </div>
-              )}
-            </div>
-            <div className="modal-field-group">
               <label htmlFor="modal-status" className="modal-label">
                 Status
               </label>
@@ -1432,6 +1356,7 @@ function NewForm() {
                 </div>
               )}
             </div>
+
           </div>
         </Modal.Body>
         <Modal.Footer className="modal-footer-custom">

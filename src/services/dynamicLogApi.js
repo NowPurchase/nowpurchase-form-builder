@@ -1,6 +1,6 @@
 import { apiGet, apiPost, apiPut, apiGetOldText } from './api';
 
-const BASE_ENDPOINT = '/api/v1/templates';
+const BASE_ENDPOINT = '/api/v2/admin/templates';
 
 export const createDynamicLog = async (data) => {
   const payload = {
@@ -55,8 +55,11 @@ export const getDynamicLog = async (template_id) => {
 export const listDynamicLogs = async (params = {}) => {
   const queryParams = [];
 
+  if (params.page !== undefined && params.page !== null) {
+    queryParams.push(`page=${params.page}`);
+  }
   if (params.page_no !== undefined && params.page_no !== null) {
-    queryParams.push(`page_no=${params.page_no}`);
+    queryParams.push(`page=${params.page_no}`); // Fallback for backward compatibility
   }
   if (params.page_size !== undefined && params.page_size !== null) {
     queryParams.push(`page_size=${params.page_size}`);
@@ -71,7 +74,7 @@ export const listDynamicLogs = async (params = {}) => {
     queryParams.push(`platform=${encodeURIComponent(params.platform)}`);
   }
   if (params.customer) {
-    queryParams.push(`customer=${params.customer}`);
+    queryParams.push(`customer_id=${params.customer}`);
   }
   if (params.search) {
     queryParams.push(`search=${encodeURIComponent(params.search)}`);
