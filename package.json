@@ -19,6 +19,7 @@
     "@react-form-builder/components-rsuite-table": "^7.9.0",
     "@react-form-builder/core": "^7.9.0",
     "@react-form-builder/designer": "^7.9.0",
+    "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.13.6",
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.553.0",
@@ -31,7 +32,8 @@
     "react-router-dom": "^6.30.1",
     "react-use-websocket": "^4.13.0",
     "rsuite": "^5.83.4",
-    "rsuite-table": "^5.19.2"
+    "rsuite-table": "^5.19.2",
+    "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, GripVertical, X, ChevronDown } from 'lucide-react';
-import { Button } from 'rsuite';
+import { Plus, GripVertical, Trash2, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import UserDropdown from './UserDropdown';
-import './ApproversEditor.css';
 
 const ACTION_OPTIONS = [
   { value: 'end', label: 'End (Finalize)' },
-  { value: 'next_approver', label: 'Next Approver (Escalate)' }
+  { value: 'next_approver', label: 'Next Approver' }
 ];
 
 const ApproversEditor = ({ approvers, onChange, errors = {} }) => {
@@ -26,7 +24,6 @@ const ApproversEditor = ({ approvers, onChange, errors = {} }) => {
 
   const handleDeleteApprover = (index) => {
     const newApprovers = approvers.filter((_, i) => i !== index);
-    // Recalculate levels after deletion
     const recalculatedApprovers = newApprovers.map((approver, i) => ({
       ...approver,
       level: i
@@ -53,35 +50,27 @@ const ApproversEditor = ({ approvers, onChange, errors = {} }) => {
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target);
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
   };
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
-    e.stopPropagation();
-
     if (draggedIndex === null || draggedIndex === dropIndex) return;
 
     const newApprovers = [...approvers];
     const draggedApprover = newApprovers[draggedIndex];
-
-    // Remove from old position
     newApprovers.splice(draggedIndex, 1);
-
-    // Insert at new position
     const actualDropIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
     newApprovers.splice(actualDropIndex, 0, draggedApprover);
 
-    // Recalculate levels based on new order
     const recalculatedApprovers = newApprovers.map((approver, i) => ({
       ...approver,
       level: i
@@ -91,182 +80,225 @@ const ApproversEditor = ({ approvers, onChange, errors = {} }) => {
     setDraggedIndex(null);
   };
 
-  // Get selected user IDs to exclude from other dropdowns
   const selectedUserIds = approvers.map(a => a.id).filter(Boolean);
 
-  return (
-    <div className="approvers-editor">
-      <div className="approvers-info-banner">
-        <div className="info-icon">i</div>
-        <div className="info-content">
-          <strong>How approval workflow works:</strong>
-          <ul>
-            <li><strong>End (Finalize)</strong> — Completes approval (approve) or blocks logsheet (reject)</li>
-            <li><strong>Next Approver</strong> — Escalates to the next level approver</li>
-            <li>Drag to reorder approvers and change their levels</li>
-          </ul>
+  const getInitials = (name) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  if (approvers.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+            <Plus className="h-6 w-6" />
+          </div>
+          <p className="text-sm font-medium">No approvers configured</p>
+          <p className="mt-1 max-w-sm text-xs text-muted-foreground">Add approvers to enable the approval workflow for this template.</p>
+          <button
+            onClick={handleAddApprover}
+            className="btn-primary mt-5"
+          >
+            <Plus className="h-4 w-4" /> Add Approver
+          </button>
         </div>
       </div>
+    );
+  }
 
-      {approvers.length === 0 ? (
-        <div className="approvers-empty-state">
-          <p>No approvers configured</p>
-          <p className="empty-state-hint">Add approvers to enable the approval workflow for this template</p>
-        </div>
-      ) : (
-        <div className="approvers-table">
-          <div className="approvers-table-header">
-            <div className="header-drag"></div>
-            <div className="header-level">Level</div>
-            <div className="header-user">Approver</div>
-            <div className="header-action">On Approve</div>
-            <div className="header-action">On Reject</div>
-            <div className="header-actions"></div>
+  return (
+    <div>
+      {/* Table Header */}
+      <div className="grid grid-cols-[40px_60px_1.5fr_1fr_1fr_40px] items-center gap-3 border-b border-border bg-secondary/60 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div></div>
+        <div>Level</div>
+        <div>Approver</div>
+        <div>On Approve</div>
+        <div>On Reject</div>
+        <div></div>
+      </div>
+
+      {/* Table Body */}
+      {approvers.map((approver, index) => (
+        <div
+          key={index}
+          className={`grid grid-cols-[40px_60px_1.5fr_1fr_1fr_40px] items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 hover:bg-secondary/40 transition-colors ${
+            draggedIndex === index ? 'opacity-50 bg-accent' : ''
+          }`}
+          draggable
+          onDragStart={(e) => handleDragStart(e, index)}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, index)}
+        >
+          {/* Drag Handle */}
+          <div className="flex justify-center">
+            <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground/60 hover:text-muted-foreground" />
           </div>
 
-          <div className="approvers-list">
-            {approvers.map((approver, index) => (
-              <div
-                key={index}
-                className={`approver-row ${draggedIndex === index ? 'dragging' : ''}`}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={(e) => handleDrop(e, index)}
-              >
-                <div className="approver-drag-handle">
-                  <GripVertical size={16} />
-                </div>
+          {/* Level Badge */}
+          <div>
+            <span className="inline-flex items-center justify-center rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+              L{index}
+            </span>
+          </div>
 
-                <div className="approver-level">
-                  <span className="level-badge">
-                    {index}
-                  </span>
+          {/* Approver Info */}
+          <div className="flex items-center gap-3 min-w-0">
+            {approver.id ? (
+              <>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-sm font-semibold text-primary-foreground shadow-glow">
+                  {getInitials(approver.name)}
                 </div>
-
-                <div className="approver-user">
-                  <UserDropdown
-                    value={approver.id}
-                    onChange={(userId) => {}}
-                    onSelect={(user) => handleUserSelect(index, user)}
-                    placeholder="Select approver..."
-                    excludeIds={selectedUserIds.filter(id => id !== approver.id)}
-                    selectedUserData={approver.id ? { id: approver.id, name: approver.name } : null}
-                  />
-                  {errors[index]?.id && <span className="error-text">{errors[index].id}</span>}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium leading-tight truncate">{approver.name || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground truncate">Approver Level {index}</p>
                 </div>
-
-                <div className="approver-action">
-                  <ActionSelect
-                    value={approver.on_approve}
-                    onChange={(value) => handleApproverChange(index, 'on_approve', value)}
-                  />
-                </div>
-
-                <div className="approver-action">
-                  <ActionSelect
-                    value={approver.on_reject}
-                    onChange={(value) => handleApproverChange(index, 'on_reject', value)}
-                  />
-                </div>
-                <div className="approver-actions">
-                  <button
-                    type="button"
-                    className="approver-delete-btn"
-                    onClick={() => handleDeleteApprover(index)}
-                    title="Remove approver"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
+              </>
+            ) : (
+              <div className="flex-1">
+                <UserDropdown
+                  value={approver.id}
+                  onChange={() => {}}
+                  onSelect={(user) => handleUserSelect(index, user)}
+                  placeholder="Select approver..."
+                  excludeIds={selectedUserIds.filter(id => id !== approver.id)}
+                  selectedUserData={null}
+                  className="w-full"
+                />
+                {errors[index]?.id && (
+                  <span className="text-xs text-destructive mt-1">{errors[index].id}</span>
+                )}
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* On Approve Action */}
+          <div>
+            <ActionPill
+              icon={CheckCircle2}
+              tone="success"
+              value={approver.on_approve}
+              onChange={(value) => handleApproverChange(index, 'on_approve', value)}
+            />
+          </div>
+
+          {/* On Reject Action */}
+          <div>
+            <ActionPill
+              icon={XCircle}
+              tone="destructive"
+              value={approver.on_reject}
+              onChange={(value) => handleApproverChange(index, 'on_reject', value)}
+            />
+          </div>
+
+          {/* Delete Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => handleDeleteApprover(index)}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer bg-transparent border-0"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      )}
+      ))}
 
-      <Button
-        appearance="ghost"
-        onClick={handleAddApprover}
-        className="add-approver-btn"
-        startIcon={<Plus size={16} />}
-      >
-        Add Approver
-      </Button>
+      {/* Add Button */}
+      <div className="p-4 border-t border-border">
+        <button
+          onClick={handleAddApprover}
+          className="btn-primary w-full"
+        >
+          <Plus className="h-4 w-4" /> Add Approver
+        </button>
+      </div>
     </div>
   );
 };
 
-// Custom select component for action dropdowns
-const ActionSelect = ({ value, onChange, disabled }) => {
+// Action Pill Select Component
+const ActionPill = ({ icon: Icon, tone, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
   const triggerRef = React.useRef(null);
+
   const selectedOption = ACTION_OPTIONS.find(opt => opt.value === value) || ACTION_OPTIONS[0];
 
-  const handleSelect = (option) => {
-    onChange(option.value);
-    setIsOpen(false);
-  };
-
   const handleTriggerClick = () => {
-    if (disabled) return;
-
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const dropdownHeight = 90; // Approximate height of dropdown
+      const dropdownHeight = 90;
 
-      // Position above if not enough space below
       if (spaceBelow < dropdownHeight) {
         setMenuPosition({
           top: rect.top - dropdownHeight - 4,
           left: rect.left,
-          width: rect.width
+          width: Math.max(rect.width, 180)
         });
       } else {
         setMenuPosition({
           top: rect.bottom + 4,
           left: rect.left,
-          width: rect.width
+          width: Math.max(rect.width, 180)
         });
       }
     }
     setIsOpen(!isOpen);
   };
 
-  return (
-    <div className={`action-select ${disabled ? 'disabled' : ''}`}>
-      <div
-        ref={triggerRef}
-        className="action-select-trigger"
-        onClick={handleTriggerClick}
-      >
-        <span className="action-select-value">{selectedOption.label}</span>
-        {!disabled && <ChevronDown size={14} />}
-      </div>
+  const handleSelect = (option) => {
+    onChange(option.value);
+    setIsOpen(false);
+  };
 
-      {isOpen && !disabled && createPortal(
+  const toneClasses = tone === 'success'
+    ? 'border-success/30 bg-success/10 text-success hover:bg-success/15'
+    : 'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15';
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        onClick={handleTriggerClick}
+        className={`inline-flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${toneClasses}`}
+      >
+        <span className="flex items-center gap-1.5 truncate">
+          <Icon className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{selectedOption.label}</span>
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 opacity-60 shrink-0" />
+      </button>
+
+      {isOpen && createPortal(
         <>
-          <div className="action-select-backdrop" onClick={() => setIsOpen(false)} />
           <div
-            className="action-select-dropdown"
+            className="fixed inset-0 z-[99998]"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="fixed z-[99999] rounded-lg border border-border bg-card shadow-lg overflow-hidden"
             style={{
-              position: 'fixed',
               top: menuPosition.top,
               left: menuPosition.left,
               width: menuPosition.width
             }}
           >
             {ACTION_OPTIONS.map(option => (
-              <div
+              <button
                 key={option.value}
-                className={`action-select-option ${option.value === value ? 'selected' : ''}`}
                 onClick={() => handleSelect(option)}
+                className={`w-full px-3 py-2.5 text-left text-sm transition-colors cursor-pointer border-0 ${
+                  option.value === value
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'bg-card text-foreground hover:bg-secondary'
+                }`}
               >
                 {option.label}
-              </div>
+              </button>
             ))}
           </div>
         </>,

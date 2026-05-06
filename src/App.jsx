@@ -4,7 +4,7 @@ import { getToken, removeToken } from "./services/api";
 import Login from "./components/pages/Login";
 import Home from "./components/pages/Home";
 import NewForm from "./components/pages/NewForm";
-import ViewForm from "./components/pages/ViewForm";
+
 import TemplateConfig from "./components/pages/TemplateConfig";
 import Deploy from "./components/pages/Deploy";
 import ToastContainer from "./components/shared/Toast";
@@ -75,16 +75,6 @@ function AppContent() {
           element={
             isAuthenticated ? (
               <NewForm />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/form/:formId"
-          element={
-            isAuthenticated ? (
-              <ViewForm />
             ) : (
               <Navigate to="/" replace />
             )

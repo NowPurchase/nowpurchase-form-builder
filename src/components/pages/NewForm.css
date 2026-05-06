@@ -1,20 +1,20 @@
 .new-form-container {
   min-height: 100vh;
-  background: #fafafa;
+  background: radial-gradient(circle at top right, hsl(204 80% 55% / 0.15), transparent 60%), hsl(220 20% 98%);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .new-form-header {
-  background: #ffffff;
+  background: hsl(0 0% 100% / 0.8);
+  backdrop-filter: blur(12px);
   padding: 12px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 10;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid hsl(220 15% 91%);
   min-height: 56px;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .sidebar-toggle {
-  background: #0f172a;
+  background: linear-gradient(135deg, hsl(240 70% 58%), hsl(265 80% 65%));
   color: white;
   border: none;
   border-radius: 8px;
@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 4px hsl(240 70% 58% / 0.12);
   flex-shrink: 0;
   padding: 0;
 }
@@ -62,8 +62,8 @@
 }
 
 .sidebar-toggle:hover {
-  background: #1e293b;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 0.92;
+  box-shadow: 0 0 0 4px hsl(240 70% 58% / 0.18);
   transform: translateY(-1px);
 }
 
@@ -88,7 +88,7 @@
 
 .save-button {
   padding: 8px 14px;
-  background: #0a0e1a;
+  background: linear-gradient(135deg, hsl(240 70% 58%), hsl(265 80% 65%));
   color: white;
   border: none;
   border-radius: 10px;
@@ -96,7 +96,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 4px hsl(240 70% 58% / 0.12);
   letter-spacing: 0.2px;
   display: flex;
   align-items: center;
@@ -145,9 +145,9 @@
 }
 
 .save-button:hover:not(:disabled) {
-  background: #151923;
+  opacity: 0.92;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px hsl(240 70% 58% / 0.18);
 }
 
 .save-button:active:not(:disabled) {
@@ -163,9 +163,9 @@
 
 .back-button {
   padding: 8px 14px;
-  background: #0f172a;
-  color: #ffffff;
-  border: none;
+  background: hsl(0 0% 100%);
+  color: hsl(222 25% 12%);
+  border: 1px solid hsl(220 15% 91%);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
@@ -179,7 +179,7 @@
   white-space: nowrap;
   height: 36px;
   min-width: 36px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 1px 2px hsl(222 25% 12% / 0.04);
 }
 
 .back-button.icon-only {
