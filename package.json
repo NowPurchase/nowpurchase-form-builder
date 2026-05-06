@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode qa",
+    "build": "vite build --mode qa",
     "build:qa": "vite build --mode qa",
     "build:prod": "vite build --mode production",
     "lint": "eslint .",
