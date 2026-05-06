@@ -5,20 +5,12 @@ const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || '';
 const DEVICE_TYPE = import.meta.env.VITE_DEVICE_TYPE || 'WEB';
 const REFRESH_TOKEN_BASE_URL = import.meta.env.VITE_REFRESH_TOKEN_BASE_URL || import.meta.env.VITE_AUTH_BASE_URL || '';
 
-// Production Environment Placeholders
+// Production Environment
 const PROD_API_BASE_URL = import.meta.env.VITE_PROD_API_BASE_URL || '';
 const PROD_REFRESH_TOKEN_BASE_URL = import.meta.env.VITE_PROD_REFRESH_TOKEN_BASE_URL || '';
-const HARDCODED_PROD_ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTU4LCJuYW1lIjoiKzkxNzk3OTc1NzkwNSIsIm1vYmlsZSI6Iis5MTc5Nzk3NTc5MDUiLCJpc19zdGFmZiI6dHJ1ZSwiY3VzdG9tZXJfaWQiOjY3OSwiY3VzdG9tZXJfbmFtZSI6IlRJVEFHQVJIIFNURUVMIiwiaXNfZGxtc19hZG1pbiI6dHJ1ZSwiZGxtc190ZW1wbGF0ZXMiOltdLCJleHAiOjE3Nzc2MzExMzd9.emn-yCE4GHdu8CXGRFS8Vtman_bD6Ef-_YIpL7gR1GA';
-const HARDCODED_PROD_REFRESH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTU4LCJuYW1lIjoiKzkxNzk3OTc1NzkwNSIsIm1vYmlsZSI6Iis5MTc5Nzk3NTc5MDUiLCJjdXN0b21lcl9pZCI6Njc5LCJjdXN0b21lcl9uYW1lIjoiVElUQUdBUkggU1RFRUwiLCJpc19kbG1zX2FkbWluIjp0cnVlLCJkbG1zX3RlbXBsYXRlcyI6W10sImV4cCI6MTc4MDEyMDc1OX0.V5uHE44HY0-Ya26KvVklj6IIzTm8o1fmqQ19n9Yhfs4';
 
 export const getProdToken = () => {
-  let token = localStorage.getItem('prod_dlms_auth_token');
-  if (!token || token === 'undefined' || token === 'INSERT_PROD_ACCESS_TOKEN_HERE') {
-    token = HARDCODED_PROD_ACCESS_TOKEN;
-    localStorage.setItem('prod_dlms_auth_token', token);
-    localStorage.setItem('prod_refresh_token', HARDCODED_PROD_REFRESH_TOKEN);
-  }
-  return token;
+  return localStorage.getItem('prod_dlms_auth_token') || null;
 };
 
 if (!API_BASE_URL && import.meta.env.DEV) {
@@ -37,15 +29,32 @@ export const setToken = (token, persist = true) => {
 };
 
 export const removeToken = () => {
+  // Clear staging tokens
   localStorage.removeItem('dlms_auth_token');
   sessionStorage.removeItem('dlms_auth_token');
+  localStorage.removeItem('refresh_token');
+  sessionStorage.removeItem('refresh_token');
   localStorage.removeItem('auth');
   sessionStorage.removeItem('auth');
   localStorage.removeItem('nowpurchase_token');
   sessionStorage.removeItem('nowpurchase_token');
-  // Also remove legacy authToken if it exists
+
+  // Clear production tokens
+  localStorage.removeItem('prod_dlms_auth_token');
+  localStorage.removeItem('prod_refresh_token');
+  sessionStorage.removeItem('prod_session_authenticated');
+
+  // Clear legacy authToken if it exists
   localStorage.removeItem('authToken');
   sessionStorage.removeItem('authToken');
+
+  // Clear filter state from sessionStorage
+  sessionStorage.removeItem('home_searchQuery');
+  sessionStorage.removeItem('home_statusFilter');
+  sessionStorage.removeItem('home_customerFilter');
+  sessionStorage.removeItem('home_customerFilterName');
+  sessionStorage.removeItem('deploy_customerFilter');
+  sessionStorage.removeItem('deploy_customerFilterName');
 };
 
 // Store NowPurchase token separately for old API calls
@@ -488,6 +497,98 @@ export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
     throw {
       code: 'network_error',
       message: error.message || 'Failed to login with NowPurchase token',
+      details: {},
+      status: 0,
+    };
+  }
+};
+
+// Production Authentication Functions
+const getProdAuthBaseUrl = () => {
+  if (!PROD_REFRESH_TOKEN_BASE_URL) {
+    throw new Error('VITE_PROD_REFRESH_TOKEN_BASE_URL is not configured');
+  }
+  return PROD_REFRESH_TOKEN_BASE_URL.replace(/\/$/, '');
+};
+
+export const isProdAuthenticated = () => {
+  const token = localStorage.getItem('prod_dlms_auth_token');
+  const sessionAuth = sessionStorage.getItem('prod_session_authenticated');
+  return !!(token && sessionAuth === 'true');
+};
+
+export const setProdSessionAuth = (value) => {
+  if (value) {
+    sessionStorage.setItem('prod_session_authenticated', 'true');
+  } else {
+    sessionStorage.removeItem('prod_session_authenticated');
+  }
+};
+
+export const sendProdOTP = async (mobile) => {
+  const baseUrl = getProdAuthBaseUrl();
+  const url = `${baseUrl}/a/auth/mobile/`;
+
+  const config = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ mobile }),
+  };
+
+  try {
+    const response = await fetch(url, config);
+    if (!response.ok) {
+      const error = await parseError(response);
+      throw error;
+    }
+    return await parseJson(response);
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: error.message || 'Failed to send OTP to production',
+      details: {},
+      status: 0,
+    };
+  }
+};
+
+export const verifyProdOTP = async (mobile, token) => {
+  const baseUrl = getProdAuthBaseUrl();
+  const url = `${baseUrl}/a/auth/token/`;
+  const deviceId = getDeviceId();
+
+  const config = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mobile,
+      token,
+      device_type: DEVICE_TYPE,
+      device_id: deviceId,
+    }),
+  };
+
+  try {
+    const response = await fetch(url, config);
+    if (!response.ok) {
+      const error = await parseError(response);
+      throw error;
+    }
+    const res = await parseJson(response);
+    localStorage.setItem('prod_dlms_auth_token', res?.access_token);
+    localStorage.setItem('prod_refresh_token', res?.refresh_token);
+    sessionStorage.setItem('prod_session_authenticated', 'true');
+    return res;
+  } catch (error) {
+    if (error.code) throw error;
+    throw {
+      code: 'network_error',
+      message: error.message || 'Failed to verify production OTP',
       details: {},
       status: 0,
     };
