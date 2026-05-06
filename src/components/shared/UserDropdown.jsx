@@ -95,7 +95,7 @@ function UserDropdown({ value, onChange, onSelect, placeholder = "Search and sel
   const getDisplayName = (user) => {
     if (!user) return placeholder;
     const name = user.name || 'Unnamed User';
-    return user.email ? `${name} (${user.email})` : name;
+    return user.customer_id ? `${name} (${user.customer_id})` : name;
   };
   const displayName = getDisplayName(selectedUserData);
   const isPlaceholder = !selectedUserData;
@@ -172,7 +172,7 @@ function UserDropdown({ value, onChange, onSelect, placeholder = "Search and sel
                 >
                   <div className="user-info">
                     <div className="user-name">{user.name || 'Unnamed User'}</div>
-                    {user.email && <div className="user-email">{user.email}</div>}
+                    <div className="user-email">{user.company_name || 'Unknown'} ({user.customer_id || '—'})</div>
                   </div>
                 </div>
               ))}

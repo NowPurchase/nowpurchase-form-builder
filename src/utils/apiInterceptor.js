@@ -20,6 +20,16 @@ const rewriteUrl = (url) => {
 
   let newUrl = typeof url === 'string' ? url : url.toString();
 
+  // Skip interception for Template Migration APIs so we can talk to Production
+  if (
+    newUrl.includes('/api/v1/templates') || 
+    newUrl.includes('/api/v2/templates') ||
+    newUrl.includes('/api/v2/admin/templates') ||
+    newUrl.includes('/a/auth/jwt/refresh')
+  ) {
+    return newUrl;
+  }
+
   for (const mapping of URL_MAPPINGS) {
     // Skip if already using the target URL
     if (newUrl.includes(mapping.to)) {
