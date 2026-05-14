@@ -31,12 +31,6 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import {
-  npInput,
-  rsChipInput,
-  rsCameraCapture,
-  rsSpectrometerReading,
-} from "np-dlms-components";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -115,10 +109,6 @@ const defaultForm = {
 const builderComponents = [
   ...rSuiteComponents,
   ...rSuiteTableComponents,
-  rsCameraCapture,
-  rsChipInput,
-  rsSpectrometerReading,
-  npInput,
 ].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)
