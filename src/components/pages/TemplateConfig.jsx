@@ -119,7 +119,7 @@ const TemplateConfig = () => {
       setAllowReject(data.allow_reject || false);
       setCategory(data.category || 'master');
       setIsJinjaTemplate(data.is_jinja_template || false);
-      setIsPreview(data.is_preview || false);
+      setIsPreview(data.has_preview || false);
       setHtmlString(data.html_string || '');
 
       setBatchMode(data.batch_mode || false);
@@ -153,7 +153,7 @@ const TemplateConfig = () => {
         allow_reject: data.allow_reject || false,
         category: data.category || 'master',
         is_jinja_template: data.is_jinja_template || false,
-        is_preview: data.is_preview || false,
+        has_preview: data.has_preview || false,
         html_string: data.html_string || '',
         batch_mode: data.batch_mode || false,
         batch_input_field: data.batch_input_field || '',
@@ -230,7 +230,7 @@ const TemplateConfig = () => {
       allowReject !== initialSettingsRef.current.allow_reject ||
       category !== initialSettingsRef.current.category ||
       isJinjaTemplate !== initialSettingsRef.current.is_jinja_template ||
-      isPreview !== initialSettingsRef.current.is_preview ||
+      isPreview !== initialSettingsRef.current.has_preview ||
       htmlString !== initialSettingsRef.current.html_string ||
       batchMode !== initialSettingsRef.current.batch_mode ||
       batchInputField !== initialSettingsRef.current.batch_input_field ||
@@ -394,7 +394,7 @@ const TemplateConfig = () => {
       grouping_field: groupingField,
       category,
       is_jinja_template: isJinjaTemplate,
-      is_preview: isPreview,
+      has_preview: isPreview,
       html_string: htmlString
     };
 
@@ -449,7 +449,7 @@ const TemplateConfig = () => {
         allow_reject: updatedTemplate.allow_reject || false,
         category: updatedTemplate.category || 'master',
         is_jinja_template: updatedTemplate.is_jinja_template || false,
-        is_preview: updatedTemplate.is_preview || false,
+        has_preview: updatedTemplate.has_preview || false,
         html_string: updatedTemplate.html_string || '',
         batch_mode: updatedTemplate.batch_mode || false,
         batch_input_field: updatedTemplate.batch_input_field || '',
@@ -461,7 +461,7 @@ const TemplateConfig = () => {
       };
 
       setIsJinjaTemplate(updatedTemplate.is_jinja_template || false);
-      setIsPreview(updatedTemplate.is_preview || false);
+      setIsPreview(updatedTemplate.has_preview || false);
       setHtmlString(updatedTemplate.html_string || '');
       setHasUnsavedChanges(false);
       toast.success(`Saved! Version ${updatedTemplate.version}`);
