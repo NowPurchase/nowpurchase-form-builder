@@ -69,6 +69,7 @@ const TemplateConfig = () => {
   const [allowReject, setAllowReject] = useState(false);
   const [category, setCategory] = useState('master');
   const [isJinjaTemplate, setIsJinjaTemplate] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
   const [htmlString, setHtmlString] = useState('');
 
   const [batchMode, setBatchMode] = useState(false);
@@ -118,6 +119,7 @@ const TemplateConfig = () => {
       setAllowReject(data.allow_reject || false);
       setCategory(data.category || 'master');
       setIsJinjaTemplate(data.is_jinja_template || false);
+      setIsPreview(data.is_preview || false);
       setHtmlString(data.html_string || '');
 
       setBatchMode(data.batch_mode || false);
@@ -151,6 +153,7 @@ const TemplateConfig = () => {
         allow_reject: data.allow_reject || false,
         category: data.category || 'master',
         is_jinja_template: data.is_jinja_template || false,
+        is_preview: data.is_preview || false,
         html_string: data.html_string || '',
         batch_mode: data.batch_mode || false,
         batch_input_field: data.batch_input_field || '',
@@ -227,6 +230,7 @@ const TemplateConfig = () => {
       allowReject !== initialSettingsRef.current.allow_reject ||
       category !== initialSettingsRef.current.category ||
       isJinjaTemplate !== initialSettingsRef.current.is_jinja_template ||
+      isPreview !== initialSettingsRef.current.is_preview ||
       htmlString !== initialSettingsRef.current.html_string ||
       batchMode !== initialSettingsRef.current.batch_mode ||
       batchInputField !== initialSettingsRef.current.batch_input_field ||
@@ -237,7 +241,7 @@ const TemplateConfig = () => {
       groupingField !== initialSettingsRef.current.grouping_field;
 
     setHasUnsavedChanges(configChanged || routeChanged || settingsChanged);
-  }, [webListingFields, kioskListingFields, mobileListingFields, exportFields, searchFields, listingFilters, approvers, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, allowReject, category, isJinjaTemplate, htmlString, batchMode, batchInputField, fanOutOnComplete, splitOnComplete, splitField, groupingMode, groupingField]);
+  }, [webListingFields, kioskListingFields, mobileListingFields, exportFields, searchFields, listingFilters, approvers, nextTemplate, previousTemplate, pushFields, platforms, showCompleted, allowNewSubmissions, allowReject, category, isJinjaTemplate, isPreview, htmlString, batchMode, batchInputField, fanOutOnComplete, splitOnComplete, splitField, groupingMode, groupingField]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -390,6 +394,7 @@ const TemplateConfig = () => {
       grouping_field: groupingField,
       category,
       is_jinja_template: isJinjaTemplate,
+      is_preview: isPreview,
       html_string: htmlString
     };
 
@@ -444,6 +449,7 @@ const TemplateConfig = () => {
         allow_reject: updatedTemplate.allow_reject || false,
         category: updatedTemplate.category || 'master',
         is_jinja_template: updatedTemplate.is_jinja_template || false,
+        is_preview: updatedTemplate.is_preview || false,
         html_string: updatedTemplate.html_string || '',
         batch_mode: updatedTemplate.batch_mode || false,
         batch_input_field: updatedTemplate.batch_input_field || '',
@@ -455,6 +461,7 @@ const TemplateConfig = () => {
       };
 
       setIsJinjaTemplate(updatedTemplate.is_jinja_template || false);
+      setIsPreview(updatedTemplate.is_preview || false);
       setHtmlString(updatedTemplate.html_string || '');
       setHasUnsavedChanges(false);
       toast.success(`Saved! Version ${updatedTemplate.version}`);
@@ -616,6 +623,8 @@ const TemplateConfig = () => {
               setAllowReject={setAllowReject}
               isJinjaTemplate={isJinjaTemplate}
               setIsJinjaTemplate={setIsJinjaTemplate}
+              isPreview={isPreview}
+              setIsPreview={setIsPreview}
               htmlString={htmlString}
               setHtmlString={setHtmlString}
               errors={errors}
@@ -725,15 +734,15 @@ function Card({ children, className = '' }) {
   return <div className={`section-card p-6 ${className}`}>{children}</div>;
 }
 
-function ToggleRow({ label, hint, checked, onChange }) {
+function ToggleRow({ label, hint, checked, onChange, disabled = false }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-4 py-3 transition-colors hover:bg-secondary">
+    <div className={`flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-4 py-3 transition-colors ${disabled ? 'opacity-50' : 'hover:bg-secondary'}`}>
       <div>
         <p className="text-sm font-medium text-foreground">{label}</p>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
-      <label className="relative inline-flex cursor-pointer">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />
+      <label className={`relative inline-flex ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+        <input type="checkbox" checked={checked} onChange={(e) => !disabled && onChange(e.target.checked)} disabled={disabled} className="sr-only peer" />
         <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
       </label>
     </div>
@@ -742,7 +751,7 @@ function ToggleRow({ label, hint, checked, onChange }) {
 
 /* ---------- Section Components ---------- */
 
-function GeneralSection({ template, platforms, setPlatforms, category, setCategory, showCompleted, setShowCompleted, allowNewSubmissions, setAllowNewSubmissions, allowReject, setAllowReject, isJinjaTemplate, setIsJinjaTemplate, htmlString, setHtmlString, errors = {} }) {
+function GeneralSection({ template, platforms, setPlatforms, category, setCategory, showCompleted, setShowCompleted, allowNewSubmissions, setAllowNewSubmissions, allowReject, setAllowReject, isJinjaTemplate, setIsJinjaTemplate, isPreview, setIsPreview, htmlString, setHtmlString, errors = {} }) {
   const togglePlatform = (id) => {
     setPlatforms(platforms.includes(id) ? platforms.filter(p => p !== id) : [...platforms, id]);
   };
@@ -818,7 +827,8 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
           <ToggleRow label="Show completed logsheets" hint="Visible to all viewers" checked={showCompleted} onChange={setShowCompleted} />
           <ToggleRow label="Allow new submissions" hint="Users can create new entries" checked={allowNewSubmissions} onChange={setAllowNewSubmissions} />
           <ToggleRow label="Allow reject" hint="Approvers can reject submissions" checked={allowReject} onChange={setAllowReject} />
-          <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} />
+          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={setIsPreview} />
+          <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} disabled={!isPreview} />
         </div>
       </Card>
 
