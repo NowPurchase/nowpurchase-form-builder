@@ -366,6 +366,7 @@ const TemplateConfig = () => {
   };
 
   const prepareRequestBody = () => {
+    console.log('prepareRequestBody - isPreview:', isPreview);
     const body = {
       config: {
         web_listing: webListingFields,
@@ -827,7 +828,7 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
           <ToggleRow label="Show completed logsheets" hint="Visible to all viewers" checked={showCompleted} onChange={setShowCompleted} />
           <ToggleRow label="Allow new submissions" hint="Users can create new entries" checked={allowNewSubmissions} onChange={setAllowNewSubmissions} />
           <ToggleRow label="Allow reject" hint="Approvers can reject submissions" checked={allowReject} onChange={setAllowReject} />
-          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={setIsPreview} />
+          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={(val) => { console.log('Setting isPreview to:', val); setIsPreview(val); }} />
           <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} disabled={!isPreview} />
         </div>
       </Card>
