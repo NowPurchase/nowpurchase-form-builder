@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import axios from 'axios'
 import { installApiInterceptors } from './utils/apiInterceptor'
 import 'np-dlms-components/styles.css'
+import './config/rsCameraCaptureOverrides.css'
 import './index.css'
 import App from './App.jsx'
 
