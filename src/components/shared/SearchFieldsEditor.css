@@ -1,0 +1,160 @@
+.search-fields-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-fields-description {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.search-fields-description p {
+  margin: 0;
+}
+
+/* Fields List */
+.search-fields-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.search-fields-empty {
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px;
+}
+
+/* Field Chip */
+.search-field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.search-field-chip:hover {
+  border-color: #3498ff;
+  background: #f5f9ff;
+}
+
+.search-field-value {
+  font-size: 12px;
+  color: #333;
+  background: transparent;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.search-field-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.search-field-remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Input Wrapper */
+.search-field-input-wrapper {
+  position: relative;
+}
+
+.search-field-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-field-input-row .rs-input {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+/* Suggestions Dropdown */
+.search-field-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+.suggestion-category {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-category:last-child {
+  border-bottom: none;
+}
+
+.suggestion-category-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #fafafa;
+  position: sticky;
+  top: 0;
+}
+
+.suggestion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.suggestion-item:hover {
+  background: #f5f9ff;
+}
+
+.suggestion-value {
+  font-size: 12px;
+  color: #333;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: transparent;
+}
+
+.suggestion-label {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Add Button */
+.add-search-field-btn {
+  align-self: flex-start;
+}

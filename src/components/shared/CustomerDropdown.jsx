@@ -4,7 +4,7 @@ import { formatErrorMessage } from "../../utils/errorHandler";
 import { toast } from "./Toast";
 import "./CustomerDropdown.css";
 
-function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName }) {
+function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select customer...", initialCustomerName, disabled = false, title }) {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,10 +105,11 @@ function CustomerDropdown({ value, onChange, onSelect, placeholder = "Select cus
   };
 
   return (
-    <div className={`customer-dropdown ${isOpen ? "open" : ""}`} ref={dropdownRef}>
+    <div className={`customer-dropdown ${isOpen ? "open" : ""} ${disabled ? "disabled" : ""}`} ref={dropdownRef} title={title}>
       <div
         className="customer-dropdown-trigger"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        style={disabled ? { cursor: 'not-allowed', backgroundColor: '#f1f5f9', opacity: 0.7 } : {}}
       >
         <span className={isPlaceholder ? "placeholder-text" : ""}>
           {displayName}

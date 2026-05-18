@@ -4,9 +4,9 @@ import { getToken, removeToken } from "./services/api";
 import Login from "./components/pages/Login";
 import Home from "./components/pages/Home";
 import NewForm from "./components/pages/NewForm";
-import ViewForm from "./components/pages/ViewForm";
-import Permissions from "./components/pages/Permissions";
+
 import TemplateConfig from "./components/pages/TemplateConfig";
+import Deploy from "./components/pages/Deploy";
 import ToastContainer from "./components/shared/Toast";
 
 function AppContent() {
@@ -80,31 +80,22 @@ function AppContent() {
             )
           }
         />
-        <Route
-          path="/form/:formId"
-          element={
-            isAuthenticated ? (
-              <ViewForm />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/permissions"
-          element={
-            isAuthenticated ? (
-              <Permissions onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
+
         <Route
           path="/config/:templateId"
           element={
             isAuthenticated ? (
               <TemplateConfig />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/deploy"
+          element={
+            isAuthenticated ? (
+              <Deploy />
             ) : (
               <Navigate to="/" replace />
             )

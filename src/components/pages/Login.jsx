@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { setToken, setNowPurchaseToken, sendOTP, verifyOTP, loginWithNowPurchaseToken } from "../../services/api";
-import "./Login.css";
+import { FileSpreadsheet, Phone, KeyRound, ArrowLeft, Loader2, ArrowRight } from "lucide-react";
+import { setNowPurchaseToken, sendOTP, verifyOTP } from "../../services/api";
 
 function Login({ onLogin }) {
   const [mobile, setMobile] = useState("");
@@ -27,7 +27,7 @@ function Login({ onLogin }) {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!mobile || mobile.length !== 10) {
       setError("Please enter a valid 10-digit mobile number");
       return;
@@ -38,7 +38,7 @@ function Login({ onLogin }) {
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await sendOTP(mobileWithPrefix);
-      
+
       if (response?.detail || response) {
         setOtpSent(true);
         setCountdown(60);
@@ -66,25 +66,22 @@ function Login({ onLogin }) {
 
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
-
-      // Step 1: Verify OTP and get NowPurchase token
       const otpResponse = await verifyOTP(mobileWithPrefix, otp);
       const nowpurchaseToken = otpResponse?.token;
 
       if (!nowpurchaseToken) {
-        setError("Verification successful but no token received from server");
+        setError("Verification successful but no token received");
         return;
       }
 
-
-      if(nowpurchaseToken) {
+      if (nowpurchaseToken) {
         setNowPurchaseToken(nowpurchaseToken, true);
         onLogin();
       } else {
-        setError("Login successful but no JWT token received");
+        setError("Login successful but no token received");
       }
     } catch (err) {
-      setError(err.message || "Invalid OTP. Please check and try again.");
+      setError(err.message || "Invalid OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,7 +89,7 @@ function Login({ onLogin }) {
 
   const handleResendOTP = async () => {
     if (countdown > 0) return;
-    
+
     setError("");
     setOtp("");
     setLoading(true);
@@ -100,15 +97,15 @@ function Login({ onLogin }) {
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await sendOTP(mobileWithPrefix);
-      
+
       if (response?.detail || response) {
         setCountdown(60);
         setError("");
       } else {
-        setError("Failed to resend OTP. Please try again.");
+        setError("Failed to resend OTP.");
       }
     } catch (err) {
-      setError(err.message || "Failed to resend OTP. Please try again.");
+      setError(err.message || "Failed to resend OTP.");
     } finally {
       setLoading(false);
     }
@@ -122,94 +119,168 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>Admin Login</h2>
-        {!otpSent ? (
-          <form onSubmit={handleSendOTP}>
-            <div className="form-group">
-              <label htmlFor="mobile">Mobile Number</label>
-              <div className="mobile-input-wrapper">
-                <span className="mobile-prefix">+91</span>
-                <input
-                  type="text"
-                  id="mobile"
-                  value={mobile}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\+91/g, '').replace(/\D/g, '');
-                    setMobile(value);
-                  }}
-                  placeholder="Enter mobile number"
-                  maxLength={10}
-                  required
-                  disabled={loading}
-                />
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-glow), hsl(var(--background))' }}>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="icon-box h-14 w-14 mb-4">
+            <FileSpreadsheet className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">DLMS Admin Panel</h1>
+        </div>
+
+        {/* Card */}
+        <div className="section-card p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-lg font-semibold text-foreground">
+              {otpSent ? "Verify OTP" : "Sign in"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {otpSent
+                ? `Enter the code sent to +91 ${mobile}`
+                : "Enter your mobile number to continue"
+              }
+            </p>
+          </div>
+
+          {!otpSent ? (
+            <form onSubmit={handleSendOTP} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                  Mobile Number
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm font-medium">+91</span>
+                    <div className="w-px h-4 bg-border" />
+                  </div>
+                  <input
+                    type="text"
+                    value={mobile}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\+91/g, '').replace(/\D/g, '');
+                      setMobile(value);
+                    }}
+                    placeholder="Enter 10-digit number"
+                    maxLength={10}
+                    required
+                    disabled={loading}
+                    className="input-field pl-24 h-12 text-base"
+                  />
+                </div>
               </div>
-            </div>
-            {error && <div className="error-message">{error}</div>}
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? "Sending OTP..." : "Send OTP"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOTP}>
-            <div className="otp-info">
-              <p className="otp-message">
-                We've sent a verification code to <strong>+91 {mobile}</strong>
-              </p>
+
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || mobile.length !== 10}
+                className="btn-primary w-full h-11"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Sending OTP...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
               <button
                 type="button"
-                className="change-number-link"
                 onClick={handleBackToMobile}
                 disabled={loading}
+                className="btn-ghost -ml-2 mb-2 text-xs"
               >
+                <ArrowLeft className="h-3.5 w-3.5" />
                 Change number
               </button>
-            </div>
-            <div className="form-group">
-              <label htmlFor="otp">Enter OTP</label>
-              <input
-                ref={otpInputRef}
-                type="text"
-                id="otp"
-                value={otp}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                  setOtp(value);
-                }}
-                placeholder="Enter 4-digit OTP"
-                maxLength={4}
-                required
-                disabled={loading}
-                className="otp-input"
-              />
-            </div>
-            {error && <div className="error-message">{error}</div>}
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? "Verifying..." : "Verify OTP"}
-            </button>
-            <div className="resend-otp">
-              {countdown > 0 ? (
-                <span className="resend-countdown">
-                  Resend OTP in {countdown}s
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  className="resend-button"
-                  onClick={handleResendOTP}
-                  disabled={loading}
-                >
-                  Resend OTP
-                </button>
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                  Verification Code
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setOtp(value);
+                    }}
+                    placeholder="Enter 4-digit OTP"
+                    maxLength={4}
+                    required
+                    disabled={loading}
+                    className="input-field pl-10 h-12 text-base tracking-widest font-mono text-center"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {error}
+                </div>
               )}
-            </div>
-          </form>
-        )}
+
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 4}
+                className="btn-primary w-full h-11"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Verify & Sign in
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
+                {countdown > 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    Resend code in <span className="font-mono font-medium text-foreground">{countdown}s</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={loading}
+                    className="text-sm font-medium text-primary hover:underline cursor-pointer bg-transparent border-0"
+                  >
+                    Resend verification code
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          By continuing, you agree to our Terms of Service
+        </p>
       </div>
     </div>
   );
 }
 
 export default Login;
-

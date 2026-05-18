@@ -1,32 +1,37 @@
 .customer-dropdown {
   position: relative;
   width: 100%;
+  min-width: 260px;
 }
 
 .customer-dropdown-trigger {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
+  padding: 8px 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--card));
   cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 13px;
-  color: #1f2937;
-  font-weight: 400;
-  min-height: auto;
-  gap: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  min-height: 42px;
+  gap: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .customer-dropdown-trigger:hover {
-  border-color: #cbd5e1;
-  background: white;
+  border-color: hsl(var(--primary) / 0.5);
+  background: hsl(var(--card));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .customer-dropdown.open .customer-dropdown-trigger {
-  background: white;
+  background: hsl(var(--card));
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
 }
 
 .customer-dropdown-trigger:focus-within,
@@ -37,96 +42,102 @@
 .customer-dropdown-trigger > span:first-child {
   flex: 1;
   text-align: left;
-  color: #1f2937;
+  color: hsl(var(--foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .customer-dropdown-trigger > span.placeholder-text {
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
 }
 
 .dropdown-arrow {
-  font-size: 10px;
-  color: #64748b;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .customer-dropdown.open .dropdown-arrow {
-  color: #0f172a;
+  color: hsl(var(--primary));
+  transform: rotate(180deg);
 }
 
 .customer-dropdown-menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 100%;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 4px 12px -4px rgba(0, 0, 0, 0.1);
   z-index: 1050;
-  max-height: 300px;
+  max-height: 350px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .customer-search {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
+  padding: 12px;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary) / 0.3);
 }
 
 .customer-search-input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-  transition: all 0.15s ease;
-  color: #1f2937;
-  background: #f8fafc;
+  padding: 10px 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
 }
 
 .customer-search-input:focus {
-  background: white;
+  background: hsl(var(--card));
   outline: none;
-  border-color: #cbd5e1;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
 }
 
 .customer-dropdown-list {
   overflow-y: auto;
-  max-height: 250px;
+  max-height: 280px;
+  padding: 6px;
 }
 
 .customer-dropdown-item {
-  padding: 10px 12px;
+  padding: 12px 14px;
   cursor: pointer;
   transition: all 0.15s ease;
-  border-bottom: 1px solid #f1f5f9;
-  color: #1f2937;
-  font-size: 13px;
-  font-weight: 400;
+  border-radius: 8px;
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  font-weight: 450;
+  margin-bottom: 2px;
 }
 
 .customer-dropdown-item:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }
 
 .customer-dropdown-item.selected {
-  background: #f8fafc;
-  color: #0f172a;
-  font-weight: 500;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  font-weight: 600;
 }
 
 .customer-dropdown-loading,
 .customer-dropdown-empty {
-  padding: 24px 20px;
+  padding: 32px 24px;
   text-align: center;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
   font-weight: 500;
 }
