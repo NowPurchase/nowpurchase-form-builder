@@ -1,21 +1,54 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button, Input } from 'rsuite';
 import './SearchFieldsEditor.css';
 
 // Common field path suggestions
-const FIELD_SUGGESTIONS = [
-  { value: 'data.main.data.serial_no', label: 'Serial Number', category: 'Form Data' },
-  { value: 'data.main.data.heat_no', label: 'Heat Number', category: 'Form Data' },
-  { value: 'data.main.data.casting_name.name', label: 'Casting Name', category: 'Form Data' },
-  { value: 'data.main.data.assembly.name', label: 'Assembly Name', category: 'Form Data' },
-  { value: 'parent_data.snos[0]', label: 'Parent Serial (first)', category: 'Parent Data' },
-  { value: 'parent_data.casting_name.name', label: 'Parent Casting Name', category: 'Parent Data' },
+const DEFAULT_SUGGESTIONS = [
   { value: 'meta.created_by_name', label: 'Created By', category: 'Metadata' },
   { value: 'status', label: 'Status', category: 'System' },
 ];
 
-const SearchFieldsEditor = ({ fields, onChange }) => {
+const SearchFieldsEditor = ({ fields, onChange, webListingFields = [], kioskListingFields = [] }) => {
+  // Generate suggestions from listing fields
+  const listingSuggestions = useMemo(() => {
+    const seen = new Set();
+    const suggestions = [];
+
+    // Add web listing fields
+    webListingFields.forEach(field => {
+      if (field.key && !seen.has(field.key)) {
+        seen.add(field.key);
+        suggestions.push({
+          value: field.key,
+          label: field.label || field.key,
+          category: 'Web Listing'
+        });
+      }
+    });
+
+    // Add kiosk listing fields (only if not already added)
+    kioskListingFields.forEach(field => {
+      if (field.key && !seen.has(field.key)) {
+        seen.add(field.key);
+        suggestions.push({
+          value: field.key,
+          label: field.label || field.key,
+          category: 'Kiosk Listing'
+        });
+      }
+    });
+
+    // Add default suggestions (only if not already added)
+    DEFAULT_SUGGESTIONS.forEach(suggestion => {
+      if (!seen.has(suggestion.value)) {
+        seen.add(suggestion.value);
+        suggestions.push(suggestion);
+      }
+    });
+
+    return suggestions;
+  }, [webListingFields, kioskListingFields]);
   const [showAddInput, setShowAddInput] = useState(false);
   const [newFieldValue, setNewFieldValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -23,7 +56,7 @@ const SearchFieldsEditor = ({ fields, onChange }) => {
   const suggestionsRef = useRef(null);
 
   // Filter suggestions based on input and exclude already added fields
-  const filteredSuggestions = FIELD_SUGGESTIONS.filter(s =>
+  const filteredSuggestions = listingSuggestions.filter(s =>
     !fields.includes(s.value) &&
     (newFieldValue === '' ||
       s.value.toLowerCase().includes(newFieldValue.toLowerCase()) ||

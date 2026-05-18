@@ -366,7 +366,6 @@ const TemplateConfig = () => {
   };
 
   const prepareRequestBody = () => {
-    console.log('prepareRequestBody - isPreview:', isPreview);
     const body = {
       config: {
         web_listing: webListingFields,
@@ -666,7 +665,12 @@ const TemplateConfig = () => {
             />
           )}
           {activeSection === 'search' && (
-            <SearchSection searchFields={searchFields} setSearchFields={setSearchFields} />
+            <SearchSection
+              searchFields={searchFields}
+              setSearchFields={setSearchFields}
+              webListingFields={webListingFields}
+              kioskListingFields={kioskListingFields}
+            />
           )}
           {activeSection === 'filters' && (
             <FiltersSection listingFilters={listingFilters} setListingFilters={setListingFilters} />
@@ -828,7 +832,7 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
           <ToggleRow label="Show completed logsheets" hint="Visible to all viewers" checked={showCompleted} onChange={setShowCompleted} />
           <ToggleRow label="Allow new submissions" hint="Users can create new entries" checked={allowNewSubmissions} onChange={setAllowNewSubmissions} />
           <ToggleRow label="Allow reject" hint="Approvers can reject submissions" checked={allowReject} onChange={setAllowReject} />
-          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={(val) => { console.log('Setting isPreview to:', val); setIsPreview(val); }} />
+          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={setIsPreview} />
           <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} disabled={!isPreview} />
         </div>
       </Card>
@@ -1013,12 +1017,17 @@ function DisplaySection({ activeTab, setActiveTab, webListingFields, setWebListi
   );
 }
 
-function SearchSection({ searchFields, setSearchFields }) {
+function SearchSection({ searchFields, setSearchFields, webListingFields, kioskListingFields }) {
   return (
     <>
       <SectionHeader icon={Search} title="Search Fields" description="Configure which field paths can be searched. Users can search logsheets by these fields." />
       <Card>
-        <SearchFieldsEditor fields={searchFields} onChange={setSearchFields} />
+        <SearchFieldsEditor
+          fields={searchFields}
+          onChange={setSearchFields}
+          webListingFields={webListingFields}
+          kioskListingFields={kioskListingFields}
+        />
       </Card>
     </>
   );
