@@ -53,20 +53,9 @@ export const createDynamicLog = async (data, options = {}) => {
  */
 export const updateDynamicLog = async (template_id, data, options = {}) => {
   const payload = {
-    form_json: data.form_json,
-    template_name: data.template_name,
-    customer_name: data.customer_name,
-    sheet_url: data.sheet_url,
-    status: data.status,
-    description: data.description,
-    config: data.config,
-    platforms: data.platforms,
+    ...data,
     fetch_html: false,
   };
-
-  Object.keys(payload).forEach(key => {
-    if (payload[key] === undefined) delete payload[key];
-  });
 
   const url = buildQueryUrl(`${BASE_ENDPOINT}/${template_id}`, data.customer_id);
   return await apiPut(url, payload, options);
