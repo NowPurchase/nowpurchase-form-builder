@@ -367,7 +367,6 @@ const TemplateConfig = () => {
 
   const prepareRequestBody = () => {
     const body = {
-      customer_id: customerId,
       config: {
         web_listing: webListingFields,
         kiosk_listing: kioskListingFields,
@@ -417,7 +416,7 @@ const TemplateConfig = () => {
 
     try {
       setSaving(true);
-      const updatedTemplate = await patchTemplateConfig(templateId, prepareRequestBody());
+      const updatedTemplate = await patchTemplateConfig(templateId, customerId, prepareRequestBody());
       setTemplate(updatedTemplate);
 
       const config = updatedTemplate.config || {};

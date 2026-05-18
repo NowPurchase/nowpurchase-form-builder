@@ -18,9 +18,8 @@ export const getDynamicLog = async (template_id, customerId, options = {}) => {
 /**
  * Update template configuration (config and/or route)
  */
-export const patchTemplateConfig = async (templateId, updates, options = {}) => {
-  // Use buildQueryUrl to ensure customer_id is passed if provided in updates
-  const url = buildQueryUrl(`${BASE_ENDPOINT}/${templateId}`, updates.customer_id);
+export const patchTemplateConfig = async (templateId, customerId, updates, options = {}) => {
+  const url = buildQueryUrl(`${BASE_ENDPOINT}/${templateId}`, customerId);
   return await apiPut(url, updates, options);
 };
 
