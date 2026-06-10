@@ -9,7 +9,6 @@ import {
   Download,
   ChevronDown,
   Loader2,
-  AlertCircle,
   Settings2,
   Workflow,
   Filter,
@@ -20,6 +19,12 @@ import {
   Sparkles,
   Code2,
   FileSpreadsheet,
+  GripVertical,
+  X,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  Trash2,
 } from 'lucide-react';
 import { Modal } from 'rsuite';
 import ListingFieldsEditor from '../shared/ListingFieldsEditor';
@@ -257,7 +262,6 @@ const TemplateConfig = () => {
   const validateConfig = () => {
     const newErrors = {};
 
-    // Validate listing fields (web/kiosk/mobile/export)
     const validatePlatformFields = (fields, platform) => {
       fields.forEach((field, index) => {
         if (!field.label || !field.label.trim()) {
@@ -278,7 +282,6 @@ const TemplateConfig = () => {
     validatePlatformFields(mobileListingFields, 'mobile');
     validatePlatformFields(exportFields, 'export');
 
-    // Validate search fields - must be valid field paths
     searchFields.forEach((field, index) => {
       if (!field || !field.trim()) {
         if (!newErrors.search_fields) newErrors.search_fields = {};
@@ -286,7 +289,6 @@ const TemplateConfig = () => {
       }
     });
 
-    // Validate listing filters
     listingFilters.forEach((filter, index) => {
       if (!newErrors.listing_filters) newErrors.listing_filters = {};
       if (!newErrors.listing_filters[index]) newErrors.listing_filters[index] = {};
@@ -300,7 +302,6 @@ const TemplateConfig = () => {
       if (!filter.field || !filter.field.trim()) {
         newErrors.listing_filters[index].field = 'Field path is required';
       }
-      // Validate options if present
       if (filter.options && Array.isArray(filter.options)) {
         filter.options.forEach((opt, optIndex) => {
           if (!opt.label || !opt.value === undefined) {
@@ -309,7 +310,6 @@ const TemplateConfig = () => {
           }
         });
       }
-      // Clean up empty error objects
       if (Object.keys(newErrors.listing_filters[index]).length === 0) {
         delete newErrors.listing_filters[index];
       }
@@ -318,7 +318,6 @@ const TemplateConfig = () => {
       delete newErrors.listing_filters;
     }
 
-    // Validate approvers
     approvers.forEach((approver, index) => {
       if (!approver.id || !approver.id.trim()) {
         if (!newErrors.approvers) newErrors.approvers = {};
@@ -337,7 +336,6 @@ const TemplateConfig = () => {
       }
     });
 
-    // Validate workflow routing
     if (nextTemplate === templateId) newErrors.next_template = 'Cannot select the same template';
     if (previousTemplate === templateId) newErrors.previous_template = 'Cannot select the same template';
     if (nextTemplate && previousTemplate && nextTemplate === previousTemplate) {
@@ -345,7 +343,6 @@ const TemplateConfig = () => {
       newErrors.previous_template = 'Next and previous cannot be the same';
     }
 
-    // Validate flow settings - required fields when enabled
     if (batchMode && (!batchInputField || !batchInputField.trim())) {
       newErrors.batch_input_field = 'Batch input field is required when batch mode is enabled';
     }
@@ -356,7 +353,6 @@ const TemplateConfig = () => {
       newErrors.grouping_field = 'Grouping field is required when grouping mode is enabled';
     }
 
-    // Validate platforms - at least one required
     if (!platforms || platforms.length === 0) {
       newErrors.platforms = 'At least one platform must be selected';
     }
@@ -488,11 +484,24 @@ const TemplateConfig = () => {
     if (pendingNavigation) navigate(pendingNavigation);
   };
 
+  const getSectionHasError = (sectionId) => {
+    switch (sectionId) {
+      case 'general': return !!errors.platforms;
+      case 'flow': return !!(errors.batch_input_field || errors.split_field || errors.grouping_field);
+      case 'display': return !!(errors.web || errors.kiosk || errors.mobile || errors.export);
+      case 'search': return !!errors.search_fields;
+      case 'filters': return !!errors.listing_filters;
+      case 'routing': return !!(errors.next_template || errors.previous_template);
+      case 'approvers': return !!errors.approvers;
+      default: return false;
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{ background: 'var(--gradient-glow), hsl(var(--background))' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 app-shell-bg">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        <span className="text-[12px] text-muted-foreground">Loading configuration...</span>
+        <span className="text-sm text-muted-foreground">Loading configuration...</span>
       </div>
     );
   }
@@ -500,114 +509,67 @@ const TemplateConfig = () => {
   if (!template) return null;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--gradient-glow), hsl(var(--background))' }}>
+    <div className="min-h-screen app-shell-bg">
       {/* Sub-header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <button onClick={handleCancel} className="btn-ghost gap-2 -ml-2">
-              <ArrowLeft className="h-4 w-4" /> Back to templates
-            </button>
-            <div className="h-6 w-px bg-border" />
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <FileSpreadsheet className="h-4 w-4" />
-              </div>
-              <div className="leading-tight">
-                <p className="text-[13px] font-semibold tracking-tight">{template.template_name}</p>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="font-mono">v{template.version}</span>
-                  {hasUnsavedChanges && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-1.5 text-[10px] font-medium text-warning">
-                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
-                      Unsaved
-                    </span>
-                  )}
-                </div>
-              </div>
+      <header className="cfg-subhead">
+        <button onClick={handleCancel} className="cfg-btn-back">
+          <ArrowLeft /> Back to templates
+        </button>
+        <span className="vr" />
+        <div className="cfg-doc">
+          <div className="cfg-doc-ic">
+            <FileSpreadsheet />
+          </div>
+          <div>
+            <div className="cfg-doc-name">{template.template_name}</div>
+            <div className="cfg-doc-meta">
+              <span className="cfg-doc-ver">v{template.version}</span>
+              {hasUnsavedChanges && (
+                <span className="cfg-unsaved">
+                  <span className="pulse" />
+                  Unsaved
+                </span>
+              )}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges || saving}
-              className="btn-primary gap-2"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {saving ? 'Saving...' : 'Save changes'}
-            </button>
-          </div>
         </div>
+        <span className="spacer" />
+        <button onClick={handleSave} disabled={!hasUnsavedChanges || saving} className="cfg-btn-save">
+          {saving ? <Loader2 className="animate-spin" /> : <Save />}
+          {saving ? 'Saving...' : 'Save changes'}
+        </button>
       </header>
 
-      <div className="mx-auto grid max-w-[1400px] grid-cols-12 gap-6 px-6 py-8">
-        {/* Sidebar */}
-        <aside className="col-span-12 lg:col-span-3">
-          <nav className="sticky top-24 space-y-1">
-            <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Configuration
-            </p>
+      {/* Page grid */}
+      <div className="cfg-wrap">
+        {/* Config nav */}
+        <nav className="cfg-nav">
+          <div className="cfg-nav-title">Configuration</div>
+          <div className="cfg-nav-card">
             {NAV.map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.id;
-
-              // Check if section has errors
-              const sectionHasError = (() => {
-                switch (item.id) {
-                  case 'general':
-                    return !!errors.platforms;
-                  case 'flow':
-                    return !!(errors.batch_input_field || errors.split_field || errors.grouping_field);
-                  case 'display':
-                    return !!(errors.web || errors.kiosk || errors.mobile || errors.export);
-                  case 'search':
-                    return !!errors.search_fields;
-                  case 'filters':
-                    return !!errors.listing_filters;
-                  case 'routing':
-                    return !!(errors.next_template || errors.previous_template);
-                  case 'approvers':
-                    return !!errors.approvers;
-                  default:
-                    return false;
-                }
-              })();
+              const hasError = getSectionHasError(item.id);
 
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all cursor-pointer border-0 ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground shadow-sm'
-                      : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  } ${sectionHasError && !isActive ? 'bg-destructive/5' : ''}`}
+                  className={`cfg-nav-item ${isActive ? 'active' : ''} ${hasError ? 'has-error' : ''}`}
                 >
-                  <span className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                    sectionHasError
-                      ? 'bg-destructive/10 text-destructive'
-                      : isActive
-                        ? 'bg-gradient-primary text-primary-foreground shadow-glow'
-                        : 'bg-secondary text-muted-foreground group-hover:bg-background'
-                  }`}>
-                    <Icon className="h-4 w-4" />
-                    {sectionHasError && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-white">!</span>
-                    )}
-                  </span>
-                  <span className="flex-1 leading-tight">
-                    <span className={`block text-sm font-medium ${sectionHasError ? 'text-destructive' : ''}`}>{item.label}</span>
-                    <span className={`block text-[11px] ${sectionHasError ? 'text-destructive/70' : 'text-muted-foreground/80'}`}>{item.hint}</span>
+                  <span className="ci"><Icon /></span>
+                  <span className="ct">
+                    <span className="cl">{item.label}</span>
+                    <span className="ch">{item.hint}</span>
                   </span>
                 </button>
               );
             })}
-          </nav>
-        </aside>
+          </div>
+        </nav>
 
-        {/* Main Content */}
-        <main className="col-span-12 space-y-6 lg:col-span-9">
+        {/* Content */}
+        <main className="cfg-content">
           {activeSection === 'general' && (
             <GeneralSection
               template={template}
@@ -701,15 +663,15 @@ const TemplateConfig = () => {
           <Modal.Title>Unsaved Changes</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p className="text-[13px] text-muted-foreground">You have unsaved changes. Discard them?</p>
+          <p className="text-sm text-muted-foreground">You have unsaved changes. Discard them?</p>
         </Modal.Body>
         <Modal.Footer>
-          <button onClick={() => setShowUnsavedModal(false)} className="btn-secondary text-[12px] mr-2">
+          <button onClick={() => setShowUnsavedModal(false)} className="btn-secondary text-sm mr-2">
             Cancel
           </button>
           <button
             onClick={handleDiscardChanges}
-            className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-[12px] font-medium transition-all cursor-pointer border-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all cursor-pointer border-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Discard
           </button>
@@ -719,43 +681,44 @@ const TemplateConfig = () => {
   );
 };
 
-/* ---------- Reusable Components ---------- */
-
+/* ---------- Section Header ---------- */
 function SectionHeader({ icon: Icon, title, description }) {
   return (
-    <div className="mb-6 flex items-start gap-4">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
-        <Icon className="h-5 w-5" />
-      </div>
+    <div className="cfg-sec-head">
+      <div className="si"><Icon /></div>
       <div>
-        <h2 className="font-display text-2xl font-semibold tracking-tight">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <h1>{title}</h1>
+        <p>{description}</p>
       </div>
     </div>
   );
 }
 
-function Card({ children, className = '' }) {
-  return <div className={`section-card p-6 ${className}`}>{children}</div>;
+/* ---------- Toggle Switch ---------- */
+function Switch({ checked, onChange, disabled = false }) {
+  return (
+    <span
+      onClick={() => !disabled && onChange(!checked)}
+      className={`cfg-switch ${checked ? 'on' : ''}`}
+      style={{ cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+    />
+  );
 }
 
+/* ---------- Toggle Row ---------- */
 function ToggleRow({ label, hint, checked, onChange, disabled = false }) {
   return (
-    <div className={`flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-4 py-3 transition-colors ${disabled ? 'opacity-50' : 'hover:bg-secondary'}`}>
+    <div className={`cfg-toggle-row ${disabled ? 'is-disabled' : ''}`}>
       <div>
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        <div className="tr-l">{label}</div>
+        {hint && <div className="tr-h">{hint}</div>}
       </div>
-      <label className={`relative inline-flex ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-        <input type="checkbox" checked={checked} onChange={(e) => !disabled && onChange(e.target.checked)} disabled={disabled} className="sr-only peer" />
-        <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-      </label>
+      <Switch checked={checked} onChange={onChange} disabled={disabled} />
     </div>
   );
 }
 
-/* ---------- Section Components ---------- */
-
+/* ---------- General Section ---------- */
 function GeneralSection({ template, platforms, setPlatforms, category, setCategory, showCompleted, setShowCompleted, allowNewSubmissions, setAllowNewSubmissions, allowReject, setAllowReject, isJinjaTemplate, setIsJinjaTemplate, isPreview, setIsPreview, htmlString, setHtmlString, errors = {} }) {
   const togglePlatform = (id) => {
     setPlatforms(platforms.includes(id) ? platforms.filter(p => p !== id) : [...platforms, id]);
@@ -765,38 +728,27 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
     <>
       <SectionHeader icon={Settings2} title="General Settings" description="Core information, where this template runs, and submission rules." />
 
-      <Card>
-        <div className="grid gap-6 md:grid-cols-2 items-end">
+      <div className="cfg-card">
+        <div className="cfg-grid-2">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Template name</label>
-            <div className="h-11 w-full rounded-xl border border-border bg-muted/40 px-4 flex items-center text-sm text-muted-foreground select-none">
-              {template.template_name}
-            </div>
+            <label className="cfg-field-label">Template name</label>
+            <div className="cfg-readonly-field">{template.template_name}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Category</label>
-            <div className="flex gap-2 h-11">
-              {['master', 'operational'].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className={category === c ? 'btn-primary h-11' : 'btn-secondary h-11'}
-                >
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </button>
-              ))}
+            <label className="cfg-field-label">Category</label>
+            <div className="cfg-seg">
+              <button className={category === 'master' ? 'on' : ''} onClick={() => setCategory('master')}>Master</button>
+              <button className={category === 'operational' ? 'on' : ''} onClick={() => setCategory('operational')}>Operational</button>
             </div>
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="cfg-block-gap">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Platforms</label>
-            {errors.platforms && (
-              <span className="text-xs text-destructive">{errors.platforms}</span>
-            )}
+            <label className="cfg-field-label" style={{ marginBottom: 0 }}>Platforms</label>
+            {errors.platforms && <span className="cfg-err">{errors.platforms}</span>}
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="cfg-platforms">
             {[
               { k: 'web', label: 'Web', icon: Monitor },
               { k: 'kiosk', label: 'Kiosk', icon: Tablet },
@@ -804,23 +756,11 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
             ].map(({ k, label, icon: Icon }) => {
               const on = platforms.includes(k);
               return (
-                <button
-                  key={k}
-                  onClick={() => togglePlatform(k)}
-                  className={`group relative flex items-center gap-3 rounded-xl border p-4 text-left transition-all cursor-pointer ${
-                    on
-                      ? 'border-primary/40 bg-accent shadow-glow'
-                      : 'border-border bg-card hover:border-primary/20 hover:bg-accent/40'
-                  }`}
-                >
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                    on ? 'bg-gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-                  }`}>
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold">{label}</p>
-                    <p className="text-xs text-muted-foreground">{on ? 'Enabled' : 'Disabled'}</p>
+                <button key={k} onClick={() => togglePlatform(k)} className={`cfg-plat ${on ? 'on' : ''}`}>
+                  <div className="pi"><Icon /></div>
+                  <div>
+                    <div className="pl">{label}</div>
+                    <div className="ps">{on ? 'Enabled' : 'Disabled'}</div>
                   </div>
                 </button>
               );
@@ -828,30 +768,27 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
-          <ToggleRow label="Show completed logsheets" hint="Visible to all viewers" checked={showCompleted} onChange={setShowCompleted} />
-          <ToggleRow label="Allow new submissions" hint="Users can create new entries" checked={allowNewSubmissions} onChange={setAllowNewSubmissions} />
-          <ToggleRow label="Allow reject" hint="Approvers can reject submissions" checked={allowReject} onChange={setAllowReject} />
-          <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={setIsPreview} />
-          <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} disabled={!isPreview} />
-        </div>
-      </Card>
-
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">HTML Template</h3>
+        <div className="cfg-block-gap">
+          <div className="cfg-toggles">
+            <ToggleRow label="Show completed logsheets" hint="Visible to all viewers" checked={showCompleted} onChange={setShowCompleted} />
+            <ToggleRow label="Allow new submissions" hint="Users can create new entries" checked={allowNewSubmissions} onChange={setAllowNewSubmissions} />
+            <ToggleRow label="Allow reject" hint="Approvers can reject submissions" checked={allowReject} onChange={setAllowReject} />
+            <ToggleRow label="Has preview" hint="Template has a preview" checked={isPreview} onChange={setIsPreview} />
+            <ToggleRow label="Use Jinja2 template for preview" hint="Render preview with Jinja2" checked={isJinjaTemplate} onChange={setIsJinjaTemplate} disabled={!isPreview} />
           </div>
-          <span className="badge badge-outline font-mono text-[10px]">Jinja2 / Django</span>
         </div>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Use <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">{"{{ variable_name }}"}</code> syntax for dynamic values.
-        </p>
+      </div>
+
+      <div className="cfg-card">
+        <div className="cfg-ed-head">
+          <div className="cfg-ed-title"><Code2 /> HTML Template</div>
+          <span className="cfg-chip-mono">Jinja2 / Django</span>
+        </div>
+        <p className="cfg-ed-hint">Use <code>{"{{ variable_name }}"}</code> syntax for dynamic values.</p>
         <div className="code-editor-wrapper">
           <div className="code-editor-body">
             <div className="code-editor-lines">
-              {Array.from({ length: Math.max(12, (htmlString || '').split('\n').length) }, (_, i) => (
+              {Array.from({ length: Math.max(9, (htmlString || '').split('\n').length) }, (_, i) => (
                 <span key={i}>{i + 1}</span>
               ))}
             </div>
@@ -864,146 +801,104 @@ function GeneralSection({ template, platforms, setPlatforms, category, setCatego
             />
           </div>
         </div>
-      </Card>
-    </>
-  );
-}
-
-function FlowSection({ batchMode, setBatchMode, batchInputField, setBatchInputField, fanOutOnComplete, setFanOutOnComplete, splitOnComplete, setSplitOnComplete, splitField, setSplitField, groupingMode, setGroupingMode, groupingField, setGroupingField, errors = {} }) {
-  return (
-    <>
-      <SectionHeader icon={Workflow} title="Advanced Flow Configuration" description="Control how submissions are batched, split and grouped." />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold">Batch Mode</p>
-              <p className="mt-1 text-xs text-muted-foreground">Group multiple entries into a single batch</p>
-            </div>
-            <label className="relative inline-flex cursor-pointer">
-              <input type="checkbox" checked={batchMode} onChange={(e) => setBatchMode(e.target.checked)} className="sr-only peer" />
-              <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-          <div>
-            <input
-              type="text"
-              value={batchInputField}
-              onChange={(e) => setBatchInputField(e.target.value)}
-              placeholder="e.g., data.main.data.batch_items"
-              disabled={!batchMode}
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none focus:border-ring disabled:bg-muted/40 disabled:text-muted-foreground disabled:cursor-not-allowed ${
-                errors.batch_input_field ? 'border-destructive bg-destructive/5' : 'border-border bg-background'
-              }`}
-            />
-            {errors.batch_input_field && (
-              <p className="mt-1.5 text-xs text-destructive">{errors.batch_input_field}</p>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold">Fan Out</p>
-              <p className="mt-1 text-xs text-muted-foreground">Distribute records to multiple targets</p>
-            </div>
-            <label className="relative inline-flex cursor-pointer">
-              <input type="checkbox" checked={fanOutOnComplete} onChange={(e) => setFanOutOnComplete(e.target.checked)} className="sr-only peer" />
-              <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-          <input
-            type="text"
-            placeholder="No additional field required"
-            disabled
-            className="h-11 w-full rounded-xl border border-border bg-muted/40 px-4 text-sm text-muted-foreground cursor-not-allowed"
-          />
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold">Split On Complete</p>
-              <p className="mt-1 text-xs text-muted-foreground">Split incoming records on a key</p>
-            </div>
-            <label className="relative inline-flex cursor-pointer">
-              <input type="checkbox" checked={splitOnComplete} onChange={(e) => setSplitOnComplete(e.target.checked)} className="sr-only peer" />
-              <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-          <div>
-            <input
-              type="text"
-              value={splitField}
-              onChange={(e) => setSplitField(e.target.value)}
-              placeholder="e.g., data.main.data.serial_numbers"
-              disabled={!splitOnComplete}
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none focus:border-ring disabled:bg-muted/40 disabled:text-muted-foreground disabled:cursor-not-allowed ${
-                errors.split_field ? 'border-destructive bg-destructive/5' : 'border-border bg-background'
-              }`}
-            />
-            {errors.split_field && (
-              <p className="mt-1.5 text-xs text-destructive">{errors.split_field}</p>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold">Grouping Mode</p>
-              <p className="mt-1 text-xs text-muted-foreground">Select multiple docs from previous template</p>
-            </div>
-            <label className="relative inline-flex cursor-pointer">
-              <input type="checkbox" checked={groupingMode} onChange={(e) => setGroupingMode(e.target.checked)} className="sr-only peer" />
-              <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-          <div>
-            <input
-              type="text"
-              value={groupingField}
-              onChange={(e) => setGroupingField(e.target.value)}
-              placeholder="e.g., data.main.data.selected_heats"
-              disabled={!groupingMode}
-              className={`h-11 w-full rounded-xl border px-4 text-sm outline-none focus:border-ring disabled:bg-muted/40 disabled:text-muted-foreground disabled:cursor-not-allowed ${
-                errors.grouping_field ? 'border-destructive bg-destructive/5' : 'border-border bg-background'
-              }`}
-            />
-            {errors.grouping_field && (
-              <p className="mt-1.5 text-xs text-destructive">{errors.grouping_field}</p>
-            )}
-          </div>
-        </Card>
       </div>
     </>
   );
 }
 
+/* ---------- Flow Section ---------- */
+function FlowSection({ batchMode, setBatchMode, batchInputField, setBatchInputField, fanOutOnComplete, setFanOutOnComplete, splitOnComplete, setSplitOnComplete, splitField, setSplitField, groupingMode, setGroupingMode, groupingField, setGroupingField, errors = {} }) {
+  return (
+    <>
+      <SectionHeader icon={Workflow} title="Advanced Flow Configuration" description="Control how submissions are batched, split and grouped." />
+      <div className="cfg-flow-grid">
+        <div className="cfg-flow-card">
+          <div className="cfg-flow-top">
+            <div>
+              <div className="ft-l">Batch Mode</div>
+              <div className="ft-h">Group multiple entries into a single batch</div>
+            </div>
+            <Switch checked={batchMode} onChange={setBatchMode} />
+          </div>
+          <input
+            type="text"
+            value={batchInputField}
+            onChange={(e) => setBatchInputField(e.target.value)}
+            placeholder="e.g., data.main.data.batch_items"
+            disabled={!batchMode}
+            className={`cfg-tin mono ${!batchMode ? 'is-disabled' : ''} ${errors.batch_input_field ? 'has-error' : ''}`}
+          />
+          {errors.batch_input_field && <p className="cfg-err">{errors.batch_input_field}</p>}
+        </div>
+
+        <div className="cfg-flow-card">
+          <div className="cfg-flow-top">
+            <div>
+              <div className="ft-l">Fan Out</div>
+              <div className="ft-h">Distribute records to multiple targets</div>
+            </div>
+            <Switch checked={fanOutOnComplete} onChange={setFanOutOnComplete} />
+          </div>
+          <input type="text" value="No additional field required" disabled className="cfg-tin is-disabled" />
+        </div>
+
+        <div className="cfg-flow-card">
+          <div className="cfg-flow-top">
+            <div>
+              <div className="ft-l">Split On Complete</div>
+              <div className="ft-h">Split incoming records on a key</div>
+            </div>
+            <Switch checked={splitOnComplete} onChange={setSplitOnComplete} />
+          </div>
+          <input
+            type="text"
+            value={splitField}
+            onChange={(e) => setSplitField(e.target.value)}
+            placeholder="e.g., data.main.data.serial_numbers"
+            disabled={!splitOnComplete}
+            className={`cfg-tin mono ${!splitOnComplete ? 'is-disabled' : ''} ${errors.split_field ? 'has-error' : ''}`}
+          />
+          {errors.split_field && <p className="cfg-err">{errors.split_field}</p>}
+        </div>
+
+        <div className="cfg-flow-card">
+          <div className="cfg-flow-top">
+            <div>
+              <div className="ft-l">Grouping Mode</div>
+              <div className="ft-h">Select multiple docs from previous template</div>
+            </div>
+            <Switch checked={groupingMode} onChange={setGroupingMode} />
+          </div>
+          <input
+            type="text"
+            value={groupingField}
+            onChange={(e) => setGroupingField(e.target.value)}
+            placeholder="e.g., data.main.data.selected_heats"
+            disabled={!groupingMode}
+            className={`cfg-tin mono ${!groupingMode ? 'is-disabled' : ''} ${errors.grouping_field ? 'has-error' : ''}`}
+          />
+          {errors.grouping_field && <p className="cfg-err">{errors.grouping_field}</p>}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ---------- Display Section ---------- */
 function DisplaySection({ activeTab, setActiveTab, webListingFields, setWebListingFields, kioskListingFields, setKioskListingFields, mobileListingFields, setMobileListingFields, exportFields, setExportFields, errors }) {
   return (
     <>
       <SectionHeader icon={Layers} title="Display & Export" description="Choose which columns appear per platform and what gets exported." />
-      <Card>
-        <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-lg border border-border bg-secondary/40 mb-5">
+      <div className="cfg-card">
+        <div className="cfg-dtabs">
           {[
             { id: 'web', label: 'Web', icon: Monitor },
             { id: 'kiosk', label: 'Kiosk', icon: Tablet },
             { id: 'mobile', label: 'Mobile', icon: Smartphone },
             { id: 'export', label: 'Export', icon: Download },
           ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all cursor-pointer border-0 ${
-                activeTab === id
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'bg-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
+            <button key={id} onClick={() => setActiveTab(id)} className={activeTab === id ? 'on' : ''}>
+              <Icon /> {label}
             </button>
           ))}
         </div>
@@ -1012,43 +907,46 @@ function DisplaySection({ activeTab, setActiveTab, webListingFields, setWebListi
         {activeTab === 'kiosk' && <ListingFieldsEditor platform="kiosk" fields={kioskListingFields} onChange={setKioskListingFields} errors={errors.kiosk || {}} />}
         {activeTab === 'mobile' && <ListingFieldsEditor platform="mobile" fields={mobileListingFields} onChange={setMobileListingFields} errors={errors.mobile || {}} />}
         {activeTab === 'export' && <ListingFieldsEditor platform="export" fields={exportFields} onChange={setExportFields} errors={errors.export || {}} />}
-      </Card>
+      </div>
     </>
   );
 }
 
+/* ---------- Search Section ---------- */
 function SearchSection({ searchFields, setSearchFields, webListingFields, kioskListingFields }) {
   return (
     <>
       <SectionHeader icon={Search} title="Search Fields" description="Configure which field paths can be searched. Users can search logsheets by these fields." />
-      <Card>
+      <div className="cfg-card">
         <SearchFieldsEditor
           fields={searchFields}
           onChange={setSearchFields}
           webListingFields={webListingFields}
           kioskListingFields={kioskListingFields}
         />
-      </Card>
+      </div>
     </>
   );
 }
 
+/* ---------- Filters Section ---------- */
 function FiltersSection({ listingFilters, setListingFilters }) {
   return (
     <>
       <SectionHeader icon={Filter} title="Listing Filters" description="Configure filters for the logsheet listing. Users can filter logsheets using these options." />
-      <Card>
+      <div className="cfg-card">
         <ListingFiltersEditor filters={listingFilters} onChange={setListingFilters} />
-      </Card>
+      </div>
     </>
   );
 }
 
+/* ---------- Routing Section ---------- */
 function RoutingSection({ nextTemplate, previousTemplate, pushFields, availableTemplates, availablePushFields, onNextTemplateChange, onPreviousTemplateChange, onPushFieldsChange, currentTemplateId, errors }) {
   return (
     <>
       <SectionHeader icon={GitBranch} title="Workflow Routing" description="Define what comes before and after this template, and which fields carry forward." />
-      <Card>
+      <div className="cfg-card">
         <WorkflowRoutingEditor
           nextTemplate={nextTemplate}
           previousTemplate={previousTemplate}
@@ -1061,30 +959,29 @@ function RoutingSection({ nextTemplate, previousTemplate, pushFields, availableT
           currentTemplateId={currentTemplateId}
           errors={errors}
         />
-      </Card>
+      </div>
     </>
   );
 }
 
+/* ---------- Approvers Section ---------- */
 function ApproversSection({ approvers, setApprovers, errors }) {
   return (
     <>
       <SectionHeader icon={Users} title="Approvers" description="Drag to reorder approvers and change their levels." />
-      <div className="rounded-2xl border border-primary/20 bg-accent/60 p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-          <div className="text-sm">
-            <p className="font-semibold text-foreground">How approval works</p>
-            <ul className="mt-1 space-y-1 text-muted-foreground">
-              <li>• <span className="font-medium text-foreground">End (Finalize)</span> — completes (approve) or blocks (reject) the logsheet.</li>
-              <li>• <span className="font-medium text-foreground">Next Approver</span> — escalates to the next level approver.</li>
-            </ul>
-          </div>
+      <div className="cfg-info-callout">
+        <Sparkles />
+        <div>
+          <div className="ic-title">How approval works</div>
+          <ul>
+            <li><b>End (Finalize)</b> — completes (approve) or blocks (reject) the logsheet.</li>
+            <li><b>Next Approver</b> — escalates to the next level approver.</li>
+          </ul>
         </div>
       </div>
-      <Card className="p-0">
+      <div className="cfg-card flush">
         <ApproversEditor approvers={approvers} onChange={setApprovers} errors={errors.approvers || {}} />
-      </Card>
+      </div>
     </>
   );
 }

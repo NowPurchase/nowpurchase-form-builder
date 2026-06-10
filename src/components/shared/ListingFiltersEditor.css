@@ -5,8 +5,8 @@
 }
 
 .filters-description {
-  font-size: 13px;
-  color: #666;
+  font: 400 14px "Oxanium", sans-serif;
+  color: #808080;
   line-height: 1.5;
 }
 
@@ -18,20 +18,20 @@
 .filters-empty-state {
   text-align: center;
   padding: 40px 20px;
-  background: #fafafa;
-  border: 2px dashed #e5e5e5;
-  border-radius: 8px;
+  background: #f2f2f2;
+  border: 1px dashed #cccccc;
+  border-radius: 12px;
 }
 
 .filters-empty-state p {
   margin: 0;
-  color: #666;
-  font-size: 14px;
+  font: 500 14px "Oxanium", sans-serif;
+  color: #808080;
 }
 
 .filters-empty-state .empty-state-hint {
   margin-top: 8px;
-  font-size: 13px;
+  font: 400 13px "Oxanium", sans-serif;
   color: #999;
 }
 
@@ -39,30 +39,34 @@
 .filters-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
-/* Filter Card */
+/* Filter Card - MetalCloud accordion style */
 .filter-card {
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid #cccccc;
+  border-radius: 12px;
   background: #fff;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 160ms ease-out;
+  margin-top: 12px;
+}
+
+.filter-card:first-child {
+  margin-top: 0;
 }
 
 .filter-card:hover {
-  border-color: #d4d4d4;
+  border-color: #999;
 }
 
 .filter-card.expanded {
-  border-color: #3498ff;
-  box-shadow: 0 2px 8px rgba(52, 152, 255, 0.1);
+  border-color: #1579be;
 }
 
 .filter-card.dragging {
   opacity: 0.5;
-  border-color: #3498ff;
+  border-color: #1579be;
 }
 
 /* Filter Card Header */
@@ -72,24 +76,23 @@
   gap: 12px;
   padding: 14px 16px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 160ms ease-out;
 }
 
 .filter-card-header:hover {
-  background: #fafafa;
+  background: #f2f2f2;
 }
 
 .filter-drag-handle {
-  color: #999;
+  color: #808080;
   cursor: grab;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+  padding: 0;
+  display: flex;
 }
 
-.filter-drag-handle:hover {
-  color: #666;
-  background: #f0f0f0;
+.filter-drag-handle svg {
+  width: 17px;
+  height: 17px;
 }
 
 .filter-drag-handle:active {
@@ -99,96 +102,118 @@
 .filter-summary {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
 .filter-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font: 600 14px "Urbanist", sans-serif;
+  color: #0d0d0d;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .filter-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: inline-flex;
+  gap: 6px;
 }
 
 .filter-placement-badge,
 .filter-count-badge,
 .filter-multi-badge {
-  font-size: 11px;
-  padding: 2px 8px;
+  font: 600 10px "Oxanium", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-weight: 500;
 }
 
 .filter-placement-badge {
-  background: #f3e8ff;
-  color: #7c3aed;
+  background: #f2f2f2;
+  color: #808080;
 }
 
 .filter-placement-badge.main {
-  background: #e8f5e9;
-  color: #388e3c;
+  background: #d0e4f2;
+  color: #0d4972;
 }
 
 .filter-placement-badge.more {
-  background: #f3e8ff;
-  color: #7c3aed;
+  background: #f2f2f2;
+  color: #808080;
 }
 
 .filter-count-badge {
-  background: #fff3e0;
-  color: #f57c00;
+  background: #f2f2f2;
+  color: #808080;
 }
 
 .filter-multi-badge {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #f2f2f2;
+  color: #808080;
 }
 
 .filter-card-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #999;
+  color: #808080;
+  margin-left: auto;
+}
+
+.filter-card-actions .caret {
+  transition: transform 200ms ease-out;
+}
+
+.filter-card-actions .caret svg {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-card.expanded .filter-card-actions .caret {
+  transform: rotate(180deg);
 }
 
 .filter-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  color: #999;
+  border-radius: 8px;
+  color: #808080;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 160ms ease-out, color 160ms ease-out;
+}
+
+.filter-delete-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .filter-delete-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #fde8e8;
+  color: #e43e2b;
 }
 
 /* Filter Card Body */
 .filter-card-body {
-  padding: 16px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: 18px 16px;
+  border-top: 1px solid #cccccc;
+  display: none;
+}
+
+.filter-card.expanded .filter-card-body {
+  display: block;
 }
 
 .filter-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -196,19 +221,31 @@
 .filter-form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .filter-form-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font: 600 12px "Oxanium", sans-serif;
+  color: #808080;
 }
 
-.filter-form-field .rs-input {
-  font-size: 13px;
+.filter-form-field .rs-input,
+.filter-form-field input {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  font: 400 14px "Oxanium", sans-serif;
+  background: #fff;
+  color: #0d0d0d;
+  outline: none;
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+.filter-form-field .rs-input:focus,
+.filter-form-field input:focus {
+  border-color: #1579be;
+  box-shadow: 0 0 0 3px rgba(21, 121, 190, 0.28);
 }
 
 .filter-form-field .rs-picker {
@@ -216,33 +253,34 @@
 }
 
 .filter-form-field .rs-picker-toggle {
-  font-size: 13px;
+  height: 44px;
+  border-radius: 8px;
+  font: 600 14px "Urbanist", sans-serif;
 }
 
 /* Toggles */
 .filter-toggles {
   display: flex;
-  gap: 24px;
+  gap: 22px;
   flex-wrap: wrap;
-  padding: 16px 0;
-  border-top: 1px solid #e5e5e5;
-  border-bottom: 1px solid #e5e5e5;
-  margin-bottom: 16px;
+  padding: 0;
+  margin: 18px 0 0;
 }
 
 .filter-toggle-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  font-size: 13px;
-  color: #333;
-  font-weight: 500;
+  font: 600 13px "Urbanist", sans-serif;
+  color: #0d0d0d;
 }
 
 /* Options Section */
 .filter-options-section {
-  margin-top: 8px;
+  margin-top: 18px;
+  border-top: 1px dashed #cccccc;
+  padding-top: 16px;
 }
 
 .filter-options-header {
@@ -253,22 +291,19 @@
 }
 
 .filter-options-header label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font: 600 12px "Oxanium", sans-serif;
+  color: #808080;
 }
 
 .filter-options-empty {
   text-align: center;
   padding: 20px;
-  color: #999;
-  font-size: 13px;
+  color: #808080;
+  font: 400 13px "Oxanium", sans-serif;
   font-style: italic;
-  background: #fff;
-  border: 1px dashed #e5e5e5;
-  border-radius: 6px;
+  background: #f2f2f2;
+  border: 1px dashed #cccccc;
+  border-radius: 8px;
 }
 
 .filter-options-list {
@@ -279,13 +314,21 @@
 
 .filter-option-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 40px 32px;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 44px 32px;
+  gap: 10px;
   align-items: center;
 }
 
-.filter-option-row .rs-input {
-  font-size: 13px;
+.filter-option-row .rs-input,
+.filter-option-row input[type="text"] {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  font: 400 13px "Oxanium", sans-serif;
+  background: #fff;
+  color: #0d0d0d;
+  outline: none;
 }
 
 /* Color Picker */
@@ -296,17 +339,17 @@
 }
 
 .option-color-picker input[type="color"] {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 36px;
   padding: 0;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
   cursor: pointer;
   background: none;
 }
 
 .option-color-picker input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 2px;
+  padding: 3px;
 }
 
 .option-color-picker input[type="color"]::-webkit-color-swatch {
@@ -318,25 +361,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  color: #999;
+  border-radius: 8px;
+  color: #808080;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 160ms ease-out, color 160ms ease-out;
+}
+
+.option-delete-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .option-delete-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #fde8e8;
+  color: #e43e2b;
 }
 
-/* Add Button */
+/* Add Button - pill style */
 .add-filter-btn {
-  align-self: flex-start;
-  margin-top: 8px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  align-self: flex-start !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  border-radius: 9999px !important;
+  border: 1px solid #1579be !important;
+  background: transparent !important;
+  color: #1579be !important;
+  font: 600 13px "Urbanist", sans-serif !important;
+  cursor: pointer !important;
+  transition: background 160ms ease-out !important;
+  margin-top: 16px !important;
+}
+
+.add-filter-btn:hover {
+  background: #d0e4f2 !important;
+}
+
+.add-filter-btn svg {
+  width: 17px !important;
+  height: 17px !important;
 }
 
 /* Responsive */

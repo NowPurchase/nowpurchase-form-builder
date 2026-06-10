@@ -1,1 +1,248 @@
-/* ApproversEditor styles are now handled by TailwindCSS inline classes */
+/* ApproversEditor — MetalCloud style */
+
+/* Table header */
+.approvers-header {
+  display: grid;
+  grid-template-columns: 36px 56px 1.6fr 1fr 1fr 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 20px;
+  background: #f2f2f2;
+  border-bottom: 1px solid #cccccc;
+  font: 700 10px "Oxanium", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #808080;
+}
+
+/* Table row */
+.approver-row {
+  display: grid;
+  grid-template-columns: 36px 56px 1.6fr 1fr 1fr 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid #cccccc;
+  transition: background 160ms ease-out;
+}
+
+.approver-row:last-child {
+  border-bottom: none;
+}
+
+.approver-row:hover {
+  background: #d0e4f2;
+}
+
+.approver-row.dragging {
+  opacity: 0.5;
+  background: #d0e4f2;
+}
+
+/* Drag handle */
+.approver-grip {
+  display: flex;
+  justify-content: center;
+  color: #808080;
+  cursor: grab;
+}
+
+.approver-grip svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Level badge */
+.level-badge {
+  justify-self: start;
+  font: 600 12px "Oxanium", monospace;
+  border: 1px solid #cccccc;
+  background: #f2f2f2;
+  color: #0d0d0d;
+  border-radius: 4px;
+  padding: 3px 9px;
+}
+
+/* Approver user info */
+.approver-user {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.approver-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #1579be;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 13px "Oxanium", monospace;
+}
+
+.approver-name {
+  font: 600 13px "Urbanist", sans-serif;
+  color: #0d0d0d;
+}
+
+.approver-sub {
+  font: 500 11px "Oxanium", sans-serif;
+  color: #808080;
+}
+
+/* Action pill */
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid;
+  font: 600 12px "Urbanist", sans-serif;
+  cursor: pointer;
+  background: transparent;
+}
+
+.action-pill .pill-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.action-pill .pill-left svg {
+  width: 16px;
+  height: 16px;
+}
+
+.action-pill.success {
+  border-color: #9dd6a9;
+  background: #d5ecdb;
+  color: #1a612e;
+}
+
+.action-pill.destructive {
+  border-color: #f5b4ae;
+  background: #fde8e8;
+  color: #c02b1d;
+}
+
+/* Delete button */
+.approver-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #808080;
+  cursor: pointer;
+  transition: background 160ms ease-out, color 160ms ease-out;
+}
+
+.approver-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+.approver-delete:hover {
+  background: #fde8e8;
+  color: #e43e2b;
+}
+
+/* Footer with add button */
+.approver-foot {
+  padding: 16px 20px;
+}
+
+.approver-add-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  border-radius: 9999px;
+  background: #1579be;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font: 700 14px "Urbanist", sans-serif;
+  transition: background 160ms ease-out;
+}
+
+.approver-add-btn:hover {
+  background: #0d4972;
+}
+
+.approver-add-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Empty state */
+.approvers-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.approvers-empty .empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #d0e4f2;
+  color: #0d4972;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.approvers-empty .empty-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.approvers-empty p {
+  font: 600 14px "Urbanist", sans-serif;
+  color: #0d0d0d;
+  margin: 0;
+}
+
+.approvers-empty .empty-hint {
+  font: 400 13px "Oxanium", sans-serif;
+  color: #808080;
+  margin-top: 6px;
+  max-width: 320px;
+}
+
+.approvers-empty .approver-add-btn {
+  width: auto;
+  padding: 0 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .approvers-header,
+  .approver-row {
+    grid-template-columns: 36px 56px 1fr 40px;
+  }
+
+  .approvers-header > div:nth-child(4),
+  .approvers-header > div:nth-child(5),
+  .approver-row > *:nth-child(4),
+  .approver-row > *:nth-child(5) {
+    display: none;
+  }
+}

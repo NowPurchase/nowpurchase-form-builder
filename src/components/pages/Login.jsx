@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FileSpreadsheet, Phone, KeyRound, ArrowLeft, Loader2, ArrowRight } from "lucide-react";
+import { FileSpreadsheet, Phone, KeyRound, ArrowLeft, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { setNowPurchaseToken, sendOTP, verifyOTP } from "../../services/api";
 
 function Login({ onLogin }) {
@@ -119,42 +119,33 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-glow), hsl(var(--background))' }}>
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="icon-box h-14 w-14 mb-4">
-            <FileSpreadsheet className="h-7 w-7" />
+    <div className="login-page">
+      <div className="login-wrap">
+        {/* Logo + Title */}
+        <div className="login-top">
+          <div className="login-mark">
+            <img src="/np-mark.svg" alt="NowPurchase" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">DLMS Admin Panel</h1>
+          <h1>DLMS Admin Panel</h1>
+          <div className="sub">NowPurchase · MetalCloud</div>
         </div>
 
-        {/* Card */}
-        <div className="section-card p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-lg font-semibold text-foreground">
-              {otpSent ? "Verify OTP" : "Sign in"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {otpSent
-                ? `Enter the code sent to +91 ${mobile}`
-                : "Enter your mobile number to continue"
-              }
-            </p>
-          </div>
+        {/* Mobile Step */}
+        {!otpSent ? (
+          <>
+            <div className="login-card">
+              <div className="login-card-head">
+                <h2>Sign in</h2>
+                <p>Enter your mobile number to continue</p>
+              </div>
 
-          {!otpSent ? (
-            <form onSubmit={handleSendOTP} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                  Mobile Number
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-sm font-medium">+91</span>
-                    <div className="w-px h-4 bg-border" />
-                  </div>
+              <form onSubmit={handleSendOTP}>
+                <label className="login-lbl">Mobile Number</label>
+                <div className="login-mobile-field">
+                  <span className="cc">
+                    <Phone />
+                    <span>+91</span>
+                  </span>
                   <input
                     type="text"
                     value={mobile}
@@ -166,53 +157,61 @@ function Login({ onLogin }) {
                     maxLength={10}
                     required
                     disabled={loading}
-                    className="input-field pl-24 h-12 text-base"
                   />
                 </div>
+
+                {error && <div className="login-error">{error}</div>}
+
+                <button
+                  type="submit"
+                  disabled={loading || mobile.length !== 10}
+                  className="login-btn-primary"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Sending OTP...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+            <p className="login-legal">
+              By continuing, you agree to our <a href="#">Terms of Service</a>
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="login-card">
+              <div className="login-card-head">
+                <h2>Verify OTP</h2>
+                <p>Enter the code sent to +91 {mobile}</p>
               </div>
 
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  {error}
+              <form onSubmit={handleVerifyOTP}>
+                <button
+                  type="button"
+                  onClick={handleBackToMobile}
+                  disabled={loading}
+                  className="login-back-btn"
+                >
+                  <ArrowLeft />
+                  Change number
+                </button>
+
+                <div className="login-sent-note">
+                  <CheckCircle2 />
+                  OTP sent to +91 {mobile}
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={loading || mobile.length !== 10}
-                className="btn-primary w-full h-11"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <button
-                type="button"
-                onClick={handleBackToMobile}
-                disabled={loading}
-                className="btn-ghost -ml-2 mb-2 text-xs"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Change number
-              </button>
-
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                  Verification Code
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <label className="login-lbl">Verification Code</label>
+                <div className="login-otp-field">
+                  <span className="lead"><KeyRound /></span>
                   <input
                     ref={otpInputRef}
                     type="text"
@@ -225,59 +224,45 @@ function Login({ onLogin }) {
                     maxLength={4}
                     required
                     disabled={loading}
-                    className="input-field pl-10 h-12 text-base tracking-widest font-mono text-center"
                   />
                 </div>
-              </div>
 
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  {error}
+                {error && <div className="login-error">{error}</div>}
+
+                <button
+                  type="submit"
+                  disabled={loading || otp.length !== 4}
+                  className="login-btn-primary"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify & Sign in
+                      <ArrowRight />
+                    </>
+                  )}
+                </button>
+
+                <div className="login-resend">
+                  {countdown > 0 ? (
+                    <>Resend code in <b>{countdown}s</b></>
+                  ) : (
+                    <button type="button" onClick={handleResendOTP} disabled={loading}>
+                      Resend verification code
+                    </button>
+                  )}
                 </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || otp.length !== 4}
-                className="btn-primary w-full h-11"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    Verify & Sign in
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-
-              <div className="text-center pt-2">
-                {countdown > 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    Resend code in <span className="font-mono font-medium text-foreground">{countdown}s</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    disabled={loading}
-                    className="text-sm font-medium text-primary hover:underline cursor-pointer bg-transparent border-0"
-                  >
-                    Resend verification code
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          By continuing, you agree to our Terms of Service
-        </p>
+              </form>
+            </div>
+            <p className="login-legal">
+              By continuing, you agree to our <a href="#">Terms of Service</a>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

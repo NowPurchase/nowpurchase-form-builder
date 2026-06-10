@@ -5,8 +5,8 @@
 }
 
 .search-fields-description {
-  font-size: 13px;
-  color: #666;
+  font: 400 14px "Oxanium", sans-serif;
+  color: #808080;
   line-height: 1.5;
 }
 
@@ -14,67 +14,66 @@
   margin: 0;
 }
 
-/* Fields List */
+/* Fields List - Chip wrapper */
 .search-fields-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   min-height: 40px;
-  padding: 12px;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  margin: 4px 0 20px;
 }
 
 .search-fields-empty {
-  color: #999;
-  font-size: 13px;
+  color: #808080;
+  font: 400 13px "Oxanium", sans-serif;
   font-style: italic;
-  padding: 8px;
+  padding: 8px 0;
 }
 
-/* Field Chip */
+/* Field Chip - MetalCloud style */
 .search-field-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px 6px 12px;
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
-  transition: all 0.15s ease;
+  padding: 8px 8px 8px 13px;
+  border-radius: 8px;
+  background: #d0e4f2;
+  border: 1px solid #a3cde6;
+  transition: all 160ms ease-out;
 }
 
 .search-field-chip:hover {
-  border-color: #3498ff;
-  background: #f5f9ff;
+  border-color: #1579be;
 }
 
 .search-field-value {
-  font-size: 12px;
-  color: #333;
+  font: 500 12px "Oxanium", monospace;
+  color: #0d4972;
   background: transparent;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 
 .search-field-remove {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: #999;
+  color: #0d4972;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 160ms ease-out;
+}
+
+.search-field-remove svg {
+  width: 15px;
+  height: 15px;
 }
 
 .search-field-remove:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #a3cde6;
 }
 
 /* Input Wrapper */
@@ -90,8 +89,20 @@
 
 .search-field-input-row .rs-input {
   flex: 1;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  font: 400 13px "Oxanium", monospace;
+  background: #fff;
+  color: #0d0d0d;
+  outline: none;
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+.search-field-input-row .rs-input:focus {
+  border-color: #1579be;
+  box-shadow: 0 0 0 3px rgba(21, 121, 190, 0.28);
 }
 
 /* Suggestions Dropdown */
@@ -103,14 +114,14 @@
   max-height: 300px;
   overflow-y: auto;
   background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid #cccccc;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
   z-index: 1000;
 }
 
 .suggestion-category {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f2f2f2;
 }
 
 .suggestion-category:last-child {
@@ -118,13 +129,12 @@
 }
 
 .suggestion-category-header {
-  padding: 8px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #666;
+  padding: 8px 14px;
+  font: 700 10px "Oxanium", sans-serif;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: #fafafa;
+  color: #808080;
+  background: #f2f2f2;
   position: sticky;
   top: 0;
 }
@@ -133,28 +143,48 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 160ms ease-out;
 }
 
 .suggestion-item:hover {
-  background: #f5f9ff;
+  background: #d0e4f2;
 }
 
 .suggestion-value {
-  font-size: 12px;
-  color: #333;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font: 500 13px "Oxanium", monospace;
+  color: #0d4972;
   background: transparent;
 }
 
 .suggestion-label {
-  font-size: 11px;
-  color: #888;
+  font: 400 12px "Oxanium", sans-serif;
+  color: #808080;
 }
 
-/* Add Button */
+/* Add Button - pill style */
 .add-search-field-btn {
-  align-self: flex-start;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  align-self: flex-start !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  border-radius: 9999px !important;
+  border: 1px solid #1579be !important;
+  background: transparent !important;
+  color: #1579be !important;
+  font: 600 13px "Urbanist", sans-serif !important;
+  cursor: pointer !important;
+  transition: background 160ms ease-out !important;
+}
+
+.add-search-field-btn:hover {
+  background: #d0e4f2 !important;
+}
+
+.add-search-field-btn svg {
+  width: 17px !important;
+  height: 17px !important;
 }
