@@ -1,24 +1,24 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || '';
+// Staging/Dev Environment
+const DLMS_API_URL = import.meta.env.VITE_DLMS_API_URL || '';
+const NP_API_URL = import.meta.env.VITE_NP_API_URL || '';
 const DEVICE_TYPE = import.meta.env.VITE_DEVICE_TYPE || 'WEB';
-const REFRESH_TOKEN_BASE_URL = import.meta.env.VITE_REFRESH_TOKEN_BASE_URL || import.meta.env.VITE_AUTH_BASE_URL || '';
 
 // Production Environment
-const PROD_API_BASE_URL = import.meta.env.VITE_PROD_API_BASE_URL || '';
-const PROD_REFRESH_TOKEN_BASE_URL = import.meta.env.VITE_PROD_REFRESH_TOKEN_BASE_URL || '';
+const DLMS_API_URL_PROD = import.meta.env.VITE_DLMS_API_URL_PROD || '';
+const NP_API_URL_PROD = import.meta.env.VITE_NP_API_URL_PROD || '';
 
 export const getProdToken = () => {
   return localStorage.getItem('prod_dlms_auth_token') || null;
 };
 
-if (!API_BASE_URL && import.meta.env.DEV) {
-  console.warn('VITE_API_BASE_URL is not set in .env file');
+if (!DLMS_API_URL && import.meta.env.DEV) {
+  console.warn('VITE_DLMS_API_URL is not set in .env file');
 }
 
-if (!AUTH_BASE_URL && import.meta.env.DEV) {
-  console.warn('VITE_AUTH_BASE_URL is not set in .env file');
+if (!NP_API_URL && import.meta.env.DEV) {
+  console.warn('VITE_NP_API_URL is not set in .env file');
 }
 
 export const getToken = () => localStorage.getItem('dlms_auth_token') || sessionStorage.getItem('dlms_auth_token');
@@ -178,7 +178,7 @@ const refreshAccessToken = async (isProd = false) => {
   }
   let res;
   try {
-    const baseUrl = isProd ? PROD_REFRESH_TOKEN_BASE_URL : REFRESH_TOKEN_BASE_URL;
+    const baseUrl = isProd ? NP_API_URL_PROD : NP_API_URL;
     res = await axios.post(
       `${baseUrl}/a/auth/jwt/refresh/`,
       { refresh_token: refreshToken }
@@ -220,7 +220,7 @@ const onRefreshed = (error, token) => {
 
 const request = async (endpoint, options = {}, _retry = false) => {
   const isProd = options.env === 'prod';
-  const baseUrl = isProd ? PROD_API_BASE_URL : API_BASE_URL;
+  const baseUrl = isProd ? DLMS_API_URL_PROD : DLMS_API_URL;
   const url = `${baseUrl}${endpoint}`;
   console.log(`[API Request] isProd: ${isProd}, env option: ${options.env}, URL: ${url}`);
 
@@ -335,7 +335,7 @@ export const apiPatch = async (endpoint, data = {}, options = {}) => {
 // Request function for old NowPurchase API (for customer data, etc.)
 const requestOldApi = async (endpoint, options = {}) => {
   const isProd = options.env === 'prod';
-  const baseUrl = isProd ? PROD_REFRESH_TOKEN_BASE_URL : AUTH_BASE_URL;
+  const baseUrl = isProd ? NP_API_URL_PROD : NP_API_URL;
   const url = `${baseUrl}${endpoint}`;
   const token = getNowPurchaseToken(); // Use NowPurchase token for old API
 
@@ -402,15 +402,15 @@ const getDeviceId = () => {
 };
 
 // Get Auth base URL for OTP endpoints
-// Uses separate VITE_AUTH_BASE_URL environment variable
+// Uses separate VITE_NP_API_URL environment variable
 // Auth endpoints are at domain.com/a/auth/, not under /api/
 const getAuthBaseUrl = () => {
-  if (!AUTH_BASE_URL) {
-    throw new Error('VITE_AUTH_BASE_URL is not configured. Please set it in your .env file (e.g., https://test-api.nowpurchase.com)');
+  if (!NP_API_URL) {
+    throw new Error('VITE_NP_API_URL is not configured. Please set it in your .env file (e.g., https://test-api.nowpurchase.com)');
   }
 
   // Remove trailing slash if present
-  return AUTH_BASE_URL.replace(/\/$/, '');
+  return NP_API_URL.replace(/\/$/, '');
 };
 
 // Send OTP to mobile number
@@ -489,7 +489,7 @@ export const verifyOTP = async (mobile, token) => {
 
 // Login to DLMS API with NowPurchase token and get JWT token
 export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
-  const url = `${API_BASE_URL}/api/v1/auth/login`;
+  const url = `${DLMS_API_URL}/api/v1/auth/login`;
 
   const config = {
     method: 'POST',
@@ -519,10 +519,10 @@ export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
 
 // Production Authentication Functions
 const getProdAuthBaseUrl = () => {
-  if (!PROD_REFRESH_TOKEN_BASE_URL) {
-    throw new Error('VITE_PROD_REFRESH_TOKEN_BASE_URL is not configured');
+  if (!NP_API_URL_PROD) {
+    throw new Error('VITE_NP_API_URL_PROD is not configured');
   }
-  return PROD_REFRESH_TOKEN_BASE_URL.replace(/\/$/, '');
+  return NP_API_URL_PROD.replace(/\/$/, '');
 };
 
 export const isProdAuthenticated = () => {
