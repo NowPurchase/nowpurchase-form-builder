@@ -39,6 +39,7 @@ export default function Permissions({ onLogout }) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({});
+  const [showAdminConfirm, setShowAdminConfirm] = useState(false);
 
   const user = useMemo(() => getUserFromToken(), []);
   const isDlmsAdmin = user?.is_dlms_admin === true;
@@ -315,7 +316,18 @@ export default function Permissions({ onLogout }) {
 
   const handleAdminToggle = () => {
     if (!selectedPermission) return;
-    handleSaveAdmin(!selectedPermission.is_dlms_admin);
+    // If granting admin access, show confirmation popup
+    if (!selectedPermission.is_dlms_admin) {
+      setShowAdminConfirm(true);
+    } else {
+      // Revoking admin - no confirmation needed
+      handleSaveAdmin(false);
+    }
+  };
+
+  const confirmAdminAccess = () => {
+    setShowAdminConfirm(false);
+    handleSaveAdmin(true);
   };
 
   const handleSaveAdmin = async (isAdmin) => {
@@ -671,6 +683,32 @@ export default function Permissions({ onLogout }) {
               </div>
             )}
           </section>
+        </div>
+      )}
+
+      {/* Admin Access Confirmation Modal */}
+      {showAdminConfirm && (
+        <div className="perm-modal-overlay">
+          <div className="perm-modal">
+            <div className="perm-modal-icon">
+              <Shield className="h-8 w-8" />
+            </div>
+            <h3>Grant Admin Access?</h3>
+            <p>
+              Are you sure you want to give <strong>{selectedItem?.name}</strong> admin access?
+            </p>
+            <p className="perm-modal-warning">
+              This will give them access to <strong>all templates</strong> across all customers.
+            </p>
+            <div className="perm-modal-actions">
+              <button className="perm-btn-cancel" onClick={() => setShowAdminConfirm(false)}>
+                Cancel
+              </button>
+              <button className="perm-btn-confirm" onClick={confirmAdminAccess}>
+                Yes, Grant Admin
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AppShell>
