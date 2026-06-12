@@ -1117,7 +1117,7 @@ function NewForm() {
             </span>
           )}
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{marginLeft: 0}}>
           {!isEditMode && (
             <button
               onClick={handleClearForm}
