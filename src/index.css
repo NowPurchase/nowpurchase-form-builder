@@ -1638,3 +1638,80 @@
 .perm-empty svg { margin-bottom: 14px; opacity: 0.4; width: 48px; height: 48px; }
 .perm-empty .et { font: 600 16px "Urbanist", sans-serif; color: #666; }
 .perm-empty .ep { font: 400 14px "Oxanium", sans-serif; margin-top: 6px; color: #999; }
+
+/* Admin confirmation modal */
+.perm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.perm-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+.perm-modal-icon {
+  width: 56px;
+  height: 56px;
+  background: #fff3cd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #d58c00;
+}
+.perm-modal h3 {
+  font: 700 20px "Urbanist", sans-serif;
+  margin: 0 0 12px;
+  color: #1a1a1a;
+}
+.perm-modal p {
+  font: 400 14px "Oxanium", sans-serif;
+  color: #666;
+  margin: 0 0 8px;
+}
+.perm-modal-warning {
+  background: #fff3cd;
+  color: #856404;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font: 500 13px "Oxanium", sans-serif !important;
+  margin: 16px 0 !important;
+}
+.perm-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+.perm-btn-cancel {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  font: 600 14px "Urbanist", sans-serif;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.perm-btn-cancel:hover { background: #f5f5f5; }
+.perm-btn-confirm {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #d58c00;
+  font: 600 14px "Urbanist", sans-serif;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.perm-btn-confirm:hover { background: #b87a00; }
