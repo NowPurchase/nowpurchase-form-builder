@@ -334,7 +334,9 @@ export const apiPatch = async (endpoint, data = {}, options = {}) => {
 
 // Request function for old NowPurchase API (for customer data, etc.)
 const requestOldApi = async (endpoint, options = {}) => {
-  const url = `${AUTH_BASE_URL}${endpoint}`;
+  const isProd = options.env === 'prod';
+  const baseUrl = isProd ? PROD_REFRESH_TOKEN_BASE_URL : AUTH_BASE_URL;
+  const url = `${baseUrl}${endpoint}`;
   const token = getNowPurchaseToken(); // Use NowPurchase token for old API
 
   const config = {
@@ -370,6 +372,15 @@ export const apiGetOld = async (endpoint, options = {}) => {
 export const apiGetOldText = async (endpoint, options = {}) => {
   const response = await requestOldApi(endpoint, { ...options, method: 'GET' });
   return await response.text();
+};
+
+export const apiPostOld = async (endpoint, data = {}, options = {}) => {
+  const response = await requestOldApi(endpoint, {
+    ...options,
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return parseJson(response);
 };
 
 // Generate or retrieve device ID (consistent per browser)
@@ -461,6 +472,9 @@ export const verifyOTP = async (mobile, token) => {
     let res = await parseJson(response);
     localStorage.setItem('dlms_auth_token', res?.access_token)
     localStorage.setItem('refresh_token', res?.refresh_token)
+    if (res?.token) {
+      localStorage.setItem('nowpurchase_token', res.token)
+    }
     return res
   } catch (error) {
     if (error.code) throw error;

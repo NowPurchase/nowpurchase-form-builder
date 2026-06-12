@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
-import { LayoutGrid, GitCompareArrows, History, LogOut } from "lucide-react";
+import { LayoutGrid, GitCompareArrows, History, LogOut, Shield } from "lucide-react";
 import { getUserFromToken, removeToken } from "../../services/api";
 
 /**
@@ -18,6 +18,7 @@ import { getUserFromToken, removeToken } from "../../services/api";
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
   { to: "/deploy", label: "Deployments", icon: GitCompareArrows },
+  { to: "/permissions", label: "Permissions", icon: Shield, adminOnly: true },
   { to: "/history", label: "History", icon: History },
 ];
 
@@ -54,13 +55,13 @@ export default function AppShell({ onLogout, children }) {
         <div className="app-brand">
           <img src="/np-mark.svg" alt="NowPurchase" />
           <div className="wm">
-            DLMS
+            MetalCloud
             <small>Admin Panel</small>
           </div>
         </div>
 
         <div className="app-nav-title">Workspace</div>
-        {NAV.map(({ to, label, icon: Icon }) => (
+        {NAV.filter(({ adminOnly }) => !adminOnly || user?.is_dlms_admin).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -75,7 +76,7 @@ export default function AppShell({ onLogout, children }) {
           <div className="app-avatar">{initials}</div>
           <div className="min-w-0">
             <div className="nm">{name}</div>
-            <div className="org">NowPurchase · DLMS</div>
+            <div className="org">{user?.customer_name || "NowPurchase"}</div>
           </div>
           <button className="lo" title="Log out" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
