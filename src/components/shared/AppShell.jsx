@@ -17,8 +17,8 @@ import { getUserFromToken, removeToken } from "../../services/api";
  */
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
-  { to: "/deploy", label: "Deployments", icon: GitCompareArrows },
   { to: "/permissions", label: "Permissions", icon: Shield, adminOnly: true },
+  { to: "/deploy", label: "Deployments", icon: GitCompareArrows, adminOnly: true },
   { to: "/history", label: "History", icon: History },
 ];
 
