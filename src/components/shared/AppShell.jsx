@@ -17,8 +17,8 @@ import { getUserFromToken, removeToken } from "../../services/api";
  */
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
-  { to: "/permissions", label: "Permissions", icon: Shield, adminOnly: true },
-  { to: "/deploy", label: "Deployments", icon: GitCompareArrows, adminOnly: true },
+  { to: "/permissions", label: "Permissions", icon: Shield },
+  { to: "/deploy", label: "Deployments", icon: GitCompareArrows, disabledForNonAdmin: true },
   { to: "/history", label: "History", icon: History },
 ];
 
@@ -61,16 +61,33 @@ export default function AppShell({ onLogout, children }) {
         </div>
 
         <div className="app-nav-title">Workspace</div>
-        {NAV.filter(({ adminOnly }) => !adminOnly || user?.is_dlms_admin).map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `app-nav-item ${isActive ? "active" : ""}`}
-          >
-            <Icon />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+        {NAV.map(({ to, label, icon: Icon, disabledForNonAdmin }) => {
+          const isDisabled = disabledForNonAdmin && !user?.is_dlms_admin;
+
+          if (isDisabled) {
+            return (
+              <div
+                key={to}
+                className="app-nav-item disabled"
+                title="Admin access required"
+              >
+                <Icon />
+                <span>{label}</span>
+              </div>
+            );
+          }
+
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) => `app-nav-item ${isActive ? "active" : ""}`}
+            >
+              <Icon />
+              <span>{label}</span>
+            </NavLink>
+          );
+        })}
 
         <div className="app-sidebar-foot">
           <div className="app-avatar">{initials}</div>

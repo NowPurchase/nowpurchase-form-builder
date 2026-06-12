@@ -420,6 +420,11 @@
     padding: 1px 8px; border-radius: 9999px;
   }
   .app-nav-item.active .count { background: hsl(var(--primary)); color: #fff; }
+  .app-nav-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 
   .app-sidebar-foot {
     margin-top: auto; display: flex; align-items: center; gap: 11px;
