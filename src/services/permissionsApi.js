@@ -46,5 +46,5 @@ export const listTemplatesForPermissions = async (params = {}) => {
     queryParams.push(`customer_id=${params.customer}`);
   }
   const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-  return apiGet(`/api/v2/admin/templates${queryString}`, { env: 'prod' });
+  return apiGet(`/api/v2/admin/templates${queryString}`);
 };
