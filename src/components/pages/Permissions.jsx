@@ -438,20 +438,6 @@ export default function Permissions({ onLogout }) {
     setDirty(true);
   };
 
-  if (!isDlmsAdmin) {
-    return (
-      <AppShell active="permissions" onLogout={onLogout}>
-        <div className="flex flex-col items-center justify-center py-20">
-          <Shield className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="font-display text-xl font-bold">Access Denied</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            You need admin privileges to view this page.
-          </p>
-        </div>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell active="permissions" onLogout={onLogout}>
       <div className="perm-page-head">
@@ -466,7 +452,6 @@ export default function Permissions({ onLogout }) {
             onSelect={(c) => { setCustomerFilter(c.customer_id); setCustomerFilterName(c.customer_name); }}
             placeholder="Select customer"
             initialCustomerName={customerFilterName}
-            disabled={!isDlmsAdmin}
           />
         </div>
       </div>
@@ -698,7 +683,7 @@ export default function Permissions({ onLogout }) {
               Are you sure you want to give <strong>{selectedItem?.name}</strong> admin access?
             </p>
             <p className="perm-modal-warning">
-              This will give them access to <strong>all templates</strong> across all customers.
+              This will give them access to <strong>all templates</strong>.
             </p>
             <div className="perm-modal-actions">
               <button className="perm-btn-cancel" onClick={() => setShowAdminConfirm(false)}>
