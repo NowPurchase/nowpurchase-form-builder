@@ -15,7 +15,6 @@ import {
   Loader2,
   Inbox,
   CheckSquare,
-  Square,
   Save,
 } from "lucide-react";
 
@@ -431,19 +430,6 @@ export default function Permissions({ onLogout }) {
     setDirty(true);
   };
 
-  const handleClearAll = () => {
-    const newChanges = {};
-    filteredRightItems.forEach(it => {
-      if (it.isAdmin) return; // Skip admins
-      if (it.granted) {
-        const changeKey = mode === "user" ? it.key : it.id;
-        newChanges[changeKey] = null;
-      }
-    });
-    setPendingChanges(prev => ({ ...prev, ...newChanges }));
-    setDirty(true);
-  };
-
   return (
     <AppShell active="permissions" onLogout={onLogout}>
       <div className="perm-page-head">
@@ -612,16 +598,10 @@ export default function Permissions({ onLogout }) {
                     <button className={rightFilter === "granted" ? "on" : ""} onClick={() => setRightFilter("granted")}>Granted</button>
                   </div>
                   {((mode === "user" && !selectedItem.isAdmin) || mode === "template") && (
-                    <>
-                      <button className="perm-selall" onClick={handleSelectAll}>
-                        <CheckSquare className="h-4 w-4" />
-                        Select all
-                      </button>
-                      <button className="perm-clearall" onClick={handleClearAll}>
-                        <Square className="h-4 w-4" />
-                        Clear
-                      </button>
-                    </>
+                    <button className="perm-selall" onClick={handleSelectAll}>
+                      <CheckSquare className="h-4 w-4" />
+                      Select all
+                    </button>
                   )}
                 </div>
 
