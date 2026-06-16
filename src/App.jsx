@@ -9,6 +9,7 @@ import Permissions from "./components/pages/Permissions";
 import TemplateConfig from "./components/pages/TemplateConfig";
 import Deploy from "./components/pages/Deploy";
 import ToastContainer from "./components/shared/Toast";
+import { IS_PROD } from "./config/env";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -95,8 +96,10 @@ function AppContent() {
         <Route
           path="/deploy"
           element={
-            isAuthenticated ? (
+            isAuthenticated && IS_PROD ? (
               <Deploy />
+            ) : isAuthenticated ? (
+              <Navigate to="/home" replace />
             ) : (
               <Navigate to="/" replace />
             )

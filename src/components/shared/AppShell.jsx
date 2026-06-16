@@ -1,7 +1,8 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { NavLink } from "react-router-dom";
+import { createElement, useMemo } from "react";
 import { LayoutGrid, GitCompareArrows, History, LogOut, Shield } from "lucide-react";
 import { getUserFromToken, removeToken } from "../../services/api";
+import { IS_PROD } from "../../config/env";
 
 /**
  * AppShell — left "Liquid Glass" sidebar + main content area.
@@ -18,12 +19,11 @@ import { getUserFromToken, removeToken } from "../../services/api";
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
   { to: "/permissions", label: "Permissions", icon: Shield },
-  { to: "/deploy", label: "Deployments", icon: GitCompareArrows, disabledForNonAdmin: true },
+  { to: "/deploy", label: "Deployments", icon: GitCompareArrows, prodOnly: true, disabledForNonAdmin: true },
   { to: "/history", label: "History", icon: History },
 ];
 
 export default function AppShell({ onLogout, children }) {
-  const navigate = useNavigate();
   const user = useMemo(() => getUserFromToken(), []);
 
   const name = user?.name || user?.customer_name || "DLMS User";
@@ -42,7 +42,7 @@ export default function AppShell({ onLogout, children }) {
     }
     try {
       removeToken();
-    } catch (e) {
+    } catch {
       /* no-op */
     }
     localStorage.clear();
@@ -61,7 +61,9 @@ export default function AppShell({ onLogout, children }) {
         </div>
 
         <div className="app-nav-title">Workspace</div>
-        {NAV.map(({ to, label, icon: Icon, disabledForNonAdmin }) => {
+        {NAV.map(({ to, label, icon, prodOnly, disabledForNonAdmin }) => {
+          if (prodOnly && !IS_PROD) return null;
+
           const isDisabled = disabledForNonAdmin && !user?.is_dlms_admin;
 
           if (isDisabled) {
@@ -71,7 +73,7 @@ export default function AppShell({ onLogout, children }) {
                 className="app-nav-item disabled"
                 title="Admin access required"
               >
-                <Icon />
+                {createElement(icon)}
                 <span>{label}</span>
               </div>
             );
@@ -83,7 +85,7 @@ export default function AppShell({ onLogout, children }) {
               to={to}
               className={({ isActive }) => `app-nav-item ${isActive ? "active" : ""}`}
             >
-              <Icon />
+              {createElement(icon)}
               <span>{label}</span>
             </NavLink>
           );

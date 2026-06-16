@@ -315,6 +315,7 @@ export default function Permissions({ onLogout }) {
   };
 
   const handleAdminToggle = () => {
+    if (!isDlmsAdmin) return;
     if (!selectedPermission) return;
     // If granting admin access, show confirmation popup
     if (!selectedPermission.is_dlms_admin) {
@@ -331,6 +332,11 @@ export default function Permissions({ onLogout }) {
   };
 
   const handleSaveAdmin = async (isAdmin) => {
+    if (!isDlmsAdmin) {
+      toast.error("Only DLMS admins can change admin access");
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await updateUserPermissions(selectedId, {
@@ -563,7 +569,11 @@ export default function Permissions({ onLogout }) {
                   <div className="perm-head-actions">
                     {mode === "user" && (
                       <>
-                        <div className="perm-admin-toggle" onClick={handleAdminToggle}>
+                        <div
+                          className={`perm-admin-toggle ${!isDlmsAdmin ? "disabled" : ""}`}
+                          onClick={handleAdminToggle}
+                          title={!isDlmsAdmin ? "Only DLMS admins can change admin access" : undefined}
+                        >
                           <span className="at-t">Admin</span>
                           <span className={`perm-switch ${selectedItem.isAdmin ? "on" : ""}`}></span>
                         </div>

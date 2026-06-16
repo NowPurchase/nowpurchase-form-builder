@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { IS_PROD } from '../config/env';
 
 // Staging/Dev Environment
 const DLMS_API_URL = import.meta.env.VITE_DLMS_API_URL || '';
@@ -9,8 +10,26 @@ const DEVICE_TYPE = import.meta.env.VITE_DEVICE_TYPE || 'WEB';
 const DLMS_API_URL_PROD = import.meta.env.VITE_DLMS_API_URL_PROD || '';
 const NP_API_URL_PROD = import.meta.env.VITE_NP_API_URL_PROD || '';
 
-export const getProdToken = () => {
-  return localStorage.getItem('prod_dlms_auth_token') || null;
+// Primary URLs for the current build. On production everything talks to prod;
+// on staging everything talks to staging. The only exception is the
+// Deployments page, which explicitly passes `{ env: 'staging' }` to compare
+// against staging using the same (prod) JWT.
+const PRIMARY_DLMS_URL = IS_PROD ? DLMS_API_URL_PROD : DLMS_API_URL;
+const PRIMARY_NP_URL = IS_PROD ? NP_API_URL_PROD : NP_API_URL;
+
+// Resolve the DLMS base URL for a given `env` option ('prod' | 'staging').
+// When omitted, the build's primary environment is used.
+const resolveDlmsUrl = (env) => {
+  if (env === 'prod') return DLMS_API_URL_PROD;
+  if (env === 'staging') return DLMS_API_URL;
+  return PRIMARY_DLMS_URL;
+};
+
+// Resolve the NowPurchase (old) base URL for a given `env` option.
+const resolveNpUrl = (env) => {
+  if (env === 'prod') return NP_API_URL_PROD;
+  if (env === 'staging') return NP_API_URL;
+  return PRIMARY_NP_URL;
 };
 
 if (!DLMS_API_URL && import.meta.env.DEV) {
@@ -29,7 +48,6 @@ export const setToken = (token, persist = true) => {
 };
 
 export const removeToken = () => {
-  // Clear staging tokens
   localStorage.removeItem('dlms_auth_token');
   sessionStorage.removeItem('dlms_auth_token');
   localStorage.removeItem('refresh_token');
@@ -39,7 +57,7 @@ export const removeToken = () => {
   localStorage.removeItem('nowpurchase_token');
   sessionStorage.removeItem('nowpurchase_token');
 
-  // Clear production tokens
+  // Clear legacy production tokens from the previous dual-login flow.
   localStorage.removeItem('prod_dlms_auth_token');
   localStorage.removeItem('prod_refresh_token');
   sessionStorage.removeItem('prod_session_authenticated');
@@ -82,7 +100,7 @@ export const getUserFromToken = () => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -135,7 +153,7 @@ const parseError = async (response) => {
       details: data.error?.details || {},
       status: response.status,
     };
-  } catch (parseErr) {
+  } catch {
     // If JSON parsing fails, return a generic error
     return {
       code: 'parse_error',
@@ -169,38 +187,34 @@ const clearAndRedirect = () => {
   localStorage.clear();
   window.location.href = '/';
 };
-const refreshAccessToken = async (isProd = false) => {
-  const refreshKey = isProd ? 'prod_refresh_token' : 'refresh_token';
-  const refreshToken = localStorage.getItem(refreshKey);
+const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken || refreshToken === 'undefined') {
-    if (!isProd) clearAndRedirect();
+    clearAndRedirect();
     return null;
   }
   let res;
   try {
-    const baseUrl = isProd ? NP_API_URL_PROD : NP_API_URL;
     res = await axios.post(
-      `${baseUrl}/a/auth/jwt/refresh/`,
+      `${PRIMARY_NP_URL}/a/auth/jwt/refresh/`,
       { refresh_token: refreshToken }
     );
   } catch (e) {
     if (e.response?.status === 401) {
-      if (!isProd) clearAndRedirect();
+      clearAndRedirect();
       return null;
     }
   }
   if (!res?.data?.access_token) {
-    if (!isProd) clearAndRedirect();
+    clearAndRedirect();
     return null;
   }
-  const accessKey = isProd ? 'prod_dlms_auth_token' : 'dlms_auth_token';
-  localStorage.setItem(accessKey, res.data.access_token);
-  
+  localStorage.setItem('dlms_auth_token', res.data.access_token);
+
   if (res.data.refresh_token) {
-    const refreshKey = isProd ? 'prod_refresh_token' : 'refresh_token';
-    localStorage.setItem(refreshKey, res.data.refresh_token);
+    localStorage.setItem('refresh_token', res.data.refresh_token);
   }
-  
+
   return res.data.access_token;
 };
 
@@ -219,16 +233,15 @@ const onRefreshed = (error, token) => {
 // -------------------------------------
 
 const request = async (endpoint, options = {}, _retry = false) => {
-  const isProd = options.env === 'prod';
-  const baseUrl = isProd ? DLMS_API_URL_PROD : DLMS_API_URL;
+  const { env, ...fetchOptions } = options;
+  const baseUrl = resolveDlmsUrl(env);
   const url = `${baseUrl}${endpoint}`;
-  console.log(`[API Request] isProd: ${isProd}, env option: ${options.env}, URL: ${url}`);
 
-  const token = isProd ? getProdToken() : getToken();
+  const token = getToken();
   const nowpurchaseToken = getNowPurchaseToken();
 
   // Validate both tokens are present for authenticated requests
-  if (!isProd && token && !nowpurchaseToken) {
+  if (token && !nowpurchaseToken) {
     removeToken();
     if (window.location.pathname !== '/') window.location.href = '/';
     throw {
@@ -240,10 +253,10 @@ const request = async (endpoint, options = {}, _retry = false) => {
   }
 
   const config = {
-    ...options,
+    ...fetchOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...fetchOptions.headers,
       // Always set Authorization header if token exists, overriding any existing one
       ...(token && { Authorization: `Bearer ${token}` }),
     },
@@ -255,7 +268,7 @@ const request = async (endpoint, options = {}, _retry = false) => {
     if ((response.status === 401 || response.status === 403) && !_retry) {
       if (!isRefreshing) {
         isRefreshing = true;
-        refreshAccessToken(isProd)
+        refreshAccessToken()
           .then((newToken) => {
             isRefreshing = false;
             onRefreshed(null, newToken);
@@ -334,16 +347,16 @@ export const apiPatch = async (endpoint, data = {}, options = {}) => {
 
 // Request function for old NowPurchase API (for customer data, etc.)
 const requestOldApi = async (endpoint, options = {}) => {
-  const isProd = options.env === 'prod';
-  const baseUrl = isProd ? NP_API_URL_PROD : NP_API_URL;
+  const { env, ...fetchOptions } = options;
+  const baseUrl = resolveNpUrl(env);
   const url = `${baseUrl}${endpoint}`;
   const token = getNowPurchaseToken(); // Use NowPurchase token for old API
 
   const config = {
-    ...options,
+    ...fetchOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...fetchOptions.headers,
       // Old API uses Token format
       ...(token && { Authorization: `Token ${token}` }),
     },
@@ -405,12 +418,12 @@ const getDeviceId = () => {
 // Uses separate VITE_NP_API_URL environment variable
 // Auth endpoints are at domain.com/a/auth/, not under /api/
 const getAuthBaseUrl = () => {
-  if (!NP_API_URL) {
-    throw new Error('VITE_NP_API_URL is not configured. Please set it in your .env file (e.g., https://test-api.nowpurchase.com)');
+  if (!PRIMARY_NP_URL) {
+    throw new Error('NowPurchase API URL is not configured for this environment.');
   }
 
   // Remove trailing slash if present
-  return NP_API_URL.replace(/\/$/, '');
+  return PRIMARY_NP_URL.replace(/\/$/, '');
 };
 
 // Send OTP to mobile number
@@ -489,7 +502,7 @@ export const verifyOTP = async (mobile, token) => {
 
 // Login to DLMS API with NowPurchase token and get JWT token
 export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
-  const url = `${DLMS_API_URL}/api/v1/auth/login`;
+  const url = `${PRIMARY_DLMS_URL}/api/v1/auth/login`;
 
   const config = {
     method: 'POST',
@@ -516,96 +529,3 @@ export const loginWithNowPurchaseToken = async (nowpurchase_token) => {
     };
   }
 };
-
-// Production Authentication Functions
-const getProdAuthBaseUrl = () => {
-  if (!NP_API_URL_PROD) {
-    throw new Error('VITE_NP_API_URL_PROD is not configured');
-  }
-  return NP_API_URL_PROD.replace(/\/$/, '');
-};
-
-export const isProdAuthenticated = () => {
-  const token = localStorage.getItem('prod_dlms_auth_token');
-  const sessionAuth = sessionStorage.getItem('prod_session_authenticated');
-  return !!(token && sessionAuth === 'true');
-};
-
-export const setProdSessionAuth = (value) => {
-  if (value) {
-    sessionStorage.setItem('prod_session_authenticated', 'true');
-  } else {
-    sessionStorage.removeItem('prod_session_authenticated');
-  }
-};
-
-export const sendProdOTP = async (mobile) => {
-  const baseUrl = getProdAuthBaseUrl();
-  const url = `${baseUrl}/a/auth/mobile/`;
-
-  const config = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ mobile }),
-  };
-
-  try {
-    const response = await fetch(url, config);
-    if (!response.ok) {
-      const error = await parseError(response);
-      throw error;
-    }
-    return await parseJson(response);
-  } catch (error) {
-    if (error.code) throw error;
-    throw {
-      code: 'network_error',
-      message: error.message || 'Failed to send OTP to production',
-      details: {},
-      status: 0,
-    };
-  }
-};
-
-export const verifyProdOTP = async (mobile, token) => {
-  const baseUrl = getProdAuthBaseUrl();
-  const url = `${baseUrl}/a/auth/token/`;
-  const deviceId = getDeviceId();
-
-  const config = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      mobile,
-      token,
-      device_type: DEVICE_TYPE,
-      device_id: deviceId,
-    }),
-  };
-
-  try {
-    const response = await fetch(url, config);
-    if (!response.ok) {
-      const error = await parseError(response);
-      throw error;
-    }
-    const res = await parseJson(response);
-    localStorage.setItem('prod_dlms_auth_token', res?.access_token);
-    localStorage.setItem('prod_refresh_token', res?.refresh_token);
-    sessionStorage.setItem('prod_session_authenticated', 'true');
-    return res;
-  } catch (error) {
-    if (error.code) throw error;
-    throw {
-      code: 'network_error',
-      message: error.message || 'Failed to verify production OTP',
-      details: {},
-      status: 0,
-    };
-  }
-};
-

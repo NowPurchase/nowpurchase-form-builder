@@ -1,6 +1,8 @@
 import { apiGetOld, apiGet, apiPostOld } from './api';
+import { IS_PROD } from '../config/env';
 
 const BASE_ENDPOINT = '/api/dlms';
+const CURRENT_ENV = IS_PROD ? 'prod' : 'staging';
 
 /**
  * List DLMS permissions
@@ -21,7 +23,7 @@ export const listPermissions = async (params = {}) => {
     queryParams.push(`customer_id=${encodeURIComponent(params.customer)}`);
   }
   const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-  return apiGetOld(`${BASE_ENDPOINT}/permissions/${queryString}`, { env: 'prod' });
+  return apiGetOld(`${BASE_ENDPOINT}/permissions/${queryString}`, { env: CURRENT_ENV });
 };
 
 /**
@@ -29,7 +31,7 @@ export const listPermissions = async (params = {}) => {
  * Returns 201 if created, 200 if updated
  */
 export const updateUserPermissions = async (userId, data) => {
-  return apiPostOld(`${BASE_ENDPOINT}/permissions/${userId}/`, data, { env: 'prod' });
+  return apiPostOld(`${BASE_ENDPOINT}/permissions/${userId}/`, data, { env: CURRENT_ENV });
 };
 
 /**
