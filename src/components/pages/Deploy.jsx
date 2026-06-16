@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createElement, useState, useEffect, useMemo } from 'react';
 import {
   FileSpreadsheet,
   Search,
@@ -15,11 +14,10 @@ import {
   Plus,
   Minus,
   Check,
-  ArrowLeft,
-  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 import ReactDiffViewer from 'react-diff-viewer-continued';
-import { getUserFromToken, isProdAuthenticated, sendProdOTP, verifyProdOTP } from '../../services/api';
+import { getUserFromToken } from '../../services/api';
 import {
   listDynamicLogs,
   getDynamicLog,
@@ -29,13 +27,14 @@ import {
 import { toast } from '../shared/Toast';
 import CustomerDropdown from '../shared/CustomerDropdown';
 import AppShell from '../shared/AppShell';
+import { IS_PROD } from '../../config/env';
 
 export default function Deploy() {
-  const navigate = useNavigate();
   const [isSwapped, setIsSwapped] = useState(true);
 
   const user = useMemo(() => getUserFromToken(), []);
   const isDlmsAdmin = user?.is_dlms_admin === true;
+  const canAccessDeployments = IS_PROD && isDlmsAdmin;
 
   const [customerFilter, setCustomerFilter] = useState(() => {
     const saved = sessionStorage.getItem("deploy_customerFilter");
@@ -56,103 +55,6 @@ export default function Deploy() {
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [deploying, setDeploying] = useState(false);
 
-  // Production login modal state
-  const [showProdLoginModal, setShowProdLoginModal] = useState(() => !isProdAuthenticated());
-  const [prodMobile, setProdMobile] = useState('');
-  const [prodOtp, setProdOtp] = useState('');
-  const [prodOtpSent, setProdOtpSent] = useState(false);
-  const [prodLoading, setProdLoading] = useState(false);
-  const [prodError, setProdError] = useState('');
-  const [prodCountdown, setProdCountdown] = useState(0);
-  const prodOtpInputRef = useRef(null);
-
-  // Check prod auth and show modal if not authenticated
-  useEffect(() => {
-    if (!isProdAuthenticated()) {
-      setShowProdLoginModal(true);
-    }
-  }, []);
-
-  // Countdown timer for OTP resend
-  useEffect(() => {
-    if (prodCountdown > 0) {
-      const timer = setTimeout(() => setProdCountdown(prodCountdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [prodCountdown]);
-
-  // Focus OTP input when OTP is sent
-  useEffect(() => {
-    if (prodOtpSent && prodOtpInputRef.current) {
-      prodOtpInputRef.current.focus();
-    }
-  }, [prodOtpSent]);
-
-  const handleProdSendOTP = async (e) => {
-    e.preventDefault();
-    setProdError('');
-
-    if (!prodMobile || prodMobile.length !== 10) {
-      setProdError('Please enter a valid 10-digit mobile number');
-      return;
-    }
-
-    setProdLoading(true);
-    try {
-      const mobileWithPrefix = prodMobile.startsWith('+91') ? prodMobile : `+91${prodMobile}`;
-      await sendProdOTP(mobileWithPrefix);
-      setProdOtpSent(true);
-      setProdCountdown(60);
-    } catch (err) {
-      setProdError(err.message || 'Failed to send OTP');
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleProdVerifyOTP = async (e) => {
-    e.preventDefault();
-    setProdError('');
-
-    if (!prodOtp || prodOtp.length !== 4) {
-      setProdError('Please enter a valid 4-digit OTP');
-      return;
-    }
-
-    setProdLoading(true);
-    try {
-      const mobileWithPrefix = prodMobile.startsWith('+91') ? prodMobile : `+91${prodMobile}`;
-      await verifyProdOTP(mobileWithPrefix, prodOtp);
-      setShowProdLoginModal(false);
-      toast.success('Successfully authenticated to production!');
-    } catch (err) {
-      setProdError(err.message || 'Invalid OTP');
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleProdResendOTP = async () => {
-    if (prodCountdown > 0) return;
-    setProdError('');
-    setProdOtp('');
-    setProdLoading(true);
-    try {
-      const mobileWithPrefix = prodMobile.startsWith('+91') ? prodMobile : `+91${prodMobile}`;
-      await sendProdOTP(mobileWithPrefix);
-      setProdCountdown(60);
-    } catch (err) {
-      setProdError(err.message || 'Failed to resend OTP');
-    } finally {
-      setProdLoading(false);
-    }
-  };
-
-  const handleCloseProdModal = () => {
-    setShowProdLoginModal(false);
-    navigate('/home');
-  };
-
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
     return () => clearTimeout(timer);
@@ -168,12 +70,14 @@ export default function Deploy() {
   }, [customerFilterName]);
 
   useEffect(() => {
+    if (!canAccessDeployments) return;
+
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
         const fetchParams = { page_size: 1000, ...(customerFilter && { customer: customerFilter }) };
         const [stagingRes, prodRes] = await Promise.all([
-          listDynamicLogs(fetchParams).catch(() => ({ templates: [] })),
+          listDynamicLogs(fetchParams, { env: 'staging' }).catch(() => ({ templates: [] })),
           listDynamicLogs(fetchParams, { env: 'prod' }).catch(() => ({ templates: [] }))
         ]);
 
@@ -216,16 +120,18 @@ export default function Deploy() {
         const merged = Array.from(templateMap.values());
         setTemplates(merged);
         if (merged.length > 0) setSelectedTemplateId(merged[0].template_id);
-      } catch (error) {
+      } catch {
         toast.error("Failed to load templates");
       } finally {
         setLoadingTemplates(false);
       }
     };
     fetchTemplates();
-  }, [customerFilter]);
+  }, [customerFilter, canAccessDeployments]);
 
   useEffect(() => {
+    if (!canAccessDeployments) return;
+
     const fetchDiffs = async () => {
       if (!selectedTemplateId) return;
       setLoadingDiff(true);
@@ -245,7 +151,7 @@ export default function Deploy() {
       }
     };
     fetchDiffs();
-  }, [selectedTemplateId, baseEnv, compareEnv, customerFilter]);
+  }, [selectedTemplateId, baseEnv, compareEnv, customerFilter, canAccessDeployments]);
 
   const handleDeploy = async () => {
     if (!selectedTemplateId || !compareJson) return;
@@ -293,12 +199,26 @@ export default function Deploy() {
   const compareVersion = selectedTemplate ? (compareEnv === 'production' ? selectedTemplate.prod_version : selectedTemplate.staging_version) : null;
   // Check if there are differences to show (for viewing)
   const hasDiff = selectedTemplate && compareJson && (baseJson !== compareJson);
-  // Only admin users can deploy
-  const canDeploy = isDlmsAdmin && hasDiff;
+  const canDeploy = canAccessDeployments && hasDiff;
+
+  if (!canAccessDeployments) {
+    return (
+      <AppShell active="deployments">
+        <div className="section-card flex min-h-[420px] flex-col items-center justify-center p-8 text-center">
+          <div className="icon-box mb-5 h-14 w-14">
+            <Lock className="h-6 w-6" />
+          </div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Deployments require DLMS admin access</h1>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            Production deployments are available only to DLMS admins. Please contact an admin if you need access.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <>
-    <div className={showProdLoginModal ? 'pointer-events-none select-none' : ''} style={{ filter: showProdLoginModal ? 'grayscale(50%) brightness(0.7)' : 'none', transition: 'filter 0.3s ease' }}>
+    <div>
       <AppShell active="deployments">
         {/* Page header */}
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
@@ -471,134 +391,10 @@ export default function Deploy() {
         </div>
       </AppShell>
     </div>
-
-      {/* Production Login Modal */}
-      {showProdLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
-          <div className="login-wrap">
-            {/* Logo + Title */}
-            <div className="login-top">
-              <div className="login-mark">
-                <ShieldCheck />
-              </div>
-              <h1>Production Login</h1>
-              <div className="sub">Authenticate to access deployments</div>
-            </div>
-
-            {/* Mobile Step */}
-            {!prodOtpSent ? (
-              <div className="login-card">
-                <div className="login-card-head">
-                  <h2>Verify Identity</h2>
-                  <p>Enter your mobile number to continue</p>
-                </div>
-
-                <form onSubmit={handleProdSendOTP}>
-                  <label className="login-lbl">Mobile Number</label>
-                  <div className="login-mobile-field">
-                    <span className="cc">
-                      <Users className="h-4 w-4" />
-                      <span>+91</span>
-                    </span>
-                    <input
-                      type="tel"
-                      value={prodMobile}
-                      onChange={(e) => setProdMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="Enter 10-digit number"
-                      maxLength={10}
-                      autoFocus
-                    />
-                  </div>
-
-                  {prodError && <div className="login-error">{prodError}</div>}
-
-                  <button
-                    type="submit"
-                    disabled={prodLoading || prodMobile.length !== 10}
-                    className="login-btn-primary"
-                  >
-                    {prodLoading ? (
-                      <><Loader2 className="animate-spin" /> Sending OTP...</>
-                    ) : (
-                      <><span>Continue</span><ArrowRight /></>
-                    )}
-                  </button>
-                </form>
-
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e5e5e5' }}>
-                  <button onClick={handleCloseProdModal} className="login-back-btn" style={{ width: '100%', justifyContent: 'center' }}>
-                    <ArrowLeft /> Cancel & Go Back
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="login-card">
-                <div className="login-card-head">
-                  <h2>Verify OTP</h2>
-                  <p>Enter the code sent to +91 {prodMobile}</p>
-                </div>
-
-                <form onSubmit={handleProdVerifyOTP}>
-                  <button
-                    type="button"
-                    onClick={() => { setProdOtpSent(false); setProdOtp(''); setProdError(''); }}
-                    className="login-back-btn"
-                  >
-                    <ArrowLeft /> Change number
-                  </button>
-
-                  <div className="login-sent-note">
-                    <CheckCircle2 />
-                    OTP sent to +91 {prodMobile}
-                  </div>
-
-                  <label className="login-lbl">Verification Code</label>
-                  <div className="login-otp-field">
-                    <span className="lead"><Clock /></span>
-                    <input
-                      ref={prodOtpInputRef}
-                      type="text"
-                      value={prodOtp}
-                      onChange={(e) => setProdOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="Enter 4-digit OTP"
-                      maxLength={4}
-                    />
-                  </div>
-
-                  {prodError && <div className="login-error">{prodError}</div>}
-
-                  <button
-                    type="submit"
-                    disabled={prodLoading || prodOtp.length !== 4}
-                    className="login-btn-primary"
-                  >
-                    {prodLoading ? (
-                      <><Loader2 className="animate-spin" /> Verifying...</>
-                    ) : (
-                      <><span>Verify & Sign in</span><ArrowRight /></>
-                    )}
-                  </button>
-
-                  <div className="login-resend">
-                    {prodCountdown > 0 ? (
-                      <>Resend code in <b>{prodCountdown}s</b></>
-                    ) : (
-                      <button type="button" onClick={handleProdResendOTP} disabled={prodLoading}>
-                        Resend verification code
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </>
   );
 }
 
-function Stat({ label, value, icon: Icon, tone }) {
+function Stat({ label, value, icon, tone }) {
   return (
     <div className="section-card flex items-center justify-between p-5">
       <div>
@@ -610,7 +406,7 @@ function Stat({ label, value, icon: Icon, tone }) {
         tone === "success" ? "bg-success/15 text-success" :
         "bg-accent text-accent-foreground"
       }`}>
-        <Icon className="h-5 w-5" />
+        {createElement(icon, { className: "h-5 w-5" })}
       </div>
     </div>
   );
