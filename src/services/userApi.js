@@ -25,10 +25,6 @@ export const getUsers = async (search = '') => {
     // Construct query params
     const params = new URLSearchParams();
 
-    // Hardcoded customer ID filter (comma-separated for OR logic)
-    const allowedCustomerIds = [243, 441, 679];
-    params.append("customer_id", allowedCustomerIds.join(','));
-
     if (search) {
       params.append('search', search);
     }
@@ -39,13 +35,15 @@ export const getUsers = async (search = '') => {
     const response = await apiGetOld(endpoint);
 
     // Response format: { results: [...users], count: number }
-    // Transform to frontend format with user_id and name
+    // Transform to frontend format with user_id, name, customer_id, and company_name
     if (response?.results && Array.isArray(response.results)) {
       return response.results.map(user => ({
         id: user.id || user.user_id,
         name: user.name || user.username || `User ${user.id}`,
         email: user.email || '',
-        mobile: user.mobile || ''
+        mobile: user.mobile || '',
+        customer_id: user.customer?.id || user.customer_id || '',
+        company_name: user.customer?.company_name || ''
       }));
     }
 
@@ -55,7 +53,9 @@ export const getUsers = async (search = '') => {
         id: user.id || user.user_id,
         name: user.name || user.username || `User ${user.id}`,
         email: user.email || '',
-        mobile: user.mobile || ''
+        mobile: user.mobile || '',
+        customer_id: user.customer?.id || user.customer_id || '',
+        company_name: user.customer?.company_name || ''
       }));
     }
 

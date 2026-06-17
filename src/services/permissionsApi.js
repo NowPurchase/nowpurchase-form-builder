@@ -1,96 +1,52 @@
-import { apiGet, apiPost } from './api';
+import { apiGetOld, apiGet, apiPostOld } from './api';
+import { IS_PROD } from '../config/env';
 
-// Fetch templates from API
-export const getTemplatesDropdown = async () => {
-  try {
-    const response = await apiGet('/api/v1/templates?page_no=1&page_size=100');
+const BASE_ENDPOINT = '/api/dlms';
+const CURRENT_ENV = IS_PROD ? 'prod' : 'staging';
 
-    // Response is an array of template objects
-    // Use template_id as the stable unique identifier (persists across clones/versions)
-    const mapTemplate = (template) => ({
-      id: template.template_id,
-      template_name: template.template_name,
-      version: template.version
-    });
-
-    // Filter out invalid templates (must have template_id and template_name)
-    const filterValid = (template) => template.template_id && template.template_name;
-
-    if (Array.isArray(response)) {
-      return response.filter(filterValid).map(mapTemplate);
-    }
-
-    // If response has a results array (paginated response)
-    if (response?.results && Array.isArray(response.results)) {
-      return response.results.filter(filterValid).map(mapTemplate);
-    }
-
-    return [];
-  } catch (error) {
-    console.error('Error fetching templates:', error);
-    throw error;
+/**
+ * List DLMS permissions
+ * @param {object} params - Query parameters
+ * @param {string} params.search - Search by user name, mobile, or company name
+ * @param {string} params.template_id - Filter users with permission for this template (or DLMS admins)
+ * @param {number} params.customer - Filter by customer/company ID
+ */
+export const listPermissions = async (params = {}) => {
+  const queryParams = [];
+  if (params.search) {
+    queryParams.push(`search=${encodeURIComponent(params.search)}`);
   }
+  if (params.template_id) {
+    queryParams.push(`template_id=${encodeURIComponent(params.template_id)}`);
+  }
+  if (params.customer) {
+    queryParams.push(`customer_id=${encodeURIComponent(params.customer)}`);
+  }
+  const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+  return apiGetOld(`${BASE_ENDPOINT}/permissions/${queryString}`, { env: CURRENT_ENV });
 };
 
-// Fetch user permissions from API
-export const getUserPermissions = async () => {
-  try {
-    const response = await apiGet('/api/v1/user-permissions');
-
-    // Response format: { users: [...], total: number }
-    // Transform to frontend format: {userId: {isAdmin: bool, permissions: {...}}}
-    if (response?.users && Array.isArray(response.users)) {
-      const transformedData = {};
-      response.users.forEach(user => {
-        if (user.user_id) {
-          transformedData[user.user_id] = {
-            isAdmin: user.is_admin || false,
-            permissions: user.permissions || {}
-          };
-        }
-      });
-      return transformedData;
-    }
-
-    // Fallback: if response is directly an array (for backward compatibility)
-    if (Array.isArray(response)) {
-      const transformedData = {};
-      response.forEach(user => {
-        if (user.user_id) {
-          transformedData[user.user_id] = {
-            isAdmin: user.is_admin || false,
-            permissions: user.permissions || {}
-          };
-        }
-      });
-      return transformedData;
-    }
-
-    // Fallback for empty response
-    return {};
-  } catch (error) {
-    console.error('Error fetching user permissions:', error);
-    // Return empty object if no permissions exist yet (404 or other errors)
-    return {};
-  }
+/**
+ * Update or create user permissions
+ * Returns 201 if created, 200 if updated
+ */
+export const updateUserPermissions = async (userId, data) => {
+  return apiPostOld(`${BASE_ENDPOINT}/permissions/${userId}/`, data, { env: CURRENT_ENV });
 };
 
-// Save user permissions to API
-export const saveUserPermissions = async (permissionsData) => {
-  try {
-    // Transform from frontend format: {userId: {isAdmin: bool, permissions: {...}}}
-    // To API format: {users: [{user_id: string, is_admin: bool, permissions: {...}}]}
-    const users = Object.keys(permissionsData).map(userId => ({
-      user_id: userId,
-      is_admin: permissionsData[userId].isAdmin || false,
-      permissions: permissionsData[userId].permissions || {}
-    }));
-
-    const payload = { users };
-    const response = await apiPost('/api/v1/user-permissions', payload);
-    return response;
-  } catch (error) {
-    console.error('Error saving user permissions:', error);
-    throw error;
+/**
+ * List templates for permissions page
+ * Uses DLMS API with JWT token (handles refresh)
+ * @param {object} params - Query parameters (page_size, customer)
+ */
+export const listTemplatesForPermissions = async (params = {}) => {
+  const queryParams = [];
+  if (params.page_size) {
+    queryParams.push(`page_size=${params.page_size}`);
   }
+  if (params.customer) {
+    queryParams.push(`customer_id=${params.customer}`);
+  }
+  const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+  return apiGet(`/api/v2/admin/templates${queryString}`);
 };

@@ -1,0 +1,190 @@
+.search-fields-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-fields-description {
+  font: 400 14px "Oxanium", sans-serif;
+  color: #808080;
+  line-height: 1.5;
+}
+
+.search-fields-description p {
+  margin: 0;
+}
+
+/* Fields List - Chip wrapper */
+.search-fields-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 40px;
+  margin: 4px 0 20px;
+}
+
+.search-fields-empty {
+  color: #808080;
+  font: 400 13px "Oxanium", sans-serif;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Field Chip - MetalCloud style */
+.search-field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 13px;
+  border-radius: 8px;
+  background: #d0e4f2;
+  border: 1px solid #a3cde6;
+  transition: all 160ms ease-out;
+}
+
+.search-field-chip:hover {
+  border-color: #1579be;
+}
+
+.search-field-value {
+  font: 500 12px "Oxanium", monospace;
+  color: #0d4972;
+  background: transparent;
+}
+
+.search-field-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #0d4972;
+  cursor: pointer;
+  transition: background 160ms ease-out;
+}
+
+.search-field-remove svg {
+  width: 15px;
+  height: 15px;
+}
+
+.search-field-remove:hover {
+  background: #a3cde6;
+}
+
+/* Input Wrapper */
+.search-field-input-wrapper {
+  position: relative;
+}
+
+.search-field-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-field-input-row .rs-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  font: 400 13px "Oxanium", monospace;
+  background: #fff;
+  color: #0d0d0d;
+  outline: none;
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+.search-field-input-row .rs-input:focus {
+  border-color: #1579be;
+  box-shadow: 0 0 0 3px rgba(21, 121, 190, 0.28);
+}
+
+/* Suggestions Dropdown */
+.search-field-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cccccc;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+}
+
+.suggestion-category {
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.suggestion-category:last-child {
+  border-bottom: none;
+}
+
+.suggestion-category-header {
+  padding: 8px 14px;
+  font: 700 10px "Oxanium", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #808080;
+  background: #f2f2f2;
+  position: sticky;
+  top: 0;
+}
+
+.suggestion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 160ms ease-out;
+}
+
+.suggestion-item:hover {
+  background: #d0e4f2;
+}
+
+.suggestion-value {
+  font: 500 13px "Oxanium", monospace;
+  color: #0d4972;
+  background: transparent;
+}
+
+.suggestion-label {
+  font: 400 12px "Oxanium", sans-serif;
+  color: #808080;
+}
+
+/* Add Button - pill style */
+.add-search-field-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  align-self: flex-start !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  border-radius: 9999px !important;
+  border: 1px solid #1579be !important;
+  background: transparent !important;
+  color: #1579be !important;
+  font: 600 13px "Urbanist", sans-serif !important;
+  cursor: pointer !important;
+  transition: background 160ms ease-out !important;
+}
+
+.add-search-field-btn:hover {
+  background: #d0e4f2 !important;
+}
+
+.add-search-field-btn svg {
+  width: 17px !important;
+  height: 17px !important;
+}

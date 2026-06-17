@@ -1,0 +1,25 @@
+/**
+ * Truncate long file names inside rsCameraCapture (np-dlms-components).
+ *
+ * The component uses rsuite Uploader in text mode, which lays out the
+ * filename and status icons in a flex row but doesn't truncate the title.
+ * A long name overflows and breaks the form field layout.
+ */
+.rs-camera-capture .rs-uploader-file-item-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rs-camera-capture .rs-uploader-file-item-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rs-camera-capture .rs-uploader-file-item {
+  max-width: 100%;
+  overflow: hidden;
+}

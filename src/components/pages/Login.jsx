@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { setToken, setNowPurchaseToken, sendOTP, verifyOTP, loginWithNowPurchaseToken } from "../../services/api";
-import "./Login.css";
+import { FileSpreadsheet, Phone, KeyRound, ArrowLeft, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { setNowPurchaseToken, sendOTP, verifyOTP } from "../../services/api";
 
 function Login({ onLogin }) {
   const [mobile, setMobile] = useState("");
@@ -27,7 +27,7 @@ function Login({ onLogin }) {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!mobile || mobile.length !== 10) {
       setError("Please enter a valid 10-digit mobile number");
       return;
@@ -38,7 +38,7 @@ function Login({ onLogin }) {
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await sendOTP(mobileWithPrefix);
-      
+
       if (response?.detail || response) {
         setOtpSent(true);
         setCountdown(60);
@@ -66,25 +66,22 @@ function Login({ onLogin }) {
 
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
-
-      // Step 1: Verify OTP and get NowPurchase token
       const otpResponse = await verifyOTP(mobileWithPrefix, otp);
       const nowpurchaseToken = otpResponse?.token;
 
       if (!nowpurchaseToken) {
-        setError("Verification successful but no token received from server");
+        setError("Verification successful but no token received");
         return;
       }
 
-
-      if(nowpurchaseToken) {
+      if (nowpurchaseToken) {
         setNowPurchaseToken(nowpurchaseToken, true);
         onLogin();
       } else {
-        setError("Login successful but no JWT token received");
+        setError("Login successful but no token received");
       }
     } catch (err) {
-      setError(err.message || "Invalid OTP. Please check and try again.");
+      setError(err.message || "Invalid OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,7 +89,7 @@ function Login({ onLogin }) {
 
   const handleResendOTP = async () => {
     if (countdown > 0) return;
-    
+
     setError("");
     setOtp("");
     setLoading(true);
@@ -100,15 +97,15 @@ function Login({ onLogin }) {
     try {
       const mobileWithPrefix = mobile.startsWith('+91') ? mobile : `+91${mobile}`;
       const response = await sendOTP(mobileWithPrefix);
-      
+
       if (response?.detail || response) {
         setCountdown(60);
         setError("");
       } else {
-        setError("Failed to resend OTP. Please try again.");
+        setError("Failed to resend OTP.");
       }
     } catch (err) {
-      setError(err.message || "Failed to resend OTP. Please try again.");
+      setError(err.message || "Failed to resend OTP.");
     } finally {
       setLoading(false);
     }
@@ -122,89 +119,149 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>Admin Login</h2>
+    <div className="login-page">
+      <div className="login-wrap">
+        {/* Logo + Title */}
+        <div className="login-top">
+          <div className="login-mark">
+            <img src="/np-mark.svg" alt="NowPurchase" />
+          </div>
+          <h1>DLMS Admin Panel</h1>
+          <div className="sub">NowPurchase · MetalCloud</div>
+        </div>
+
+        {/* Mobile Step */}
         {!otpSent ? (
-          <form onSubmit={handleSendOTP}>
-            <div className="form-group">
-              <label htmlFor="mobile">Mobile Number</label>
-              <div className="mobile-input-wrapper">
-                <span className="mobile-prefix">+91</span>
-                <input
-                  type="text"
-                  id="mobile"
-                  value={mobile}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\+91/g, '').replace(/\D/g, '');
-                    setMobile(value);
-                  }}
-                  placeholder="Enter mobile number"
-                  maxLength={10}
-                  required
-                  disabled={loading}
-                />
+          <>
+            <div className="login-card">
+              <div className="login-card-head">
+                <h2>Sign in</h2>
+                <p>Enter your mobile number to continue</p>
               </div>
+
+              <form onSubmit={handleSendOTP}>
+                <label className="login-lbl">Mobile Number</label>
+                <div className="login-mobile-field">
+                  <span className="cc">
+                    <Phone />
+                    <span>+91</span>
+                  </span>
+                  <input
+                    type="text"
+                    value={mobile}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\+91/g, '').replace(/\D/g, '');
+                      setMobile(value);
+                    }}
+                    placeholder="Enter 10-digit number"
+                    maxLength={10}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                {error && <div className="login-error">{error}</div>}
+
+                <button
+                  type="submit"
+                  disabled={loading || mobile.length !== 10}
+                  className="login-btn-primary"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Sending OTP...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight />
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
-            {error && <div className="error-message">{error}</div>}
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? "Sending OTP..." : "Send OTP"}
-            </button>
-          </form>
+            <p className="login-legal">
+              By continuing, you agree to our <a href="#">Terms of Service</a>
+            </p>
+          </>
         ) : (
-          <form onSubmit={handleVerifyOTP}>
-            <div className="otp-info">
-              <p className="otp-message">
-                We've sent a verification code to <strong>+91 {mobile}</strong>
-              </p>
-              <button
-                type="button"
-                className="change-number-link"
-                onClick={handleBackToMobile}
-                disabled={loading}
-              >
-                Change number
-              </button>
-            </div>
-            <div className="form-group">
-              <label htmlFor="otp">Enter OTP</label>
-              <input
-                ref={otpInputRef}
-                type="text"
-                id="otp"
-                value={otp}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                  setOtp(value);
-                }}
-                placeholder="Enter 4-digit OTP"
-                maxLength={4}
-                required
-                disabled={loading}
-                className="otp-input"
-              />
-            </div>
-            {error && <div className="error-message">{error}</div>}
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? "Verifying..." : "Verify OTP"}
-            </button>
-            <div className="resend-otp">
-              {countdown > 0 ? (
-                <span className="resend-countdown">
-                  Resend OTP in {countdown}s
-                </span>
-              ) : (
+          <>
+            <div className="login-card">
+              <div className="login-card-head">
+                <h2>Verify OTP</h2>
+                <p>Enter the code sent to +91 {mobile}</p>
+              </div>
+
+              <form onSubmit={handleVerifyOTP}>
                 <button
                   type="button"
-                  className="resend-button"
-                  onClick={handleResendOTP}
+                  onClick={handleBackToMobile}
                   disabled={loading}
+                  className="login-back-btn"
                 >
-                  Resend OTP
+                  <ArrowLeft />
+                  Change number
                 </button>
-              )}
+
+                <div className="login-sent-note">
+                  <CheckCircle2 />
+                  OTP sent to +91 {mobile}
+                </div>
+
+                <label className="login-lbl">Verification Code</label>
+                <div className="login-otp-field">
+                  <span className="lead"><KeyRound /></span>
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setOtp(value);
+                    }}
+                    placeholder="Enter 4-digit OTP"
+                    maxLength={4}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                {error && <div className="login-error">{error}</div>}
+
+                <button
+                  type="submit"
+                  disabled={loading || otp.length !== 4}
+                  className="login-btn-primary"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify & Sign in
+                      <ArrowRight />
+                    </>
+                  )}
+                </button>
+
+                <div className="login-resend">
+                  {countdown > 0 ? (
+                    <>Resend code in <b>{countdown}s</b></>
+                  ) : (
+                    <button type="button" onClick={handleResendOTP} disabled={loading}>
+                      Resend verification code
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
-          </form>
+            <p className="login-legal">
+              By continuing, you agree to our <a href="#">Terms of Service</a>
+            </p>
+          </>
         )}
       </div>
     </div>
@@ -212,4 +269,3 @@ function Login({ onLogin }) {
 }
 
 export default Login;
-
