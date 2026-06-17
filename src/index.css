@@ -455,11 +455,56 @@
 
   .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 28px 28px 28px 12px; }
 
+  /* Mobile chrome — hidden on desktop, shown ≤ 768px (see media query below) */
+  .app-topbar, .app-bottomnav { display: none; }
+
   @media (max-width: 860px) {
     .app-sidebar { width: 76px; }
     .app-brand .wm, .app-nav-title, .app-nav-item span:not(.count), .app-sidebar-foot .nm, .app-sidebar-foot .org { display: none; }
     .app-nav-item { justify-content: center; padding: 0; }
     .app-main { padding: 20px 16px; }
+  }
+
+  /* ── Mobile (≤768px): sidebar → single top header + bottom tab nav ── */
+  @media (max-width: 768px) {
+    .app-shell { flex-direction: column; min-height: 100svh; }
+    .app-sidebar { display: none; }
+
+    /* Single white header: page title (left) + optional action + account avatar */
+    .app-topbar {
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 40;
+      padding: 12px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(2,30,79,0.08);
+    }
+    .app-topbar-title {
+      flex: 1; min-width: 0;
+      font-family: "Urbanist", sans-serif; font-weight: 900; font-size: 20px; line-height: 22px;
+      letter-spacing: -0.01em; color: hsl(var(--foreground));
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .app-main { width: 100%; padding: 14px 12px calc(74px + env(safe-area-inset-bottom)); }
+
+    /* Fixed bottom tab bar */
+    .app-bottomnav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      height: calc(64px + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid #cccccc;
+    }
+    .app-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      padding: 8px 2px 6px; text-decoration: none; border: none; background: transparent; cursor: pointer;
+      color: #888888;
+      font-family: "Urbanist", sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.02em;
+      transition: color 160ms ease-out;
+    }
+    .app-tab svg { width: 23px; height: 23px; color: #888888; transition: color 160ms ease-out; }
+    .app-tab.active, .app-tab.active svg { color: hsl(var(--primary)); }
+    .app-tab.disabled { opacity: 0.4; pointer-events: none; }
   }
 }
 
@@ -574,6 +619,119 @@
 .pager .pbtn:hover:not(:disabled) { border-color: #1579be !important; color: #1579be !important; }
 .pager .pbtn:disabled { opacity: 0.4 !important; cursor: default !important; }
 .pager .pnum { font: 600 13px "Urbanist", sans-serif !important; color: #0d0d0d !important; }
+
+/* Mobile template cards — hidden on desktop, replace the table ≤ 768px */
+.tm-list { display: none !important; }
+
+@media (max-width: 768px) {
+  /* Hide the page's desktop header (AppShell top bar carries the title) */
+  .page-head { display: none !important; }
+
+  /* Compact 3-up stats strip on the page background */
+  .stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .stat {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    min-height: 0 !important;
+    gap: 4px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(2,30,79,0.07) !important;
+  }
+  .stat .ic { display: none !important; }
+  .stat .lbl { font-size: 10px !important; letter-spacing: 0.06em !important; }
+  .stat .val { font-size: 22px !important; line-height: 26px !important; }
+
+  /* The table card becomes a transparent container so cards sit on the page bg */
+  .table-card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    gap: 12px !important;
+  }
+
+  /* Filters become their own rounded white card */
+  .filter-bar {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 14px !important;
+    border-bottom: none !important;
+    background: #fff !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 8px rgba(2,30,79,0.07) !important;
+  }
+  .segmented { width: 100% !important; }
+  .segmented button { flex: 1 !important; padding: 0 10px !important; }
+  .filter-search { margin-left: 0 !important; width: 100% !important; }
+  .filter-bar > .flex {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .filter-bar .min-w-\[240px\] { min-width: 0 !important; width: 100% !important; }
+
+  .dlms-table { display: none !important; }
+
+  /* Card list */
+  .tm-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  /* Read-only on mobile — non-interactive listing */
+  .tm-card {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px !important;
+    background: #fff !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 8px rgba(2,30,79,0.07) !important;
+    cursor: default !important;
+  }
+  .tm-icon {
+    width: 42px !important; height: 42px !important; flex-shrink: 0 !important;
+    border-radius: 10px !important; background: #ddeef9 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    color: #1579be !important;
+  }
+  .tm-icon svg { width: 20px !important; height: 20px !important; }
+  .tm-info { flex: 1 !important; min-width: 0 !important; }
+  .tm-name {
+    font: 700 14px "Urbanist", sans-serif !important; color: #0a0f1a !important;
+    overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
+  }
+  .tm-sub {
+    margin-top: 2px !important;
+    font: 500 11px "Urbanist", sans-serif !important; color: #6b7280 !important;
+    overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
+  }
+  .tm-badge { margin-top: 8px !important; }
+  .tm-state {
+    min-height: 180px !important;
+    display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    gap: 12px !important; padding: 24px !important; text-align: center !important;
+  }
+
+  .pager {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 14px !important;
+    background: #fff !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 8px rgba(2,30,79,0.07) !important;
+  }
+  .pager .nav { justify-content: space-between !important; }
+  .pager .pbtn { width: 40px !important; height: 40px !important; }
+}
 
 /* ============================================================================
    Config Page — MetalCloud redesign
@@ -1735,3 +1893,152 @@
   transition: all 0.15s;
 }
 .perm-btn-confirm:hover { background: #b87a00; }
+
+/* Mobile back button — hidden until the drill-down view kicks in */
+.perm-mobile-back { display: none; }
+
+/* ── Mobile: master/detail drill-down (list ↔ detail), one screen at a time ── */
+@media (max-width: 768px) {
+  /* AppShell top bar shows the "Permissions" title — hide the desktop heading,
+     keep the customer filter */
+  .perm-page-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .perm-page-head > div:first-child { display: none; }
+  .perm-cust-filter { min-width: 0; width: 100%; }
+
+  .perm-modebar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .perm-seg { width: 100%; }
+  .perm-seg button { flex: 1; justify-content: center; padding: 0 10px; }
+  /* Simplify: drop the wordy hint sentence on phones */
+  .perm-hint { display: none; }
+  /* Trim list rows — keep name + company, drop the phone number */
+  .perm-extra { display: none; }
+
+  /* Single-column drill-down: show one pane at a time */
+  .perm-grid { grid-template-columns: 1fr; gap: 0; }
+  .perm-grid.show-list .perm-assign { display: none; }
+  .perm-grid.show-detail .perm-pane { display: none; }
+
+  .perm-pane,
+  .perm-assign {
+    max-height: none;
+    border-radius: 16px;
+  }
+  .perm-pane { min-height: 260px; }
+  .perm-list { max-height: calc(100svh - 320px); }
+
+  /* Roomier, full-width search; 16px font stops iOS from zooming on focus */
+  .perm-pane-head { padding: 14px; }
+  .perm-pane-head .perm-search,
+  .perm-assign-tools .perm-search {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    /* Match both search boxes: flat grey pill, no border/white bg */
+    background: #f2f2f2;
+    border: none;
+  }
+  .perm-search input { font-size: 16px; }
+  .perm-litem {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+  .perm-lic { width: 36px; height: 36px; font-size: 12px; }
+  .perm-ln, .perm-lc { white-space: normal; overflow-wrap: anywhere; }
+  .perm-admin-badge,
+  .perm-grant-pill {
+    align-self: flex-start;
+    margin-top: 3px;
+    padding: 4px 8px;
+  }
+
+  /* Detail header gets a back button on the left */
+  .perm-mobile-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    border: none;
+    background: #f4f4f5;
+    color: hsl(var(--primary));
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .perm-assign-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+  }
+  .perm-ha { width: 40px; height: 40px; }
+  .perm-head-info { flex: 1; min-width: 0; }
+  .perm-head-name { overflow-wrap: anywhere; }
+  .perm-head-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .perm-admin-toggle { min-height: 40px; }
+  .perm-head-divider { display: none; }
+  .perm-btn-save {
+    min-width: 112px;
+    height: 42px;
+    justify-content: center;
+  }
+  .perm-admin-banner {
+    align-items: flex-start;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 19px;
+  }
+  /* Tools bar → search only (drop the All/Granted filter + Select all) */
+  .perm-assign-tools {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .perm-filter-seg,
+  .perm-selall { display: none; }
+  .perm-alist { max-height: calc(100svh - 360px); }
+  /* Rows are a clean checkbox + icon + name (no per-row level dropdown) */
+  .perm-arow {
+    display: grid;
+    grid-template-columns: 28px 36px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 13px 12px;
+  }
+  .perm-chk { width: 28px; height: 28px; border-radius: 8px; }
+  .perm-aic { width: 36px; height: 36px; }
+  .perm-ainfo { min-width: 0; }
+  .perm-an, .perm-as { overflow-wrap: anywhere; }
+  .perm-level { display: none; }
+  .perm-empty {
+    min-height: 200px;
+    padding: 36px 16px;
+    text-align: center;
+  }
+
+  .perm-modal-overlay { align-items: flex-end; padding: 12px; }
+  .perm-modal {
+    width: 100%;
+    max-width: none;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+  .perm-modal-actions { flex-direction: column-reverse; }
+  .perm-btn-cancel,
+  .perm-btn-confirm { min-height: 44px; }
+}

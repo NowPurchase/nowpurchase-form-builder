@@ -9,12 +9,16 @@ import { IS_PROD } from "../../config/env";
  * Pure presentation/navigation wrapper. No business logic lives here.
  *
  * Props:
- *   active   — "templates" | "deployments" | "history"  (kept for clarity; NavLink
- *              also derives the active state from the current route)
- *   onLogout — optional. When provided (e.g. from Home), it is called so the parent
- *              can flip auth state without a reload. When absent (e.g. Deploy), the
- *              shell performs a hard logout (clear token + redirect to "/").
- *   children — page content, rendered inside <main className="app-main">
+ *   active     — "templates" | "deployments" | "history"  (kept for clarity; NavLink
+ *                also derives the active state from the current route)
+ *   onLogout   — optional. When provided (e.g. from Home), it is called so the parent
+ *                can flip auth state without a reload. When absent (e.g. Deploy), the
+ *                shell performs a hard logout (clear token + redirect to "/").
+ *   title      — page title shown in the mobile-only top bar (desktop uses the
+ *                sidebar + the page's own header instead). The mobile top bar is
+ *                intentionally title-only — no actions/logout (logout lives in the
+ *                desktop sidebar footer).
+ *   children   — page content, rendered inside <main className="app-main">
  */
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
@@ -23,7 +27,7 @@ const NAV = [
   { to: "/history", label: "History", icon: History },
 ];
 
-export default function AppShell({ onLogout, children }) {
+export default function AppShell({ onLogout, title, children }) {
   const user = useMemo(() => getUserFromToken(), []);
 
   const name = user?.name || user?.customer_name || "DLMS User";
@@ -49,8 +53,24 @@ export default function AppShell({ onLogout, children }) {
     window.location.href = "/";
   };
 
+  // Nav items visible to this user in the desktop sidebar — each tagged with
+  // its disabled state.
+  const visibleNav = NAV.filter(({ prodOnly }) => !(prodOnly && !IS_PROD)).map((item) => ({
+    ...item,
+    disabled: item.disabledForNonAdmin && !user?.is_dlms_admin,
+  }));
+
+  // Mobile bottom tab bar exposes only Templates (read-only) + Permissions —
+  // the two things an admin needs from a phone.
+  const mobileNav = visibleNav.filter(({ to }) => to === "/home" || to === "/permissions");
+
   return (
     <div className="app-shell app-shell-bg">
+      {/* Mobile-only top bar — title only (no actions / no logout) */}
+      <header className="app-topbar">
+        <span className="app-topbar-title">{title}</span>
+      </header>
+
       <aside className="app-sidebar">
         <div className="app-brand">
           <img src="/np-mark.svg" alt="NowPurchase" />
@@ -61,25 +81,17 @@ export default function AppShell({ onLogout, children }) {
         </div>
 
         <div className="app-nav-title">Workspace</div>
-        {NAV.map(({ to, label, icon, prodOnly, disabledForNonAdmin }) => {
-          if (prodOnly && !IS_PROD) return null;
-
-          const isDisabled = disabledForNonAdmin && !user?.is_dlms_admin;
-
-          if (isDisabled) {
-            return (
-              <div
-                key={to}
-                className="app-nav-item disabled"
-                title="Admin access required"
-              >
-                {createElement(icon)}
-                <span>{label}</span>
-              </div>
-            );
-          }
-
-          return (
+        {visibleNav.map(({ to, label, icon, disabled }) =>
+          disabled ? (
+            <div
+              key={to}
+              className="app-nav-item disabled"
+              title="Admin access required"
+            >
+              {createElement(icon)}
+              <span>{label}</span>
+            </div>
+          ) : (
             <NavLink
               key={to}
               to={to}
@@ -88,8 +100,8 @@ export default function AppShell({ onLogout, children }) {
               {createElement(icon)}
               <span>{label}</span>
             </NavLink>
-          );
-        })}
+          )
+        )}
 
         <div className="app-sidebar-foot">
           <div className="app-avatar">{initials}</div>
@@ -104,6 +116,27 @@ export default function AppShell({ onLogout, children }) {
       </aside>
 
       <main className="app-main">{children}</main>
+
+      {/* Mobile-only bottom tab bar (Permissions only) */}
+      <nav className="app-bottomnav">
+        {mobileNav.map(({ to, label, icon, disabled }) =>
+          disabled ? (
+            <div key={to} className="app-tab disabled" title="Admin access required">
+              {createElement(icon)}
+              <span>{label}</span>
+            </div>
+          ) : (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) => `app-tab ${isActive ? "active" : ""}`}
+            >
+              {createElement(icon)}
+              <span>{label}</span>
+            </NavLink>
+          )
+        )}
+      </nav>
     </div>
   );
 }
