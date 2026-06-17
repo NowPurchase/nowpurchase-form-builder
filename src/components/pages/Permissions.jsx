@@ -11,6 +11,7 @@ import {
   User,
   FileSpreadsheet,
   ChevronDown,
+  ChevronLeft,
   Check,
   Loader2,
   Inbox,
@@ -39,6 +40,7 @@ export default function Permissions({ onLogout }) {
   const [dirty, setDirty] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({});
   const [showAdminConfirm, setShowAdminConfirm] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false); // mobile drill-down: list ↔ detail
 
   const user = useMemo(() => getUserFromToken(), []);
   const isDlmsAdmin = user?.is_dlms_admin === true;
@@ -99,6 +101,12 @@ export default function Permissions({ onLogout }) {
     fetchData();
   }, [fetchData]);
 
+  // Land at the top on open — otherwise a preserved scroll offset (e.g. from a
+  // scrolled Templates list) can hide the mode toggle above the fold on mobile.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -140,6 +148,7 @@ export default function Permissions({ onLogout }) {
     setRightFilter("all");
     setPendingChanges({});
     setDirty(false);
+    setMobileDetailOpen(false);
 
     if (newMode === "user" && permissions.length > 0) {
       setSelectedId(permissions[0].user?.id);
@@ -431,7 +440,7 @@ export default function Permissions({ onLogout }) {
   };
 
   return (
-    <AppShell active="permissions" onLogout={onLogout}>
+    <AppShell active="permissions" onLogout={onLogout} title="Permissions">
       <div className="perm-page-head">
         <div>
           <h1>Permissions</h1>
@@ -478,7 +487,7 @@ export default function Permissions({ onLogout }) {
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         </div>
       ) : (
-        <div className="perm-grid">
+        <div className={`perm-grid ${mobileDetailOpen ? "show-detail" : "show-list"}`}>
           {/* LEFT PANE */}
           <aside className="perm-pane">
             <div className="perm-pane-head">
@@ -510,7 +519,7 @@ export default function Permissions({ onLogout }) {
                   <button
                     key={it.id}
                     className={`perm-litem ${it.id === selectedId ? "active" : ""}`}
-                    onClick={() => { setSelectedId(it.id); setPendingChanges({}); setDirty(false); }}
+                    onClick={() => { setSelectedId(it.id); setPendingChanges({}); setDirty(false); setMobileDetailOpen(true); }}
                   >
                     {mode === "user" ? (
                       <span className="perm-lic usr">{it.initials}</span>
@@ -521,7 +530,7 @@ export default function Permissions({ onLogout }) {
                       <div className="perm-ln">{it.name}</div>
                       <div className="perm-lc">
                         {mode === "user" ? (
-                          <>{it.company}{it.mobile && <> · {it.mobile}</>}</>
+                          <>{it.company}{it.mobile && <span className="perm-extra"> · {it.mobile}</span>}</>
                         ) : it.sub}
                       </div>
                     </div>
@@ -543,6 +552,13 @@ export default function Permissions({ onLogout }) {
             {selectedItem ? (
               <>
                 <div className="perm-assign-head">
+                  <button
+                    className="perm-mobile-back"
+                    onClick={() => setMobileDetailOpen(false)}
+                    title="Back to list"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
                   {mode === "user" ? (
                     <div className="perm-ha usr">{selectedItem.initials}</div>
                   ) : (
@@ -634,7 +650,7 @@ export default function Permissions({ onLogout }) {
                           <div className="perm-an">{it.name}</div>
                           <div className="perm-as">
                             {mode === "template" ? (
-                              <>{it.company}{it.mobile && <> · {it.mobile}</>}</>
+                              <>{it.company}{it.mobile && <span className="perm-extra"> · {it.mobile}</span>}</>
                             ) : it.sub}
                           </div>
                         </div>
