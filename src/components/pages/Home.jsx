@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Filter,
   Loader2,
+  Inbox,
 } from "lucide-react";
 
 function parsePageFromUrl(url) {
@@ -156,9 +157,9 @@ export default function Home({ onLogout }) {
   const totalPages = pagination.count > 0 && pagination.page_size > 0 ? Math.ceil(pagination.count / pagination.page_size) : 0;
 
   return (
-    <AppShell active="templates" onLogout={onLogout}>
-      {/* Page Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-5">
+    <AppShell active="templates" onLogout={onLogout} title="Templates">
+      {/* Page Header (desktop only — mobile uses the AppShell top bar) */}
+      <div className="page-head mb-6 flex flex-wrap items-end justify-between gap-5">
         <div>
           <h1 className="font-display text-[32px] font-bold leading-10 tracking-tight">Templates</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">Browse and manage every form template across your customers.</p>
@@ -318,6 +319,29 @@ export default function Home({ onLogout }) {
           </tbody>
         </table>
 
+        {/* Mobile card list (shown ≤ 768px in place of the table) */}
+        <div className="tm-list">
+          {loading && allForms.length === 0 ? (
+            <div className="tm-state">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : error ? (
+            <div className="tm-state">
+              <p className="text-sm text-destructive">{error}</p>
+              <button onClick={() => fetchForms(pagination.page)} className="btn-secondary">Retry</button>
+            </div>
+          ) : filteredForms.length === 0 ? (
+            <div className="tm-state">
+              <Inbox className="h-9 w-9 text-muted-foreground/40" />
+              <span className="text-sm text-muted-foreground">No templates found</span>
+            </div>
+          ) : (
+            filteredForms.map((f, i) => (
+              <MobileTemplateCard key={f.template_id || i} f={f} />
+            ))
+          )}
+        </div>
+
         {/* Pagination */}
         {(pagination.count > 0 || pagination.next || pagination.page > 1) && (
           <div className="pager">
@@ -343,6 +367,26 @@ export default function Home({ onLogout }) {
         )}
       </div>
     </AppShell>
+  );
+}
+
+// Mobile is read-only: the phone view exists so an admin can manage permissions
+// and glance at what templates exist. The listing is non-interactive — names +
+// basic info only, no create / edit / open actions (those live on desktop).
+function MobileTemplateCard({ f }) {
+  return (
+    <article className="tm-card" aria-disabled="true">
+      <div className="tm-icon">
+        <FileSpreadsheet />
+      </div>
+      <div className="tm-info">
+        <div className="tm-name">{f.template_name || f["from-name"] || "N/A"}</div>
+        <div className="tm-sub">{(f.customer_name || "System")} · v{f.version || "—"}</div>
+        <div className="tm-badge">
+          <StatusBadge status={f.status} />
+        </div>
+      </div>
+    </article>
   );
 }
 
