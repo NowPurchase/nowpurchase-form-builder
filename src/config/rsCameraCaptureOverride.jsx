@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { Uploader } from "rsuite";
 import {
   define,
@@ -14,21 +14,19 @@ import {
 /**
  * Drop-in replacement for np-dlms-components' rsCameraCapture.
  *
- * The stock component hardcodes `capture="environment"` on its file input
- * (via a useEffect), which forces mobile browsers to open the rear camera
- * directly and gives the user no way to pick from the gallery or files.
- * There is no prop to control this.
+ * Renders a distinct camera-icon "Capture" button as rsuite's Uploader trigger
+ * (so the native click -> hidden <input type="file"> wiring is handled by
+ * rsuite; reliable on Android). A useEffect configures that input the same way
+ * the stock RsUploader does (aria-hidden + tabIndex), and the `allowGallery`
+ * prop decides the source:
+ *   - allowGallery = false (default): sets `capture="environment"`, so the
+ *     device camera opens directly (Capture behaviour, no gallery).
+ *   - allowGallery = true: no `capture`, mimicking the stock Upload button, so
+ *     on a phone the OS picker offers BOTH the camera and the gallery (Photo
+ *     Library / Files) from one tap.
  *
- * This version adds a `source` prop:
- *   - "camera" (default): keeps the original behavior — sets
- *     capture="environment", so the device opens the camera directly.
- *   - "any": omits the `capture` attribute, so the OS shows its native
- *     chooser (Camera / Photo Library / Files) and the user can take a
- *     photo OR pick an existing image.
- *
- * Note: `capture` is a mobile-only hint; desktop browsers always show a
- * file dialog. There is no standard way to force a "gallery only" source,
- * so gallery is offered (alongside camera/files) by the OS when source="any".
+ * `capture` is a mobile-only hint; desktop browsers ignore it and show a
+ * normal file dialog regardless.
  *
  * Registered under the same type name "RsCameraCapture" so existing form
  * templates pick it up automatically.
@@ -42,42 +40,42 @@ const RsCameraCaptureOverrideView = ({
   className,
   label,
   accept = "image/*",
-  source = "camera",
+  allowGallery = false,
   ...rest
 }) => {
   const uploaderRef = useRef(null);
-  const containerRef = useRef(null);
 
+  // Same input setup as the stock RsUploader (aria-hidden + tabIndex on the
+  // hidden file input), then gate the source with `allowGallery`:
+  //   - true:  no `capture` — identical to stock, so the OS chooser opens
+  //            BOTH the camera and the gallery.
+  //   - false: `capture="environment"` — opens the device camera directly.
   useEffect(() => {
-    const inputElement = uploaderRef.current?.root?.querySelector(
+    const input = uploaderRef.current?.root?.querySelector(
       'input[type="file"]'
     );
-    // --- TEMP DIAGNOSTIC ---
-    if (containerRef.current) {
-      containerRef.current.setAttribute(
-        "data-input-found",
-        String(!!inputElement)
-      );
+    if (!input) return;
+    if (!input.hasAttribute("aria-hidden")) {
+      input.setAttribute("aria-hidden", "true");
     }
-    if (!inputElement) return;
-
-    if (source === "any") {
-      inputElement.removeAttribute("capture");
+    if (!input.hasAttribute("tabIndex")) {
+      input.setAttribute("tabIndex", "-1");
+    }
+    if (allowGallery) {
+      // Exact stock Upload-button config: no capture AND no accept filter. On
+      // Android 13+ `accept="image/*"` forces the gallery-only Photo Picker;
+      // clearing it lets the OS show the full chooser (Camera + gallery),
+      // exactly like the Upload button.
+      input.removeAttribute("capture");
+      input.removeAttribute("accept");
     } else {
-      inputElement.setAttribute("capture", "environment");
+      // Camera: `capture` is ignored when `multiple` is also present (it falls
+      // back to the gallery), so strip `multiple` to guarantee it opens.
+      input.setAttribute("capture", "environment");
+      input.setAttribute("accept", accept);
+      input.removeAttribute("multiple");
     }
-    inputElement.setAttribute("accept", accept);
-    if (!inputElement.hasAttribute("tabIndex")) {
-      inputElement.setAttribute("tabIndex", "-1");
-    }
-    // --- TEMP DIAGNOSTIC ---
-    if (containerRef.current) {
-      containerRef.current.setAttribute(
-        "data-capture-attr",
-        inputElement.getAttribute("capture") ?? "none"
-      );
-    }
-  }, [accept, source]);
+  }, [allowGallery, multiple, accept]);
 
   const shouldAllowUpload = useMemo(
     () => (multiple ? true : !(fileList && fileList.length > 0)),
@@ -88,16 +86,40 @@ const RsCameraCaptureOverrideView = ({
     [isDisabled, shouldAllowUpload]
   );
 
-  return (
-    <div
-      ref={containerRef}
-      className={`rs-camera-capture ${className || ""}`.trim()}
-      data-source={source}
+  // Always the distinct "Capture" button (look never changes). The behaviour
+  // is driven by the `capture` attribute in the effect above: allowGallery
+  // false -> camera; true -> no capture, mimicking the Upload button.
+  const trigger = customElement ? (
+    <div>{children}</div>
+  ) : (
+    <button
+      type="button"
+      className="rs-camera-capture__capture-btn"
+      disabled={effectiveDisabled}
     >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+      </svg>
+      <span>Capture</span>
+    </button>
+  );
+
+  return (
+    <div className={`rs-camera-capture ${className || ""}`.trim()}>
       {label && <label className="rs-camera-capture__label">{label}</label>}
       <Uploader
         {...rest}
-        accept={accept}
+        accept={allowGallery ? undefined : accept}
         disabled={effectiveDisabled}
         multiple={multiple}
         fileList={fileList}
@@ -105,30 +127,7 @@ const RsCameraCaptureOverrideView = ({
         draggable={false}
         className="rs-camera-capture__uploader"
       >
-        {customElement ? (
-          <div>{children}</div>
-        ) : (
-          <button
-            type="button"
-            className="rs-camera-capture__capture-btn"
-            disabled={effectiveDisabled}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-            <span>Capture</span>
-          </button>
-        )}
+        {trigger}
       </Uploader>
     </div>
   );
@@ -142,7 +141,7 @@ export const rsCameraCaptureOverride = define(
   .category("form")
   .props({
     label: string,
-    source: oneOf("camera", "any").default("camera"),
+    allowGallery: boolean.default(false),
     action: string.default("/"),
     accept: string.default("image/*"),
     autoUpload: boolean.default(true),

@@ -38,3 +38,12 @@
   content: "*";
   color: #f44336;
 }
+
+/**
+ * Wrapper around the single "Capture" button. The button drives the hidden
+ * <input type="file">; whether that input opens the camera directly or the
+ * OS chooser (with gallery) is decided by the `allowGallery` prop.
+ */
+.rs-camera-capture__trigger {
+  display: inline-block;
+}
