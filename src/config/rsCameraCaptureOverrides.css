@@ -23,3 +23,27 @@
   max-width: 100%;
   overflow: hidden;
 }
+
+/**
+ * Required-field asterisk for rsCameraCapture.
+ *
+ * The framework adds the `required` class to the field wrapper when a
+ * `required` validation rule exists, but np-dlms-components renders its own
+ * plain <div>/<label> instead of the stock `Labeled` wrapper, so it lacks the
+ * `&.required > label::after` rule that draws the asterisk. This replicates
+ * that rule, matching the behavior of other fields (e.g. RsNumberFormat).
+ */
+.rs-camera-capture.required > .rs-camera-capture__label::after {
+  margin-inline-start: 3px;
+  content: "*";
+  color: #f44336;
+}
+
+/**
+ * Wrapper around the single "Capture" button. The button drives the hidden
+ * <input type="file">; whether that input opens the camera directly or the
+ * OS chooser (with gallery) is decided by the `allowGallery` prop.
+ */
+.rs-camera-capture__trigger {
+  display: inline-block;
+}

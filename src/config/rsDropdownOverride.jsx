@@ -9,6 +9,7 @@ import {
   event,
   oneOf,
   toLabeledValues,
+  useComponentData,
 } from "@react-form-builder/core";
 
 /**
@@ -35,6 +36,31 @@ const LoaderWrapper = styled(Loader)`
     background: var(--rs-bg-overlay);
     width: 100%;
     padding-block: 10px;
+  }
+`;
+
+/**
+ * Mirrors the stock `Labeled` wrapper from @react-form-builder/components-rsuite,
+ * which isn't exported from the package's public API. The framework adds the
+ * `required` class to the component's className when a `required` validation
+ * rule exists; the `&.required > label::after` rule turns that class into the
+ * red asterisk, matching the behavior of other fields (e.g. RsNumberFormat).
+ */
+const Labeled = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+
+  label {
+    margin-inline-start: 5px;
+    margin-bottom: 2px;
+    text-align: left;
+  }
+
+  &.required > label::after {
+    margin-inline-start: 3px;
+    content: "*";
+    color: #f44336;
   }
 `;
 
@@ -136,6 +162,7 @@ const RsDropdownOverrideView = ({
   onLoadData,
   onSearch,
   onOpen,
+  onChange,
   value = "",
   className,
   preload,
@@ -151,6 +178,23 @@ const RsDropdownOverrideView = ({
     onSearchProp: onSearch,
     onOpenProp: onOpen,
   });
+
+  // The framework's injected onChange updates the stored value but does not
+  // re-run validation, so a "Required" error stays visible after a value is
+  // picked (or reappears correctly when cleared). Mark the field touched and
+  // re-validate on every value change so the error state stays in sync.
+  const componentData = useComponentData();
+  const handleChange = useCallback(
+    (newValue, ...args) => {
+      onChange?.(newValue, ...args);
+      const field = componentData?.field;
+      if (field) {
+        field.setTouched();
+        field.validate?.();
+      }
+    },
+    [onChange, componentData]
+  );
 
   const pickerRef = useRef(null);
   useEffect(() => {
@@ -173,18 +217,17 @@ const RsDropdownOverrideView = ({
   );
 
   return (
-    <div className={className}>
-      {label && (
-        <label style={{ display: "block", marginBottom: 4 }}>{label}</label>
-      )}
+    <Labeled className={className} role="group">
+      {label && <label>{label}</label>}
       <InputPicker
         ref={pickerRef}
         {...rest}
         {...state}
+        onChange={handleChange}
         renderMenu={renderMenu}
         block
       />
-    </div>
+    </Labeled>
   );
 };
 

@@ -34,10 +34,10 @@ import {
 import {
   npInput,
   rsChipInput,
-  rsCameraCapture,
   rsSpectrometerReading,
 } from "np-dlms-components";
 import { rsDropdownOverride } from "../../config/rsDropdownOverride";
+import { rsCameraCaptureOverride } from "../../config/rsCameraCaptureOverride";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -117,7 +117,7 @@ const builderComponents = [
   ...rSuiteComponents.filter((c) => c.build().model.type !== "RsDropdown"),
   ...rSuiteTableComponents,
   rsDropdownOverride,
-  rsCameraCapture,
+  rsCameraCaptureOverride,
   rsChipInput,
   rsSpectrometerReading,
   npInput,

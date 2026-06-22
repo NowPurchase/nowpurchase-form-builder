@@ -10,10 +10,10 @@ import { rSuiteTableComponents } from '@react-form-builder/components-rsuite-tab
 import { BiDi, createView, FormViewer } from '@react-form-builder/core';
 import {
   rsChipInput,
-  rsCameraCapture,
   rsSpectrometerReading,
 } from "np-dlms-components";
 import { rsDropdownOverride } from "../../config/rsDropdownOverride";
+import { rsCameraCaptureOverride } from "../../config/rsCameraCaptureOverride";
 import { getDynamicLog, getSheetPreview } from "../../services/dynamicLogApi";
 import { apiToLocal } from "../../utils/dataTransform";
 import { formatErrorMessage } from "../../utils/errorHandler";
@@ -24,7 +24,7 @@ import html2pdf from "html2pdf.js";
 import "rsuite/dist/rsuite.min.css";
 import "./ViewForm.css";
 
-const customComponents = [rsSpectrometerReading, rsCameraCapture, rsChipInput, rsDropdownOverride];
+const customComponents = [rsSpectrometerReading, rsCameraCaptureOverride, rsChipInput, rsDropdownOverride];
 const components = [
   ...rSuiteComponents.filter((c) => c.build().model.type !== "RsDropdown"),
   ...rSuiteTableComponents,
