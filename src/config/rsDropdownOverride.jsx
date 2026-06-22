@@ -9,6 +9,7 @@ import {
   event,
   oneOf,
   toLabeledValues,
+  useComponentData,
 } from "@react-form-builder/core";
 
 /**
@@ -161,6 +162,7 @@ const RsDropdownOverrideView = ({
   onLoadData,
   onSearch,
   onOpen,
+  onChange,
   value = "",
   className,
   preload,
@@ -176,6 +178,23 @@ const RsDropdownOverrideView = ({
     onSearchProp: onSearch,
     onOpenProp: onOpen,
   });
+
+  // The framework's injected onChange updates the stored value but does not
+  // re-run validation, so a "Required" error stays visible after a value is
+  // picked (or reappears correctly when cleared). Mark the field touched and
+  // re-validate on every value change so the error state stays in sync.
+  const componentData = useComponentData();
+  const handleChange = useCallback(
+    (newValue, ...args) => {
+      onChange?.(newValue, ...args);
+      const field = componentData?.field;
+      if (field) {
+        field.setTouched();
+        field.validate?.();
+      }
+    },
+    [onChange, componentData]
+  );
 
   const pickerRef = useRef(null);
   useEffect(() => {
@@ -204,6 +223,7 @@ const RsDropdownOverrideView = ({
         ref={pickerRef}
         {...rest}
         {...state}
+        onChange={handleChange}
         renderMenu={renderMenu}
         block
       />
