@@ -22,6 +22,9 @@ export default function ActualChemItem({
   defaultOpen = true,
   panelColor = "transparent",
   headerPadding,
+  labelColor,
+  labelSize,
+  labelTracking,
   spectroData,
   formRef,
   actualChemistry = {},
@@ -107,6 +110,9 @@ export default function ActualChemItem({
       defaultOpen={defaultOpen}
       panelColor={panelColor}
       headerPadding={headerPadding}
+      labelColor={labelColor ?? '#606060'}
+      labelSize={labelSize ?? '14px'}
+      labelTracking={labelTracking ?? '0.28px'}
       headerBorderBottom="none"
       rightSection={rightSection}
     >
