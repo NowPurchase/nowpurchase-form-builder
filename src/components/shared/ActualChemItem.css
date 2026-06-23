@@ -1,0 +1,112 @@
+.actual-chem__edit-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: #e8f2f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.actual-chem__edit-btn:hover {
+  background: #d0e8f4;
+}
+
+.actual-chem__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actual-chem__cancel-btn {
+  height: 32px;
+  padding: 0 12px;
+  font-family: "Oxanium", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #606060;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actual-chem__cancel-btn:hover {
+  background: #f7f7f7;
+}
+
+.actual-chem__save-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-family: "Oxanium", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #1579be;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actual-chem__save-btn:hover {
+  background: #1167a8;
+}
+
+.actual-chem__grid-wrapper {
+  padding: 12px 0;
+  background: #ffffff;
+}
+
+.actual-chem__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.actual-chem__grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #e8f2f8;
+  border-radius: 4px;
+  padding: 4px 10px;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.actual-chem__card-symbol {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3d3d3d;
+  font-family: "Oxanium", sans-serif;
+  letter-spacing: 0.24px;
+  line-height: normal;
+}
+
+.actual-chem__card-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3d3d3d;
+  font-family: "Oxanium", sans-serif;
+  letter-spacing: 0.24px;
+  line-height: normal;
+}
+
+.actual-chem__card-input {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1579be;
+  font-family: "Oxanium", sans-serif;
+  letter-spacing: 0.24px;
+  line-height: normal;
+  background: #ffffff;
+  border: 1px solid #1579be;
+  border-radius: 3px;
+  outline: none;
+  padding: 2px 4px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}

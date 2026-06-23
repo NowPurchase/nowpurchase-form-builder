@@ -39,6 +39,7 @@ import {
 import { rsDropdownOverride } from "../../config/rsDropdownOverride";
 import { rsCameraCaptureOverride } from "../../config/rsCameraCaptureOverride";
 import { formAccordion } from "../../config/formAccordion";
+import { actualChemItem } from "../../config/actualChemItem";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -123,6 +124,7 @@ const builderComponents = [
   rsSpectrometerReading,
   npInput,
   formAccordion,
+  actualChemItem,
 ].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)

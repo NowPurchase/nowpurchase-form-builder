@@ -1,4 +1,4 @@
-import { define, string, boolean, node, object } from "@react-form-builder/core";
+import { define, string, boolean, node } from "@react-form-builder/core";
 import FormAccordion from "../components/shared/FormAccordion";
 
 export const formAccordion = define(FormAccordion, "FormAccordion")
@@ -16,7 +16,4 @@ export const formAccordion = define(FormAccordion, "FormAccordion")
     headerBackground: string,
     headerBorderBottom: string,
     children: node,
-    spectroData: object,
-    formRef: object,
-    actualChemistry: object,
   });
