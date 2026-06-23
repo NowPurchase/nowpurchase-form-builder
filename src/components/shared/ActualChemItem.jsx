@@ -107,6 +107,7 @@ export default function ActualChemItem({
       defaultOpen={defaultOpen}
       panelColor={panelColor}
       headerPadding={headerPadding}
+      headerBorderBottom="none"
       rightSection={rightSection}
     >
       <div className="actual-chem__grid-wrapper">

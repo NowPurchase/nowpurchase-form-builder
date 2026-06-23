@@ -14,8 +14,13 @@
   user-select: none;
   background: transparent;
   border: none;
+  border-bottom: 1px solid #CCCCCC;
   width: 100%;
   text-align: left;
+}
+
+.form-accordion__content .form-accordion .form-accordion__header {
+  border-bottom: none;
 }
 
 .form-accordion__header:hover {
