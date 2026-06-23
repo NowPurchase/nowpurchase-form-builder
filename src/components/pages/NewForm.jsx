@@ -38,6 +38,8 @@ import {
 } from "np-dlms-components";
 import { rsDropdownOverride } from "../../config/rsDropdownOverride";
 import { rsCameraCaptureOverride } from "../../config/rsCameraCaptureOverride";
+import { formAccordion } from "../../config/formAccordion";
+import { actualChemAccordion } from "../../config/actualChemAccordion";
 import "rsuite/dist/rsuite.min.css";
 import "./NewForm.css";
 
@@ -121,6 +123,8 @@ const builderComponents = [
   rsChipInput,
   rsSpectrometerReading,
   npInput,
+  formAccordion,
+  actualChemAccordion,
 ].map((c) => c.build());
 const builderView = new BuilderView(builderComponents)
   .withViewerWrapper(RsLocalizationWrapper)

@@ -14,6 +14,8 @@ import {
 } from "np-dlms-components";
 import { rsDropdownOverride } from "../../config/rsDropdownOverride";
 import { rsCameraCaptureOverride } from "../../config/rsCameraCaptureOverride";
+import { formAccordion } from "../../config/formAccordion";
+import { actualChemAccordion } from "../../config/actualChemAccordion";
 import { getDynamicLog, getSheetPreview } from "../../services/dynamicLogApi";
 import { apiToLocal } from "../../utils/dataTransform";
 import { formatErrorMessage } from "../../utils/errorHandler";
@@ -24,7 +26,7 @@ import html2pdf from "html2pdf.js";
 import "rsuite/dist/rsuite.min.css";
 import "./ViewForm.css";
 
-const customComponents = [rsSpectrometerReading, rsCameraCaptureOverride, rsChipInput, rsDropdownOverride];
+const customComponents = [rsSpectrometerReading, rsCameraCaptureOverride, rsChipInput, rsDropdownOverride, formAccordion, actualChemAccordion];
 const components = [
   ...rSuiteComponents.filter((c) => c.build().model.type !== "RsDropdown"),
   ...rSuiteTableComponents,
