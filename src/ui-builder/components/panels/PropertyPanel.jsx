@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { validateContainerName } from '../../engine/dataKey.js';
 import { createTableConfig, createColumn, siblingNames, FIELD_PALETTE } from '../../state/formState.js';
 import { ENTITIES, getEntity } from '../../state/entities.js';
+import { dropdownBaseKey } from '../../engine/autofill.js';
 import EntityConfigModal from './EntityConfigModal.jsx';
 import Icon from '../Icon.jsx';
 
@@ -92,7 +93,7 @@ function TypeConfig({ field, set, fieldOptions = [] }) {
       return <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />;
     case 'dropdown_async':
     case 'tags_async':
-      return <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} />;
+      return <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} field={field} />;
     case 'spectrometer':
       return (
         <>
@@ -133,7 +134,9 @@ function TypeConfig({ field, set, fieldOptions = [] }) {
 // Master-data dropdown config: basic choices on the right panel (entity +
 // search/display field), a "Configure…" button for the full popup (filters +
 // auto-fill), and a raw-value Advanced disclosure so power is never hidden.
-function AsyncConfig({ c, set, fieldOptions }) {
+function AsyncConfig({ c, set, fieldOptions, field }) {
+  // Base key for "save with this field" auto-keys (see engine/autofill.js).
+  const baseKey = dropdownBaseKey(field);
   const [open, setOpen] = useState(false);
   const entity = getEntity(c.entity_id);
   const nFilters = (c.filters || []).length;
@@ -165,7 +168,7 @@ function AsyncConfig({ c, set, fieldOptions }) {
         <Field label="Entity ID"><input type="text" value={c.entity_id || ''} onChange={(e) => set({ entity_id: e.target.value })} /></Field>
         <Field label="Search field"><input type="text" value={c.search_fields || ''} onChange={(e) => set({ search_fields: e.target.value })} /></Field>
       </details>
-      {open && <EntityConfigModal value={c} fieldOptions={fieldOptions} onChange={(patch) => set(patch)} onClose={() => setOpen(false)} />}
+      {open && <EntityConfigModal value={c} fieldOptions={fieldOptions} baseKey={baseKey} onChange={(patch) => set(patch)} onClose={() => setOpen(false)} />}
     </>
   );
 }

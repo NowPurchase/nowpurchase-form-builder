@@ -53,50 +53,95 @@ const ACTION_REGISTRY = {
   },
 
   fetch_dropdown: {
-    // Included when any field is dropdown_async or tags_async
-    params: { entity_id: 'string', search_fields: 'string', filters: 'array' },
+    // Included when any field is dropdown_async or tags_async. Handles two
+    // contracts: a GENERIC one baked from the entity registry (args.request — any
+    // GET/POST endpoint, auth by backend, response-mapped), and the LEGACY DLMS
+    // POST path (no args.request) for existing forms. Filters resolve to a static
+    // value or are pulled from another field at fetch time (cascade).
+    params: { entity_id: 'string', search_fields: 'string', filters: 'array', request: 'object' },
     body: `
       const [searchValue, loadCallback, currentDataLength] = e.args;
-      const { entity_id, search_fields, filters } = args;
+      const { entity_id, search_fields, filters, request } = args;
 
-      if (window._dropdownDebounceTimer)
-        clearTimeout(window._dropdownDebounceTimer);
-      if (window._dropdownAbortController)
-        window._dropdownAbortController.abort();
-
+      if (window._dropdownDebounceTimer) clearTimeout(window._dropdownDebounceTimer);
+      if (window._dropdownAbortController) window._dropdownAbortController.abort();
       window._dropdownAbortController = new AbortController();
       const signal = window._dropdownAbortController.signal;
 
-      window._dropdownDebounceTimer = setTimeout(async () => {
-        const token = localStorage.getItem('dlms_auth_token');
-        const url = \`https://dlms-api.iotnp.com/api/v1/templates/\${entity_id}/dropdown\`;
-
-        const body = {
-          fields: search_fields ? [search_fields] : [],
-          search: searchValue ? [searchValue] : [],
-          search_fields: search_fields ? [search_fields] : [],
-          flat: false,
-          limit: searchValue ? 20 : 100
-        };
-
-        // Apply configured filters. 'static' uses the fixed value; 'field' pulls
-        // the value from another form field at fetch time (cascade).
+      const resolveFilters = function (apply) {
         (filters || []).forEach(function (flt) {
           if (!flt || !flt.key) return;
           var val = flt.source === 'field' ? (e.data ? e.data[flt.field] : undefined) : flt.value;
-          if (val !== undefined && val !== null && val !== '') body[flt.key] = val;
+          if (val !== undefined && val !== null && val !== '') apply(flt.key, val);
         });
-        // Preserve the historical default unless a filter set it explicitly.
-        if (body.status === undefined) body.status = 'completed';
+      };
 
+      window._dropdownDebounceTimer = setTimeout(async () => {
         try {
+          // ---- generic contract (Django/MTC/etc.) ----
+          if (request && request.url) {
+            const backend = request.backend || 'django';
+            const token = backend === 'django'
+              ? localStorage.getItem('nowpurchase_token')
+              : localStorage.getItem('dlms_auth_token');
+            const headers = {
+              'accept': 'application/json',
+              'Authorization': (backend === 'django' ? 'Token ' : 'Bearer ') + token
+            };
+            const method = (request.method || 'GET').toUpperCase();
+            const resp = request.response || { path: '', valueKey: 'id', labelKey: 'name' };
+            let url = request.url, options;
+            if (method === 'GET') {
+              const u = new URL(request.url);
+              if (searchValue) u.searchParams.set(request.searchParam || 'search', searchValue);
+              resolveFilters(function (k, v) { u.searchParams.set(k, v); });
+              url = u.toString();
+              options = { method: 'GET', headers, signal };
+            } else {
+              const bodyObj = {};
+              if (searchValue) bodyObj[request.searchParam || 'search'] = searchValue;
+              resolveFilters(function (k, v) { bodyObj[k] = v; });
+              headers['Content-Type'] = 'application/json';
+              options = { method: 'POST', headers, body: JSON.stringify(bodyObj), signal };
+            }
+            const res = await fetch(url, options);
+            const response = await res.json();
+            let items = resp.path
+              ? String(resp.path).split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, response)
+              : response;
+            if (!Array.isArray(items)) items = Array.isArray(response.data) ? response.data : (Array.isArray(response.results) ? response.results : []);
+            const prepared = items
+              .slice(currentDataLength || 0, (currentDataLength || 0) + 20)
+              .map(function (item) {
+                // Coerce value to string — the picker stores string values, so a
+                // numeric id (e.g. 7) wouldn't match its option (\`"7" !== 7\`) and
+                // the selected label would not show.
+                var val = item[resp.valueKey];
+                return {
+                  value: val == null ? '' : String(val),
+                  label: (item[resp.labelKey] != null && item[resp.labelKey] !== '') ? item[resp.labelKey] : String(val == null ? '' : val),
+                  data: item
+                };
+              });
+            if (typeof loadCallback === 'function') loadCallback(prepared);
+            return;
+          }
+
+          // ---- legacy DLMS contract ----
+          const token = localStorage.getItem('dlms_auth_token');
+          const url = \`https://dlms-api-stage.iotnp.com/api/v1/templates/\${entity_id}/dropdown\`;
+          const body = {
+            fields: search_fields ? [search_fields] : [],
+            search: searchValue ? [searchValue] : [],
+            search_fields: search_fields ? [search_fields] : [],
+            flat: false,
+            limit: searchValue ? 20 : 100
+          };
+          resolveFilters(function (k, v) { body[k] = v; });
+          if (body.status === undefined) body.status = 'completed';
           const res = await fetch(url, {
             method: 'POST',
-            headers: {
-              'accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': \`Bearer \${token}\`
-            },
+            headers: { 'accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': \`Bearer \${token}\` },
             body: JSON.stringify(body),
             signal
           });
@@ -104,13 +149,8 @@ const ACTION_REGISTRY = {
           const items = Array.isArray(response.data) ? response.data : [];
           const preparedData = items
             .slice(currentDataLength || 0, (currentDataLength || 0) + 20)
-            .map(item => ({
-              value: item._id,
-              label: item.main?.data?.[search_fields] || item._id,
-              data: item
-            }));
-          if (typeof loadCallback === 'function')
-            loadCallback(preparedData);
+            .map(item => ({ value: item._id, label: item.main?.data?.[search_fields] || item._id, data: item }));
+          if (typeof loadCallback === 'function') loadCallback(preparedData);
         } catch (err) {
           if (err.name !== 'AbortError') console.error(err);
           if (typeof loadCallback === 'function') loadCallback([]);

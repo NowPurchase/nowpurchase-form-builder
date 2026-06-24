@@ -15,6 +15,7 @@
     "test:roundtrip": "node src/ui-builder/roundtrip-audit.mjs",
     "test:state": "node src/ui-builder/state/formState.test.mjs",
     "test:theme": "node src/ui-builder/theme-snapshot.test.mjs",
+    "test:autofill": "node src/ui-builder/engine/autofill.test.mjs",
     "test:ui-builder-fixtures": "node src/ui-builder/verify.js",
     "mcp": "node server/mcp-formengine.mjs",
     "test:mcp": "node server/mcp-smoke.mjs"

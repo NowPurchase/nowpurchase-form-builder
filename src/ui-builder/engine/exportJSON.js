@@ -16,6 +16,7 @@
 import { collectUsedActions } from '../state/actions.js';
 import { THEMES } from '../state/themes.js';
 import { TOKENS } from '../state/tokens.js';
+import { getEntity, resolveRequest } from '../state/entities.js';
 
 // Maps builder field types → FormEngine component type-ids.
 const FIELD_TYPE_MAP = {
@@ -301,17 +302,21 @@ function buildEvents(field) {
 
     case 'dropdown_async':
     case 'tags_async':
-      events.onLoadData = [{
-        name: 'fetch_dropdown',
-        type: 'code',
-        args: {
+      {
+        const ddArgs = {
           entity_id: cfg.entity_id || '',
           search_fields: cfg.search_fields || '',
           // configurable request filters: static value, or pulled from another
           // field at fetch time (cascade). fetch_dropdown applies these.
           filters: Array.isArray(cfg.filters) ? cfg.filters.filter((f) => f && f.key) : [],
-        },
-      }];
+        };
+        // Contract-based entities (Django/MTC) bake their resolved request
+        // (method/url/searchParam/response) so fetch_dropdown can call any
+        // endpoint. DLMS-default entities omit it → legacy DLMS POST path.
+        const req = resolveRequest(getEntity(cfg.entity_id));
+        if (req) ddArgs.request = req;
+        events.onLoadData = [{ name: 'fetch_dropdown', type: 'code', args: ddArgs }];
+      }
       if (Array.isArray(cfg.on_select_populate) && cfg.on_select_populate.length) {
         events.onSelect = [{
           name: 'populate_on_select',

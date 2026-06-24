@@ -504,10 +504,24 @@ function findType(form, type) { let hit = null; (function w(n) { if (!n) return;
   ok('static filter preserved', args.filters.some((x) => x.key === 'status' && x.source === 'static' && x.value === 'pending'));
   ok('field-sourced filter preserved', args.filters.some((x) => x.key === 'grade' && x.source === 'field' && x.field === 'm__grade'));
 
+  // DLMS-default entity: NO baked request contract (legacy fetch path)
+  ok('DLMS entity omits request contract', args.request === undefined);
+
   // the generated fetch_dropdown runtime action must apply filters (static + from field)
   const fd = (exportJSON(s).actions || {}).fetch_dropdown;
   ok('fetch_dropdown action emitted', !!fd && typeof fd.body === 'string');
   ok('fetch_dropdown applies filters', /filters/.test(fd.body) && /e\.data\[flt\.field\]/.test(fd.body));
+  ok('fetch_dropdown handles generic contract + auth by backend', /request\.url/.test(fd.body) && /Token /.test(fd.body) && /Bearer /.test(fd.body));
+
+  // Django/MTC entity: bakes a generic GET contract (method/url/searchParam/response)
+  let d = build([['add_section', { container_name: 'q' }], ['add_field', { section: 'q', field_type: 'dropdown_async', label: 'Part' }]]);
+  d = applyTool(d, 'configure_field', { section: 'q', field: 'Part', entity_id: 'mtc_part_no' }).state;
+  const dArgs = findType(exportJSON(d).form, 'RsDropdown').events.onLoadData[0].args;
+  ok('django entity bakes a request contract', !!dArgs.request);
+  eq('django request method', dArgs.request.method, 'GET');
+  ok('django request url is full + staging host', /^https:\/\/test-api\.nowpurchase\.com\/.*part_no_dropdown\/$/.test(dArgs.request.url));
+  eq('django request backend', dArgs.request.backend, 'django');
+  ok('django response mapping present', dArgs.request.response && dArgs.request.response.valueKey === 'id' && dArgs.request.response.labelKey === 'name');
 }
 
 // ---------------------------------------------------------------------------

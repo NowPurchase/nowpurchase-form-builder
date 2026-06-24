@@ -1,5 +1,6 @@
 import React from 'react';
 import { ENTITIES, getEntity } from '../../state/entities.js';
+import { recordSourcePath, autoSaveKey } from '../../engine/autofill.js';
 
 /**
  * EntityConfigModal — full point-and-click config for a master-data dropdown
@@ -15,7 +16,7 @@ import { ENTITIES, getEntity } from '../../state/entities.js';
  * Props: value (type_config), onChange(patch), onClose(), fieldOptions
  * ([{ dataKey, label }] — other form fields, for "from field" + auto-fill).
  */
-export default function EntityConfigModal({ value, onChange, onClose, fieldOptions = [] }) {
+export default function EntityConfigModal({ value, onChange, onClose, fieldOptions = [], baseKey = 'field' }) {
   const c = value || {};
   const entity = getEntity(c.entity_id);
   const filters = c.filters || [];
@@ -30,8 +31,23 @@ export default function EntityConfigModal({ value, onChange, onClose, fieldOptio
   };
   const setFilter = (i, patch) => setFilters(filters.map((x, j) => (j === i ? { ...x, ...patch } : x)));
 
-  const addPop = () => setPopulate([...populate, { target_key: '', source_path: '' }]);
+  // New rows default to "save with this field" (auto, under our prefix).
+  const addPop = () => setPopulate([...populate, { source_path: '', target_key: '', target_mode: 'auto' }]);
   const setPop = (i, patch) => setPopulate(populate.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+
+  // Source path + auto-save key are pure (see engine/autofill.js).
+  const srcPath = (key) => recordSourcePath(entity, key);
+  const autoKey = (sp) => autoSaveKey(baseKey, sp);
+  const setSource = (i, sp) => {
+    const m = populate[i] || {};
+    const patch = { source_path: sp };
+    if (m.target_mode !== 'field') patch.target_key = autoKey(sp); // keep auto key in sync
+    setPop(i, patch);
+  };
+  const setTarget = (i, val) => {
+    if (val === '__auto__') setPop(i, { target_mode: 'auto', target_key: autoKey((populate[i] || {}).source_path) });
+    else setPop(i, { target_mode: 'field', target_key: val });
+  };
 
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -98,32 +114,33 @@ export default function EntityConfigModal({ value, onChange, onClose, fieldOptio
           })}
           <button className="mini" onClick={addFilter}>+ Filter</button>
 
-          {/* Auto-fill on select */}
-          <label className="fld" style={{ marginTop: 14 }}>Auto-fill on select</label>
-          <div className="hint" style={{ marginTop: 0 }}>When an option is picked, copy values from the selected record into other fields.</div>
+          {/* Auto-fill: each row — "Save <record field> → <destination>" */}
+          <label className="fld" style={{ marginTop: 14 }}>Also save fields from the picked record</label>
+          <div className="hint" style={{ marginTop: 0 }}>On select, keep extra values from the chosen record. Each value can be <b>saved with this field</b> (stored as <code>{baseKey}__&lt;name&gt;</code> in the form data — no extra field needed) or <b>copied into</b> another field you've added. One row per value.</div>
           {populate.map((m, i) => (
             <div className="col-editor" key={i}>
-              <div className="inline">
-                <select value={m.target_key || ''} onChange={(e) => setPop(i, { target_key: e.target.value })}>
-                  <option value="">Target field…</option>
-                  {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} ({o.dataKey})</option>)}
-                  {m.target_key && !fieldOptions.some((o) => o.dataKey === m.target_key) && <option value={m.target_key}>{m.target_key}</option>}
+              <div className="inline" style={{ alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: 'var(--faint)' }}>Save</span>
+                {entity ? (
+                  <select value={m.source_path || ''} onChange={(e) => setSource(i, e.target.value)}>
+                    <option value="">record field…</option>
+                    {entity.fields.map((fl) => <option key={fl.key} value={srcPath(fl.key)}>{fl.label}</option>)}
+                    {m.source_path && !entity.fields.some((fl) => srcPath(fl.key) === m.source_path) && <option value={m.source_path}>{m.source_path}</option>}
+                  </select>
+                ) : (
+                  <input style={{ width: 120 }} type="text" placeholder="record field" value={m.source_path || ''} onChange={(e) => setSource(i, e.target.value)} />
+                )}
+                <span style={{ fontSize: 12, color: 'var(--faint)' }}>→</span>
+                <select value={m.target_mode === 'field' ? (m.target_key || '') : '__auto__'} onChange={(e) => setTarget(i, e.target.value)}>
+                  <option value="__auto__">save with this field{autoKey(m.source_path) ? ` (${autoKey(m.source_path)})` : ''}</option>
+                  {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>copy into: {o.label}</option>)}
+                  {m.target_mode === 'field' && m.target_key && !fieldOptions.some((o) => o.dataKey === m.target_key) && <option value={m.target_key}>copy into: {m.target_key}</option>}
                 </select>
                 <button className="mini danger" onClick={() => setPopulate(populate.filter((_, j) => j !== i))}>✕</button>
               </div>
-              {entity ? (
-                <select style={{ marginTop: 4 }} value={m.source_path || ''} onChange={(e) => setPop(i, { source_path: e.target.value })}>
-                  <option value="">From record field…</option>
-                  {entity.fields.map((fl) => <option key={fl.key} value={`main.data.${fl.key}`}>{fl.label}</option>)}
-                  {m.source_path && !entity.fields.some((fl) => `main.data.${fl.key}` === m.source_path) && <option value={m.source_path}>{m.source_path}</option>}
-                </select>
-              ) : (
-                <input style={{ marginTop: 4 }} type="text" placeholder="source path in record (e.g. main.data.weight)" value={m.source_path || ''} onChange={(e) => setPop(i, { source_path: e.target.value })} />
-              )}
-              <div className="key">{m.target_key || '?'} ← record.{m.source_path || '?'}</div>
             </div>
           ))}
-          <button className="mini" onClick={addPop}>+ Auto-fill</button>
+          <button className="mini" onClick={addPop}>+ Save another field</button>
 
         </div>
         <div className="modal-foot"><button className="primary" onClick={onClose}>Done</button></div>
