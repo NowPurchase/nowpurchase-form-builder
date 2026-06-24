@@ -1,0 +1,751 @@
+{
+  "version": "1",
+  "actions": {
+    "initPouringData": {
+      "body": "if (e) {\n  e.data = e.data || {};\n  const now = new Date();\n\n  if (!e.data.pouring_datetime) e.data.pouring_datetime = now.toISOString();\n\n  const h = now.getHours();\n  let shift = 'A';\n  if (h >= 14 && h < 22) shift = 'B';\n  else if (h >= 22 || h < 6) shift = 'C';\n\n  if (!e.data.shift) e.data.shift = shift;\n  if (!e.data.operator) e.data.operator = 'Logged In User';\n}",
+      "params": {}
+    },
+    "set_shift": {
+      "body": "    function getShift(timeString) {\n        // Extract hours from time string (e.g., '22:00:00' -> 22)\n        const hours = parseInt(timeString.split(':')[0], 10);\n\n        if (hours >= 6 && hours < 14) {\n            return 'A'; // Shift A: 06:00 - 14:00\n        } else if (hours >= 14 && hours < 22) {\n            return 'B'; // Shift B: 14:00 - 22:00\n        } else {\n            return 'C'; // Shift C: 22:00 - 06:00\n        }\n    }\n\n    const targetKey = `${args.field_data_key}`;\n    const time = e.args[0]; // e.g., '22:00:00'\n    const shift = getShift(time);\n\n    e.data[targetKey] = shift;\n\n    // Set pouring_time in meta\n    e.data.meta = e.data.meta || {};\n    e.data.meta.pouring_time = time;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "set_user": {
+      "body": "if(e?.data?.disabled__supervisor){\n    return e?.data?.disabled__supervisor;\n}\nlet savedToken = localStorage.getItem('tokenv2') || localStorage.getItem('auth');\n\nconsole.log('Token used:', savedToken);\n\nconst finalToken = savedToken;\n\n// 1. Updated URL to user-detail endpoint\nfetch('https://api.nowpurchase.com/api/user-detail/', {\n    method: 'GET',\n    headers: {\n        'accept': 'application/json',\n        'authorization': `Token ${finalToken}` \n    }\n})\n.then(res => res.json())\n.then(userData => {\n    if (userData && userData.name) {\n        e.data.disabled__supervisor = userData.name; \n    }\n\n\n})\n.catch((error) => {\n    console.error('Fetch error:', error);\n});",
+      "params": {}
+    },
+    "on_time_mount": {
+      "body": "function getShift(timeString) {\n        // Extract hours from time string (e.g., '22:00:00' -> 22)\n        const hours = parseInt(timeString.split(':')[0], 10);\n\n        if (hours >= 6 && hours < 14) {\n            return 'A'; // Shift A: 06:00 - 14:00\n        } else if (hours >= 14 && hours < 22) {\n            return 'B'; // Shift B: 14:00 - 22:00\n        } else {\n            return 'C'; // Shift C: 22:00 - 06:00\n        }\n    }\n\n    function formatTime(d) {\n        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;\n    }\n\n    // Ensure time exists — store as \"HH:MM:SS\" string\n    if (!e.data?.time) {\n        e.data.time = formatTime(new Date());\n    }\n\n    // Ensure meta exists\n    e.data.meta = e.data.meta || {};\n\n    // Ensure pouring_time exists — derive from e.data.time\n    if (!e.data.meta.pouring_time) {\n        const t = e.data.time;\n        e.data.meta.pouring_time = typeof t === 'string' ? t : formatTime(new Date(t));\n    }\n\n    // Ensure shift exists — derive from time\n    if (!e.data?.shift) {\n        const time = typeof e.data.time === 'string' ? e.data.time : formatTime(new Date(e.data.time));\n        e.data.shift = getShift(time);\n    }",
+      "params": {}
+    },
+    "on_date_mount": {
+      "body": "    // Ensure date exists\n    if (!e.data?.date) {\n        e.data.date = new Date();\n    }\n\n    // Ensure meta exists\n    e.data.meta = e.data.meta || {};\n\n    // Ensure pouring_date exists — derive from e.data.date\n    if (!e.data.meta.pouring_date) {\n        const d = e.data.date instanceof Date ? e.data.date : new Date(e.data.date);\n\n        if (!isNaN(d)) {\n            e.data.meta.pouring_date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;\n        }\n    }",
+      "params": {}
+    },
+    "load_grade": {
+      "body": "  const [searchValue, loadCallback, currentDataLength] = e.args;\n\n    console.log(e.args);\n\n    // ✅ Clear previous debounce timer\n    if (window._gradesDropdownDebounceTimer) {\n        clearTimeout(window._gradesDropdownDebounceTimer);\n    }\n\n    // ✅ Abort previous pending request\n    if (window._gradesDropdownAbortController) {\n        window._gradesDropdownAbortController.abort();\n    }\n\n    // ✅ Create new abort controller for this request\n    window._gradesDropdownAbortController = new AbortController();\n    const signal = window._gradesDropdownAbortController.signal;\n\n    // ✅ Debounce: Wait 300ms before making API call\n    window._gradesDropdownDebounceTimer = setTimeout(async () => {\n\n        // ✅ Auth Token from localStorage\n        let savedToken = localStorage.getItem('tokenv2');\n\n        // Build URL with query parameters\n        let apiUrl = 'https://api.nowpurchase.com/api/c/grades_v2/?page_size=500';\n        \n        // Add search parameter if searchValue exists\n        if (searchValue) {\n            apiUrl += `&search=${encodeURIComponent(searchValue)}`;\n        }\n\n        try {\n            const res = await fetch(apiUrl, {\n                method: 'GET',\n                headers: {\n                    'authorization': `Token ${savedToken}`\n                },\n                signal: signal\n            });\n\n            const response = await res.json();\n            \n            // ✅ Parse results array from response\n            const items = Array.isArray(response.results) ? response.results : [];\n\n            // Filter items based on search value (client-side filtering as backup)\n            const filteredItems = items.filter(item => {\n                const name = item.name || \"\";\n                return name.toLowerCase().includes((searchValue || \"\").toLowerCase());\n            });\n\n            // Create unique map to remove duplicates\n            const uniqueMap = new Map();\n            filteredItems.forEach(item => {\n                const itemName = item.name || \"Unnamed Grade\";\n                const itemId = item.id;\n                \n                if (!uniqueMap.has(itemName)) {\n                    uniqueMap.set(itemName, {\n                        value: itemName,\n                        label: itemName,\n                        data: {\n                            id: item.id,\n                            name: item.name,\n                            grade_tag_id: item.grade_tag_id,\n                            category_name: item.category_name,\n                            grade_code: item.grade_code,\n                            part_name: item.part_name,\n                            part_no: item.part_no,\n                            furnace_type: item.furnace_type,\n                            item_count: item.item_count,\n                            grade_tc: item.grade_tc || [],\n                            _raw: item\n                        }\n                    });\n                }\n            });\n\n            // Convert map to array and apply pagination\n            const preparedData = [...uniqueMap.values()]\n                .slice(currentDataLength || 0, (currentDataLength || 0) + 20);\n\n            // ✅ DEBUG: Check what's being sent\n            console.log(\"Final preparedData:\", preparedData);\n\n            // SAFETY CHECK\n            if (typeof loadCallback === 'function') {\n                loadCallback(preparedData);\n            } else {\n                console.warn(\"loadCallback is not a function. Check e.args structure:\", e.args);\n            }\n\n        } catch (err) {\n            if (err.name === 'AbortError') {\n                console.log('Previous request cancelled');\n                return;\n            }\n            console.error(\"Dropdown fetch error:\", err);\n            if (typeof loadCallback === 'function') loadCallback([]);\n        }\n\n    }, 300);",
+      "params": {}
+    },
+    "set_grade": {
+      "body": "    console.log(e.args);\n    var sourceData = e.args[1]?.data;\n    if (!sourceData) return;\n\n    console.log(sourceData);\n\n    // Set grade_id\n\n    e.data.grade = {\"value\": sourceData.id, \"label\": sourceData.name};\n    ",
+      "params": {}
+    },
+    "upload_success": {
+      "body": "    if (e.args[1]?.fileKey && e.args[0]?.file_url) {\n        // Store in global map\n        if (!window.__fileUrlMap) window.__fileUrlMap = {};\n        window.__fileUrlMap[e.args[1].fileKey] = e.args[0].file_url;\n\n        // Sync ALL stored URLs to current attachment array\n        if (e.data.attachment) {\n            e.data.attachment.forEach(item => {\n                if (window.__fileUrlMap[item.fileKey]) {\n                    item.file_url = window.__fileUrlMap[item.fileKey];\n                    item.status = 'finished';\n                }\n            });\n        }\n    }",
+      "params": {}
+    },
+    "set_pouring_date": {
+      "body": "    const raw = e.args?.[0];\n    const d = raw instanceof Date ? raw : new Date(raw);\n\n    if (isNaN(d)) {\n        console.warn(\"Invalid date in e.args[0]:\", raw);\n        return;\n    }\n\n    const pouringDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;\n\n    e.data.meta = e.meta || {};\n    e.data.meta.pouring_date = pouringDate;\n\n    console.log(\"pouring_date set to:\", e.meta.pouring_date);",
+      "params": {}
+    }
+  },
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "events": {
+      "onLoadData": [
+        {
+          "name": "initPouringData",
+          "type": "code"
+        }
+      ]
+    },
+    "children": [
+      {
+        "key": "rsContainer3",
+        "type": "RsContainer",
+        "props": {},
+        "css": {
+          "any": {
+            "object": {
+              "flexDirection": "row"
+            },
+            "string": "background-color: #ffffff;\n  color: rgba(0, 0, 0, 0.87);\n\n  border-radius: 8px;\n  padding: 16px;\n\n  background-color: white;\n  border-radius: 0.5rem;\n  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);\n  padding: 1.5rem;\n  transition: box-shadow 0.3s ease;\n\n  box-sizing: border-box;\n  transition: box-shadow 200ms ease, transform 200ms ease;"
+          }
+        },
+        "children": [
+          {
+            "key": "rsHeader2",
+            "type": "RsHeader",
+            "props": {
+              "headerSize": {
+                "value": "h6"
+              },
+              "content": {
+                "value": "Casting Name:",
+                "computeType": "function",
+                "fnSource": "    return \"Casting Name: \" + form.data?.parent_data__casting_name;"
+              }
+            }
+          },
+          {
+            "key": "rsHeader1",
+            "type": "RsHeader",
+            "props": {
+              "headerSize": {
+                "value": "h6"
+              },
+              "content": {
+                "value": "Created At:",
+                "computeType": "function",
+                "fnSource": " return \"Created At: \" + new Date(form.data?.created_at)\n    .toLocaleString(\"en-IN\", {\n      timeZone: \"Asia/Kolkata\",\n      day: \"2-digit\",\n      month: \"short\",\n      hour: \"2-digit\",\n      minute: \"2-digit\",\n      hour12: true\n    });"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:1.5rem;transition:box-shadow 0.3s ease;"
+          }
+        },
+        "key": "pouring_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "date",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "enableTime": {
+                    "value": true
+                  },
+                  "format": {
+                    "value": "dd-MM-yyyy"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "date",
+                "events": {
+                  "onDidMount": [
+                    {
+                      "name": "on_date_mount",
+                      "type": "code"
+                    }
+                  ],
+                  "onChange": [
+                    {
+                      "name": "set_pouring_date",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "time",
+                "dataKey": "time",
+                "type": "RsTimePicker",
+                "props": {
+                  "format": {
+                    "value": "HH:mm"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "set_shift",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift"
+                      }
+                    }
+                  ],
+                  "onSelect": [],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "shift",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "readOnly": {
+                    "value": true
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "shift"
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "p_row1",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "heat_no",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Heat No"
+                  },
+                  "placeholder": {
+                    "value": "Enter Heat No"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "heat_no"
+              },
+              {
+                "key": "grade",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": []
+                  },
+                  "label": {
+                    "value": "Grade"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "grade__label",
+                "events": {
+                  "onLoadData": [
+                    {
+                      "name": "load_grade",
+                      "type": "code"
+                    }
+                  ],
+                  "onSelect": [
+                    {
+                      "name": "set_grade",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "tapping_temp",
+                "type": "RsNumberFormat",
+                "props": {
+                  "label": {
+                    "value": "Tapping Temp"
+                  },
+                  "placeholder": {
+                    "value": "Enter Tapping Temp"
+                  },
+                  "allowNegative": {
+                    "value": false
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    },
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Temperature Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "tapping_temp"
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "p_row2",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "pouring_temp",
+                "type": "RsNumberFormat",
+                "props": {
+                  "label": {
+                    "value": "Pouring Temp"
+                  },
+                  "placeholder": {
+                    "value": "Enter Pouring Temp"
+                  },
+                  "allowNegative": {
+                    "value": false
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    },
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Temperature Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "pouring_temp"
+              },
+              {
+                "key": "pouring_duration",
+                "dataKey": "pouring_duration",
+                "type": "RsTimePicker",
+                "props": {
+                  "format": {
+                    "value": "mm:ss"
+                  },
+                  "label": {
+                    "value": "Pouring Duration"
+                  },
+                  "editable": {
+                    "value": false
+                  },
+                  "placeholder": {
+                    "value": "Enter Pouring Duration "
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "set_shift",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift"
+                      }
+                    }
+                  ],
+                  "onSelect": [],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "remarks",
+            "type": "RsTextArea",
+            "props": {
+              "rows": {
+                "value": 2
+              },
+              "label": {
+                "value": "Remarks"
+              }
+            },
+            "dataKey": "remarks"
+          },
+          {
+            "key": "rsContainer2",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsCameraCapture1",
+                "dataKey": "attachment",
+                "type": "RsCameraCapture",
+                "props": {
+                  "multiple": {
+                    "value": true
+                  },
+                  "removable": {
+                    "value": true
+                  },
+                  "name": {
+                    "value": "file"
+                  },
+                  "method": {
+                    "value": "POST"
+                  },
+                  "action": {
+                    "computeType": "function",
+                    "fnSource": "let savedToken = localStorage.getItem('dlms_auth_token');\n\nreturn \"https://dlms-api.iotnp.com/api/v1/upload/image?token=\" + savedToken;\n"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "  .rs-uploader-trigger-btn {\n    display: flex !important;\n    align-items: center !important;\n    justify-content: center !important;\n    width:100%\n  }"
+                  }
+                },
+                "events": {
+                  "onSuccess": [
+                    {
+                      "name": "upload_success",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:1.5rem;margin-bottom:2.5rem;transition:box-shadow 0.3s ease;"
+          }
+        },
+        "key": "footer_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "20px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "footer_row",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "supervisor_key",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Supervisor"
+                  },
+                  "readOnly": {
+                    "value": true
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "disabled__supervisor",
+                "events": {
+                  "onDidMount": [
+                    {
+                      "name": "set_user",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "Operator",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "Sk Habib",
+                        "value": "Sk Habib"
+                      },
+                      {
+                        "label": "SKL Shaukat Ali",
+                        "value": "SKL Shaukat Ali"
+                      },
+                      {
+                        "value": "Mograj Raut",
+                        "label": "Mograj Raut"
+                      },
+                      {
+                        "value": "Barun Sahu",
+                        "label": "Barun Sahu"
+                      },
+                      {
+                        "value": "Biswanath Poddar",
+                        "label": "Biswanath Poddar"
+                      },
+                      {
+                        "value": "Debnath",
+                        "label": "Debnath"
+                      },
+                      {
+                        "value": "Prosenjit",
+                        "label": "Prosenjit"
+                      },
+                      {
+                        "value": "Ashok",
+                        "label": "Ashok"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Operator"
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "operator"
+              },
+              {
+                "key": "teemer",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "Pradip Jana",
+                        "value": "Pradip Jana"
+                      },
+                      {
+                        "label": "Vinod",
+                        "value": "Vinod"
+                      },
+                      {
+                        "value": "Joy",
+                        "label": "Joy"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Teemer"
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "33.33%"
+                    }
+                  }
+                },
+                "dataKey": "teemer"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

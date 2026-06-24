@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { createElement, useMemo } from "react";
-import { LayoutGrid, GitCompareArrows, History, LogOut, Shield } from "lucide-react";
+import { createElement, useMemo, useState } from "react";
+import { LayoutGrid, GitCompareArrows, History, LogOut, Shield, Wand2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { getUserFromToken, removeToken } from "../../services/api";
 import { IS_PROD } from "../../config/env";
 
@@ -22,6 +22,7 @@ import { IS_PROD } from "../../config/env";
  */
 const NAV = [
   { to: "/home", label: "Templates", icon: LayoutGrid },
+  { to: "/ui-builder", label: "UI-Builder Simplified", icon: Wand2 },
   { to: "/permissions", label: "Permissions", icon: Shield },
   { to: "/deploy", label: "Deployments", icon: GitCompareArrows, prodOnly: true, disabledForNonAdmin: true },
   { to: "/history", label: "History", icon: History },
@@ -29,6 +30,25 @@ const NAV = [
 
 export default function AppShell({ onLogout, title, children }) {
   const user = useMemo(() => getUserFromToken(), []);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("app_sidebar_collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem("app_sidebar_collapsed", next ? "1" : "0");
+      } catch {
+        /* no-op */
+      }
+      return next;
+    });
+  };
 
   const name = user?.name || user?.customer_name || "DLMS User";
   const initials = name
@@ -71,13 +91,21 @@ export default function AppShell({ onLogout, title, children }) {
         <span className="app-topbar-title">{title}</span>
       </header>
 
-      <aside className="app-sidebar">
+      <aside className={`app-sidebar ${collapsed ? "collapsed" : ""}`}>
         <div className="app-brand">
           <img src="/np-mark.svg" alt="NowPurchase" />
           <div className="wm">
             MetalCloud
             <small>Admin Panel</small>
           </div>
+          <button
+            className="app-collapse"
+            onClick={toggleCollapsed}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+          </button>
         </div>
 
         <div className="app-nav-title">Workspace</div>

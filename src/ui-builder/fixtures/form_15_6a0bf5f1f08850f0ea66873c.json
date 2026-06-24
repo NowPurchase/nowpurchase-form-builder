@@ -1,0 +1,5037 @@
+{
+  "version": "1",
+  "actions": {
+    "removeRow": {
+      "body": "if(e){ e.data=e.data||{}; const i=Number(args.index); if(i>=2 && i<=20){ e.data['deleted_'+i]=true; }}",
+      "params": {
+        "index": "number"
+      }
+    },
+    "addSpecRow": {
+      "body": "if(e){ e.data = e.data || {}; const max=20; for(let i=2;i<=max;i++){ if(e.data['deleted_'+i]===true){ e.data['deleted_'+i]=false; return; }} const n=Number(e.data.spec_count||1); e.data.spec_count=Math.min(n+1,max); }",
+      "params": {}
+    },
+    "initSpecCount": {
+      "body": "if(e){ e.data = e.data || {}; if(e.data.spec_count == null) e.data.spec_count = 1; }",
+      "params": {}
+    }
+  },
+  "formValidator": "const errors = {};\n\n    for (let i = 0; i < 25; i++) {\n        const characteristicsKey = `specs__${i}__characteristics`;\n        const tolPosKey = `specs__${i}__tol_pos`;\n        const tolNegKey = `specs__${i}__tol_neg`;\n        const isSingleVal = formData[`specs__${i}__is_single_val`];\n\n        const characteristicsValue = formData[characteristicsKey];\n        const tolPosValue = formData[tolPosKey];\n        const tolNegValue = formData[tolNegKey];\n\n        const hasAnyValue = !!(characteristicsValue || tolPosValue || tolPosValue === 0 || tolNegValue || tolNegValue === 0);\n\n        if (hasAnyValue) {\n            if (!characteristicsValue) {\n                errors[characteristicsKey] = \"Drawing Dimension is required\";\n            }\n            if (!isSingleVal && !tolPosValue && tolPosValue !== 0) {\n                errors[tolPosKey] = \"+ve Tolerance is required\";\n            }\n            if (!isSingleVal && !tolNegValue && tolNegValue !== 0) {\n                errors[tolNegKey] = \"-ve Tolerance is required\";\n            }\n        }\n    }\n\n    return Object.keys(errors).length > 0 ? errors : undefined;",
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "object": {
+          "gap": "10px",
+          "alignItems": "start",
+          "justifyContent": "flex-start"
+        }
+      }
+    },
+    "children": [
+      {
+        "key": "top_info_card",
+        "type": "RsContainer",
+        "props": {},
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);padding:1.5rem;"
+          }
+        },
+        "children": [
+          {
+            "key": "rsContainer16",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "item",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Raw Material Name"
+                  },
+                  "placeholder": {
+                    "value": "Enter Raw Material"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%",
+                      "marginBottom": "15px"
+                    }
+                  }
+                },
+                "dataKey": "material_name"
+              }
+            ]
+          },
+          {
+            "key": "info_row",
+            "type": "RsContainer",
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "gap": "15px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "indian_standard",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Indian Standard"
+                  },
+                  "placeholder": {
+                    "value": "Enter Standard"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "flex": 1
+                    }
+                  }
+                },
+                "dataKey": "indian_standard"
+              },
+              {
+                "key": "sap_code",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "SAP Code"
+                  },
+                  "placeholder": {
+                    "value": "Enter SAP Code"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "flex": 1
+                    }
+                  }
+                },
+                "dataKey": "sap_code"
+              }
+            ],
+            "props": {}
+          }
+        ]
+      },
+      {
+        "key": "rsSpecContainer",
+        "type": "RsContainer",
+        "props": {},
+        "events": {
+          "onLoadData": [
+            {
+              "name": "initSpecCount",
+              "type": "code"
+            }
+          ]
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);padding:1.5rem;",
+            "object": {
+              "gap": "17px"
+            }
+          }
+        },
+        "children": [
+          {
+            "key": "table_header_row",
+            "type": "RsContainer",
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "borderBottom": "2px solid #f3f4f6",
+                  "paddingBottom": "10px",
+                  "marginBottom": "5px",
+                  "alignItems": "center",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "h_sno",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "S.No"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "h_quality",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "Drawing Dimension"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader14",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "Single Value?"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader16",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "Is Optional?"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "h_range",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "Tolerances"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              }
+            ],
+            "props": {}
+          },
+          {
+            "key": "rsContainer15",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "borderBottom": "2px solid #f3f4f6",
+                  "paddingBottom": "10px",
+                  "marginBottom": "5px",
+                  "alignItems": "center",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader9",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": ""
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader10",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": " "
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader12",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": ""
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader15",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": ""
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader11",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "+ve"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "24%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader13",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "-ve"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "textAlign": "center"
+                    }
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "24%"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "spec_row_1",
+            "type": "RsContainer",
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader2",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "1."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "characteristics_1",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__0__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle1",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__0__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle26",
+                "dataKey": "specs__0__is_optional",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "specification_container_1",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput74",
+                    "dataKey": "specs__0__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__0__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "specification_1",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__0__is_single_val !== true"
+                    },
+                    "dataKey": "specs__0__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput15",
+                    "dataKey": "specs__0__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__0__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ],
+            "props": {}
+          },
+          {
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader1",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "2."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput1",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__1__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle2_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__1__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle2",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__1__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer2",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput1_str",
+                    "dataKey": "specs__1__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__1__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput2",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__1__is_single_val !== true"
+                    },
+                    "dataKey": "specs__1__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput3",
+                    "dataKey": "specs__1__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__1__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer3",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader3",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "3."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput4",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__2__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle3_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__2__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle3",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__2__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer4",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput4_str",
+                    "dataKey": "specs__2__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__2__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput5",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__2__is_single_val !== true"
+                    },
+                    "dataKey": "specs__2__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput6",
+                    "dataKey": "specs__2__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__2__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer5",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader4",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "4."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput7",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__3__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle4_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__3__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle4",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__3__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer6",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput7_str",
+                    "dataKey": "specs__3__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__3__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput8",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__3__is_single_val !== true"
+                    },
+                    "dataKey": "specs__3__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput9",
+                    "dataKey": "specs__3__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__3__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer7",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader5",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "5."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput10",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__4__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle5_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__4__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle5",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__4__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer8",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput10_str",
+                    "dataKey": "specs__4__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__4__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput11",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__4__is_single_val !== true"
+                    },
+                    "dataKey": "specs__4__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput12",
+                    "dataKey": "specs__4__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__4__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer9",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader6",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "6."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput13",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__5__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle6_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__5__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle6",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__5__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer10",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput13_str",
+                    "dataKey": "specs__5__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__5__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput14",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__5__is_single_val !== true"
+                    },
+                    "dataKey": "specs__5__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput16",
+                    "dataKey": "specs__5__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__5__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer11",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader7",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "7."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput17",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__6__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle7_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__6__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle7",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__6__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer12",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput17_str",
+                    "dataKey": "specs__6__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__6__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput18",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__6__is_single_val !== true"
+                    },
+                    "dataKey": "specs__6__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput19",
+                    "dataKey": "specs__6__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__6__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer13",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader8",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "8."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput20",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__7__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle8_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__7__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle8",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__7__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer14",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput20_str",
+                    "dataKey": "specs__7__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__7__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput21",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__7__is_single_val !== true"
+                    },
+                    "dataKey": "specs__7__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput22",
+                    "dataKey": "specs__7__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__7__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer17",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader18",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "9."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput23",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__8__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle9_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__8__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle9",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__8__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer18",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput23_str",
+                    "dataKey": "specs__8__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__8__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput24",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__8__is_single_val !== true"
+                    },
+                    "dataKey": "specs__8__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput25",
+                    "dataKey": "specs__8__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__8__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer19",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader19",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "10."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput26",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__9__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle10_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__9__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle10",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__9__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer20",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput26_str",
+                    "dataKey": "specs__9__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__9__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput27",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__9__is_single_val !== true"
+                    },
+                    "dataKey": "specs__9__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput28",
+                    "dataKey": "specs__9__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__9__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer21",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader20",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "11."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput29",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__10__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle11_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__10__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle11",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__10__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer22",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput29_str",
+                    "dataKey": "specs__10__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__10__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput30",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__10__is_single_val !== true"
+                    },
+                    "dataKey": "specs__10__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput31",
+                    "dataKey": "specs__10__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__10__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer23",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader21",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "12."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput32",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__11__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle12_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__11__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle12",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__11__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer24",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput32_str",
+                    "dataKey": "specs__11__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__11__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput33",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__11__is_single_val !== true"
+                    },
+                    "dataKey": "specs__11__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput34",
+                    "dataKey": "specs__11__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__11__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer25",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader22",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "13."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput35",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__12__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle13_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__12__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle13",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__12__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer26",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput35_str",
+                    "dataKey": "specs__12__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__12__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput36",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__12__is_single_val !== true"
+                    },
+                    "dataKey": "specs__12__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput37",
+                    "dataKey": "specs__12__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__12__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer27",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader23",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "14."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput38",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__13__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle14_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__13__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle14",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__13__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer28",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput38_str",
+                    "dataKey": "specs__13__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__13__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput39",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__13__is_single_val !== true"
+                    },
+                    "dataKey": "specs__13__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput40",
+                    "dataKey": "specs__13__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__13__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer29",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader24",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "15."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput41",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__14__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle15_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__14__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle15",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__14__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer30",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput41_str",
+                    "dataKey": "specs__14__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__14__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput42",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__14__is_single_val !== true"
+                    },
+                    "dataKey": "specs__14__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput43",
+                    "dataKey": "specs__14__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__14__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer31",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader25",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "16."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput44",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__15__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle16_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__15__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle16",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__15__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer32",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput44_str",
+                    "dataKey": "specs__15__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__15__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput45",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__15__is_single_val !== true"
+                    },
+                    "dataKey": "specs__15__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput46",
+                    "dataKey": "specs__15__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__15__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer33",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader26",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "17."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput47",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__16__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle17_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__16__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle17",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__16__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer34",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput47_str",
+                    "dataKey": "specs__16__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__16__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput48",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__16__is_single_val !== true"
+                    },
+                    "dataKey": "specs__16__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput49",
+                    "dataKey": "specs__16__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__16__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer35",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader27",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "18."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput50",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__17__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle18_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__17__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle18",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__17__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer36",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput50_str",
+                    "dataKey": "specs__17__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__17__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput51",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__17__is_single_val !== true"
+                    },
+                    "dataKey": "specs__17__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput52",
+                    "dataKey": "specs__17__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__17__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer37",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader28",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "19."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput53",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__18__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle19_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__18__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle19",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__18__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer38",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput53_str",
+                    "dataKey": "specs__18__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__18__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput54",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__18__is_single_val !== true"
+                    },
+                    "dataKey": "specs__18__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput55",
+                    "dataKey": "specs__18__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__18__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer39",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader29",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "20."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput56",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__19__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle20_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__19__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle20",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__19__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer40",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput56_str",
+                    "dataKey": "specs__19__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__19__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput57",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__19__is_single_val !== true"
+                    },
+                    "dataKey": "specs__19__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput58",
+                    "dataKey": "specs__19__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__19__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer41",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader30",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "21."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput59",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__20__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle21_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__20__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle21",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__20__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer42",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput59_str",
+                    "dataKey": "specs__20__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__20__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput60",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__20__is_single_val !== true"
+                    },
+                    "dataKey": "specs__20__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput61",
+                    "dataKey": "specs__20__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__20__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer43",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader31",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "22."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput62",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__21__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle22_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__21__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle22",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__21__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer44",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput62_str",
+                    "dataKey": "specs__21__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__21__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput63",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__21__is_single_val !== true"
+                    },
+                    "dataKey": "specs__21__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput64",
+                    "dataKey": "specs__21__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__21__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer45",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader32",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "23."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput65",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__22__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle23_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__22__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle23",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__22__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer46",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput65_str",
+                    "dataKey": "specs__22__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__22__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput66",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__22__is_single_val !== true"
+                    },
+                    "dataKey": "specs__22__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput67",
+                    "dataKey": "specs__22__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__22__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer47",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader33",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "24."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput68",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__23__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle24_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__23__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle24",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__23__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer48",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput68_str",
+                    "dataKey": "specs__23__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__23__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput69",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__23__is_single_val !== true"
+                    },
+                    "dataKey": "specs__23__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput70",
+                    "dataKey": "specs__23__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__23__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          },
+          {
+            "key": "rsContainer49",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "paddingVertical": "8px",
+                  "borderBottom": "1px solid #f9fafb",
+                  "gap": "5px"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsHeader34",
+                "type": "RsHeader",
+                "props": {
+                  "headerSize": {
+                    "value": "h6"
+                  },
+                  "content": {
+                    "value": "25."
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "6%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput71",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "e.g. Density"
+                  }
+                },
+                "dataKey": "specs__24__characteristics",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "26%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle25_single",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__24__is_single_val",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsToggle25",
+                "type": "RsToggle",
+                "props": {
+                  "checked": {
+                    "value": false
+                  }
+                },
+                "dataKey": "specs__24__is_optional",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "10%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer50",
+                "type": "RsContainer",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "48%"
+                    }
+                  }
+                },
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "row",
+                      "gap": "10px"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsInput71_str",
+                    "dataKey": "specs__24__str_val",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__24__is_single_val === true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput72",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__24__is_single_val !== true"
+                    },
+                    "dataKey": "specs__24__tol_pos",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsInput73",
+                    "dataKey": "specs__24__tol_neg",
+                    "type": "RsInput",
+                    "props": {
+                      "label": {
+                        "value": ""
+                      },
+                      "placeholder": {
+                        "value": "Enter Value"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": "form.data.specs__24__is_single_val !== true"
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": 1
+                        }
+                      }
+                    }
+                  }
+                ],
+                "props": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

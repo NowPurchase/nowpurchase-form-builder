@@ -1,0 +1,1305 @@
+{
+  "version": "1",
+  "actions": {
+    "setShiftByTime": {
+      "body": "function getShift(timeString) {\n    const hours = parseInt(timeString.split(':')[0], 10);\n    if (hours >= 6 && hours < 14) {\n        return 'A';\n    } else if (hours >= 14 && hours < 22) {\n        return 'B';\n    } else {\n        return 'C';\n    }\n}\n\nconst targetKey = `${args.field_data_key}`;\nconst time = e.args[0];\nconst shift = getShift(time);\ne.data[targetKey] = shift;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "setDefaultDateTime": {
+      "body": "const now = new Date().toISOString(); e.store.form.data.rsDateTime = now;",
+      "params": {}
+    },
+    "set_upload_url": {
+      "body": "const attachmentKey = args.field_data_key;  // Changed from args.attachment_key\n\nif (e.args[1]?.fileKey && e.args[0]?.file_url) {\n    if (!window.__fileUrlMap) window.__fileUrlMap = {};\n    window.__fileUrlMap[e.args[1].fileKey] = e.args[0].file_url;\n\n    if (e.data[attachmentKey]) {\n        e.data[attachmentKey].forEach(item => {\n            if (window.__fileUrlMap[item.fileKey]) {\n                item.file_url = window.__fileUrlMap[item.fileKey];\n                item.status = 'finished';\n            }\n        });\n    }\n}",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "on_time_mount": {
+      "body": "const targetKeySelf = `${args.self_data_key_name}`;\n\nif(!e.data[targetKeySelf]){\n    e.data[targetKeySelf] = new Date();\n}\n\nfunction getShift(timeString) {\n    const hours = parseInt(timeString.split(':')[0], 10);\n    if (hours >= 6 && hours < 14) {\n        return 'A';\n    } else if (hours >= 14 && hours < 22) {\n        return 'B';\n    } else {\n        return 'C';\n    }\n}\n\nif(!e.data?.shift){\n    const time = e.data[targetKeySelf];\n    const targetKey = `${args.field_data_key}`;\n    const shift = getShift(time);\n    e.data[targetKey] = shift;\n}",
+      "params": {
+        "field_data_key": "string",
+        "self_data_key_name": "string"
+      }
+    },
+    "set_date_on_mount": {
+      "body": "const targetKey = `${args.field_data_key}`;\n\nif (!e.data[targetKey]) {\n    e.data[targetKey] = new Date();\n}",
+      "params": {
+        "field_data_key": "string"
+      }
+    }
+  },
+  "formValidator": "    const errors = {};\n    console.log(\"is rejecting\",window.__FORM_IS_REJECTING__);\n    if (window.__FORM_IS_REJECTING__) {\n        if (!formData.rejection_reason || formData.rejection_reason.toString().trim() === '') {\n            errors['rejection_reason'] = 'Please select a rejection reason';\n        }\n\n        // if (!formData.remarks || formData.remarks.toString().trim() === '') {\n        //     errors['remarks'] = 'Remarks is required when rejecting';\n        // }\n    }\n\n    return Object.keys(errors).length > 0 ? errors : undefined;\n",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "object": {
+          "gap": "10px"
+        },
+        "string": ".rs-uploader-file-item-preview { max-width: 80px !important; max-height: 80px !important; } .rs-uploader-file-items { flex-wrap: wrap !important; } .rs-uploader-file-item { max-width: 100% !important; }"
+      }
+    },
+    "children": [
+      {
+        "key": "rsContainer8",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "10px"
+            }
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "rsContainer9",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsContainer11",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader9",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Heat No:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader6",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "    return form.data.parent_data__heat_no || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": ""
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "column",
+                      "gap": "0px"
+                    }
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer13",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader8",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Date:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader7",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "      var value = form.data.created_at;\n      var formatted = value;\n\n      try {\n          var date;\n\n          if (value instanceof Date) {\n              date = value;\n          } else if (typeof value === 'string') {\n              // Parse ISO string and handle 'Z' timezone indicator\n              var isoString = value.replace('Z', '+00:00');\n              date = new Date(isoString);\n          }\n\n          if (date && !isNaN(date.getTime())) {\n              // Convert UTC to IST (UTC+5:30)\n              var istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds\n              var istDate = new Date(date.getTime() + istOffset);\n\n              var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',\n                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];\n\n              var month = months[istDate.getUTCMonth()];\n              var day = istDate.getUTCDate();\n              var year = istDate.getUTCFullYear();\n\n              var hours = istDate.getUTCHours();\n              var minutes = istDate.getUTCMinutes();\n              var ampm = hours >= 12 ? 'PM' : 'AM';\n\n              hours = hours % 12;\n              hours = hours ? hours : 12;\n\n              var minutesStr = minutes < 10 ? '0' + minutes : minutes;\n\n              // Format: \"Apr 24, 2025 - 11:32 AM\" (matches backend)\n              formatted = month + ' ' + day + ', ' + year + ' - ' + hours + ':' + minutesStr + ' ' + ampm;\n          }\n      } catch (e) {\n          // Return original value on error\n      }\n      return formatted || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "gap": "0px"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer14",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsContainer16",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader12",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Serial No:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader13",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "      return form.data.parent_data__serial_no || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "gap": "0px"
+                    }
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer15",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader10",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Casting Name:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader11",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "    return form.data.parent_data__casting_name || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": ""
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "column",
+                      "gap": "0px"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "14px"
+            }
+          }
+        },
+        "key": "card_section_2",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "12px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_datetime_shift",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDateTime",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "calendarDefaultDate": {
+                    "fnSource": "return new Date();",
+                    "computeType": "function"
+                  },
+                  "format": {
+                    "value": "dd-MM-yyyy"
+                  }
+                },
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "date_dpt"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ],
+                  "autoValidate": true
+                },
+                "dataKey": "date_dpt",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsTimePicker2",
+                "dataKey": "time_dpt",
+                "type": "RsTimePicker",
+                "props": {
+                  "label": {
+                    "value": "Time"
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "setShiftByTime",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_dpt"
+                      }
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_dpt",
+                        "self_data_key_name": "time_dpt"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer18",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "shift",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  },
+                  "cleanable": {
+                    "value": false
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift_dpt",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "dpt",
+                "dataKey": "dpt",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "DPT"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer3",
+            "type": "RsContainer",
+            "props": {},
+            "children": [],
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "column",
+                  "alignItems": "stretch",
+                  "justifyContent": "flex-start",
+                  "gap": "12px"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "key": "rsContainer4",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "14px"
+            }
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDatePicker1",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "calendarDefaultDate": {
+                    "fnSource": "return new Date();",
+                    "computeType": "function"
+                  }
+                },
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "date_mpi"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ],
+                  "autoValidate": true
+                },
+                "dataKey": "date_mpi",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsTimePicker1",
+                "dataKey": "time_mpi",
+                "type": "RsTimePicker",
+                "props": {
+                  "label": {
+                    "value": "Time"
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "setShiftByTime",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_mpi"
+                      }
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_mpi",
+                        "self_data_key_name": "time_mpi"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer19",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsDropdown1",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  },
+                  "cleanable": {
+                    "value": false
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift_mpi",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "mpi",
+                "dataKey": "mpi",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "MPI"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer2",
+            "type": "RsContainer",
+            "props": {},
+            "children": [],
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "column",
+                  "alignItems": "stretch",
+                  "justifyContent": "flex-start",
+                  "gap": "12px"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "key": "rsContainer6",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "10px"
+            }
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "rsContainer7",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDatePicker3",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "calendarDefaultDate": {
+                    "fnSource": "return new Date();",
+                    "computeType": "function"
+                  }
+                },
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "date_sr"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ],
+                  "autoValidate": true
+                },
+                "dataKey": "date_sr",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsTimePicker4",
+                "dataKey": "time_sr",
+                "type": "RsTimePicker",
+                "props": {
+                  "label": {
+                    "value": "Time"
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "setShiftByTime",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_sr"
+                      }
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_sr",
+                        "self_data_key_name": "time_sr"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer17",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDropdown3",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  },
+                  "cleanable": {
+                    "value": false
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift_sr",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsInput4",
+                "dataKey": "surface_roughness",
+                "type": "RsInput",
+                "props": {
+                  "placeholder": {
+                    "value": "Enter Roughness"
+                  },
+                  "label": {
+                    "value": "Surface Roughness"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ],
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "alignItems": "stretch",
+                  "justifyContent": "flex-start",
+                  "gap": "12px"
+                }
+              }
+            }
+          },
+          {
+            "key": "rsContainer22",
+            "type": "RsContainer",
+            "props": {},
+            "children": []
+          }
+        ]
+      },
+      {
+        "key": "rsContainer10",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "10px"
+            }
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "rsContainer5",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDatePicker2",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "calendarDefaultDate": {
+                    "fnSource": "return new Date();",
+                    "computeType": "function"
+                  }
+                },
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "date_gauge"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ],
+                  "autoValidate": true
+                },
+                "dataKey": "date_gauge",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsTimePicker3",
+                "dataKey": "time_gauge",
+                "type": "RsTimePicker",
+                "props": {
+                  "label": {
+                    "value": "Time"
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "setShiftByTime",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_gauge"
+                      }
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "on_time_mount",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift_gauge",
+                        "self_data_key_name": "time_gauge"
+                      }
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer12",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsInput3",
+                "dataKey": "gauge",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Gauge"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "rsDropdown2",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  },
+                  "cleanable": {
+                    "value": false
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift_gauge",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ],
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "gap": "10px"
+                }
+              }
+            }
+          },
+          {
+            "key": "rsContainer20",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "attachment_gauge",
+                "dataKey": "attachment__all",
+                "type": "RsCameraCapture",
+                "props": {
+                  "label": {
+                    "value": "Attachment:"
+                  },
+                  "accept": {
+                    "computeType": "function",
+                    "fnSource": "const dlms_config = window.__DLMS_CONFIG || {};\nlet savedToken = localStorage.getItem('dlms_auth_token');\nreturn `${dlms_config.dlmsBaseUrl}/api/v1/upload/image?token=` + savedToken;"
+                  },
+                  "removable": {
+                    "value": true
+                  },
+                  "name": {
+                    "value": "file"
+                  },
+                  "method": {
+                    "value": "POST"
+                  },
+                  "action": {
+                    "computeType": "function",
+                    "fnSource": "const dlms_config = window.__DLMS_CONFIG || {};\nlet savedToken = localStorage.getItem('dlms_auth_token');\nreturn `${dlms_config.dlmsBaseUrl}/api/v1/upload/image?token=` + savedToken;"
+                  },
+                  "multiple": {
+                    "value": true
+                  }
+                },
+                "events": {
+                  "onSuccess": [
+                    {
+                      "name": "set_upload_url",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "attachment__all"
+                      }
+                    }
+                  ]
+                },
+                "css": {
+                  "any": {
+                    "string": ".rs-uploader-trigger-btn {\n  width: 100% !important;\n  height: 40px !important;\n  display: flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n}\n.rs-uploader-file-items {\n  max-width: 100% !important;\n  overflow: hidden !important;\n}\n.rs-uploader {\n  max-width: 100% !important;\n}"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%",
+                      "maxWidth": "100%",
+                      "overflow": "hidden"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer21",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDropdown4",
+                "dataKey": "rejection_reason",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Cause of Rejection"
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "Bottom Puncture",
+                        "label": "Bottom Puncture"
+                      },
+                      {
+                        "value": "Parting Line Leakage",
+                        "label": "Parting Line Leakage"
+                      },
+                      {
+                        "value": "Stopper Fail",
+                        "label": "Stopper Fail"
+                      },
+                      {
+                        "value": "Nozzle Running",
+                        "label": "Nozzle Running"
+                      },
+                      {
+                        "value": "Interrupted Pouring",
+                        "label": "Interrupted Pouring"
+                      },
+                      {
+                        "value": "Void",
+                        "label": "Void"
+                      },
+                      {
+                        "value": "Shrinkage",
+                        "label": "Shrinkage"
+                      },
+                      {
+                        "value": "Crack",
+                        "label": "Crack"
+                      },
+                      {
+                        "value": "Pin Holes",
+                        "label": "Pin Holes"
+                      },
+                      {
+                        "value": "Blow Holes",
+                        "label": "Blow Holes"
+                      },
+                      {
+                        "value": "Non-Formation",
+                        "label": "Non-Formation"
+                      },
+                      {
+                        "value": "Sand Drop",
+                        "label": "Sand Drop"
+                      },
+                      {
+                        "value": "Core Lift",
+                        "label": "Core Lift"
+                      },
+                      {
+                        "value": "Core Fall",
+                        "label": "Core Fall"
+                      },
+                      {
+                        "value": "Swelling",
+                        "label": "Swelling"
+                      },
+                      {
+                        "value": "Short Poured",
+                        "label": "Short Poured"
+                      }
+                    ]
+                  },
+                  "cleanable": {
+                    "value": true
+                  }
+                }
+              },
+              {
+                "key": "rsTextArea1",
+                "dataKey": "remarks",
+                "type": "RsTextArea",
+                "props": {
+                  "rows": {
+                    "value": 3
+                  },
+                  "label": {
+                    "value": "Remarks"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

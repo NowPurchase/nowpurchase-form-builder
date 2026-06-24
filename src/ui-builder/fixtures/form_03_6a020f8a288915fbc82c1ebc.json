@@ -1,0 +1,359 @@
+{
+  "version": "1",
+  "formValidator": "  const errors = {};\n\n  // Route validation - at least one route must be selected\n  const routeFields = Object.keys(formData).filter(key => key.startsWith('route__'));\n  const hasAtLeastOneRoute = routeFields.some(field => formData[field] === true);\n\n  if (!hasAtLeastOneRoute) {\n    errors.route__moulding = \"At least one route must be selected\";\n  }\n\n  // Extract current record ID from URL if in edit mode\n  // URL pattern: /logsheet/master/casting_master/completed/<id>/edit\n  let currentRecordId = null;\n  try {\n    const match = window.location.pathname.match(/\\/([a-f0-9]{24})\\/edit/i);\n    if (match) {\n      currentRecordId = match[1];\n    }\n  } catch (e) {\n    // window unavailable or path doesn't match — treat as new record\n  }\n\n  // Casting name duplicate validation\n  const castingName = formData.casting_name;\n\n  if (castingName && typeof castingName === 'string' && castingName.trim() !== '') {\n    try {\n      const savedToken = localStorage.getItem('dlms_auth_token');\n\n      if (savedToken) {\n        const res = await fetch('https://dlms-api.iotnp.com/api/v1/templates/casting_master/dropdown/v2', {\n          method: 'POST',\n          headers: {\n            'accept': 'application/json',\n            'Content-Type': 'application/json',\n            'Authorization': `Bearer ${savedToken}`\n          },\n          body: JSON.stringify({\n            \"fields\": [\"data.main.data.casting_name\", \"id\"],\n            \"search_fields\": [\"data.main.data.casting_name\"],\n            \"search\": castingName.trim(),\n            \"status\": \"completed\",\n            \"limit\": 100\n          })\n        });\n\n        if (res.ok) {\n          const response = await res.json();\n          const items = Array.isArray(response.data) ? response.data : [];\n\n          // Duplicate exists if name matches (case-insensitive) AND it's not the same record\n          const duplicateExists = items.some(item => {\n            const existingName = item[\"data.main.data.casting_name\"] || \"\";\n            const existingId = item.id || item._id;\n            const nameMatches = existingName.toLowerCase() === castingName.trim().toLowerCase();\n            const isSameRecord = currentRecordId && String(existingId) === String(currentRecordId);\n            return nameMatches && !isSameRecord;\n          });\n\n          if (duplicateExists) {\n            errors.casting_name = `Casting name \"${castingName}\" already exists. Please use a different name.`;\n          }\n        }\n      }\n    } catch (err) {\n      console.error(\"Duplicate check error:\", err);\n      // Don't block submission on API error, just log it\n    }\n  }\n\n  return Object.keys(errors).length > 0 ? errors : undefined;",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "object": {
+          "height": "100%"
+        }
+      }
+    },
+    "children": [
+      {
+        "css": {
+          "any": {
+            "string": "    background-color: white;\nborder: 1px solid #ccc; border-radius: 12px; padding: 16px;"
+          }
+        },
+        "key": "castingContainer",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "16px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "topRow",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "castingName",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Casting Name"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "casting_name"
+              },
+              {
+                "key": "weight",
+                "type": "RsNumberFormat",
+                "props": {
+                  "label": {
+                    "value": "Weight"
+                  },
+                  "allowNegative": {
+                    "value": false
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    },
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "weight"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color: white;\nborder: 1px solid #ccc; border-radius: 12px; padding: 16px;"
+          }
+        },
+        "key": "routesContainer",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "key": "routesHeader",
+            "type": "RsHeader",
+            "props": {
+              "content": {
+                "value": "Routes"
+              },
+              "headerSize": {
+                "value": "h5"
+              }
+            }
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "32px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "routesGrid",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "routesCol1",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "route1",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "1. Moulding"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__moulding"
+                  },
+                  {
+                    "key": "route4",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "4. Shot Blasting (BHT)"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__shot_blasting_bht"
+                  },
+                  {
+                    "key": "route7",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "7. Shot Blasting (AHT)"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__shot_blasting_aht"
+                  },
+                  {
+                    "key": "route10",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "10. Load Test"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__load_test"
+                  }
+                ]
+              },
+              {
+                "key": "routesCol2",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "route2",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "2. Pouring"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__pouring"
+                  },
+                  {
+                    "key": "route5",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "5. Gas Cutting"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__gas_cutting"
+                  },
+                  {
+                    "key": "route8",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "8. Machining"
+                      },
+                      "disabled": {
+                        "value": true
+                      },
+                      "readOnly": {
+                        "value": false
+                      }
+                    },
+                    "dataKey": "route__machining"
+                  },
+                  {
+                    "key": "route11",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "11. Painting"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__painting"
+                  }
+                ]
+              },
+              {
+                "key": "routesCol3",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "route3",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "3. Shakeout"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__shakeout"
+                  },
+                  {
+                    "key": "route6",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "6. Heat Treatment"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__heat_treatment"
+                  },
+                  {
+                    "key": "route9",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "9. Assembly"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__assembly"
+                  },
+                  {
+                    "key": "route12",
+                    "type": "RsCheckbox",
+                    "props": {
+                      "checked": {
+                        "value": true
+                      },
+                      "children": {
+                        "value": "12. Dispatch"
+                      },
+                      "disabled": {
+                        "value": true
+                      }
+                    },
+                    "dataKey": "route__dispatch"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

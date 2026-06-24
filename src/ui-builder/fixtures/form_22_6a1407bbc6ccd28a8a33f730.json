@@ -1,0 +1,229 @@
+{
+  "version": "1",
+  "actions": {
+    "fetch_casting_name": {
+      "body": "\n    const [searchValue, loadCallback, currentDataLength] = e.args;\n\n    if (window._dropdownDebounceTimer) {\n        clearTimeout(window._dropdownDebounceTimer);\n    }\n\n    if (window._dropdownAbortController) {\n        window._dropdownAbortController.abort();\n    }\n\n    window._dropdownAbortController = new AbortController();\n    const signal = window._dropdownAbortController.signal;\n\n    window._dropdownDebounceTimer = setTimeout(async () => {\n\n        let savedToken = localStorage.getItem('dlms_auth_token');\n\n        let requestBody = {\n            \"fields\": [\"main__data__casting_name\", \"main__data__weight\"],\n            \"filters\": [],\n            \"search\": [],\n            \"flat\": false,\n            \"status\": \"completed\",\n            \"limit\": 100\n        };\n\n        if (searchValue) {\n            requestBody = {\n                \"fields\": [\"main__data__casting_name\", \"main__data__weight\"],\n                \"search_fields\": [\"main__data__casting_name\", \"main__data__weight\"],\n                \"filters\": [],\n                \"search\": [searchValue],\n                \"flat\": false,\n                \"status\": \"completed\",\n                \"limit\": 20\n            };\n        }\n\n        try {\n            const res = await fetch('https://dlms-api.iotnp.com/api/v1/templates/casting_master/dropdown', {\n                method: 'POST',\n                headers: {\n                    'accept': 'application/json',\n                    'Content-Type': 'application/json',\n                    'Authorization': `Bearer ${savedToken}`\n                },\n                body: JSON.stringify(requestBody),\n                signal: signal\n            });\n\n            const response = await res.json();\n            const items = Array.isArray(response.data) ? response.data : [];\n\n            const filteredItems = items.filter(item => {\n                const name = item.main?.data?.casting_name || \"\";\n                const weight = item.main?.data?.weight || \"\";\n                const search = (searchValue || \"\").toLowerCase();\n                return (\n                    name.toLowerCase().includes(search) ||\n                    weight.toString().includes(search)\n                );\n            });\n\n            const uniqueMap = new Map();\n            filteredItems.forEach(item => {\n                const castingName = item.main?.data?.casting_name || \"Unnamed Item\";\n                const id = item._id;\n                const weight = item.main?.data?.weight ?? \"N/A\";\n                if (!uniqueMap.has(castingName)) {\n                    uniqueMap.set(castingName, {\n                        value: castingName,\n                        label: castingName,\n                        id: id,\n                        weight: weight,\n                        data: item\n                    });\n                }\n            });\n\n            const preparedData = [...uniqueMap.values()]\n                .slice(currentDataLength || 0, (currentDataLength || 0) + 20);\n\n            if (typeof loadCallback === 'function') {\n                loadCallback(preparedData);\n            } else {\n                console.warn(\"loadCallback is not a function. Check e.args structure:\", e.args);\n            }\n\n        } catch (err) {\n            if (err.name === 'AbortError') {\n                console.log('Previous request cancelled');\n                return;\n            }\n            console.error(\"Dropdown fetch error:\", err);\n            if (typeof loadCallback === 'function') loadCallback([]);\n        }\n\n    }, 300);",
+      "params": {}
+    },
+    "on_select_casting_name": {
+      "body": "    console.log(\"Casting name select\", e.args);\n\n    var data = e.args[1];\n    e.data.casting = {\"casting_id\": data.id, \"id\": data.id, \"value\": data.value, \"casting_name\": data.value, \"weight\": data.weight};\n    e.data.casting_name = data.value;",
+      "params": {}
+    },
+    "submitForm": {
+      "body": "console.log('Submitting to Assembly Logsheet', e.data);\n\nconst savedToken = localStorage.getItem('dlms_auth_token');\n\nconst payload = {\n    data: {\n        serial_no: e.data.serial_no,\n        serial_no: e.data.serial_no,\n        casting_name: e.data.casting_name,\n        casting: e.data.casting || null,\n        heatname: e.data.heat_no || null\n    },\n    status: 'pending'\n};\n\nconsole.log('Payload:', payload);\n\nfetch('https://dlms-api.iotnp.com/api/v1/templates/assembly_logsheet/submissions', {\n    method: 'POST',\n    headers: {\n        'accept': 'application/json',\n        'Content-Type': 'application/json',\n        'Authorization': `Bearer ${savedToken}`\n    },\n    body: JSON.stringify(payload)\n})\n.then(res => res.json())\n.then(response => {\n    console.log('Submission response:', response);\n    if (response && (response._id || response.id || response.success)) {\n        alert('Record submitted to Assembly Logsheet with status: Pending');\n    } else {\n        console.error('Unexpected response:', response);\n        alert('Submission may have failed. Check console for details.');\n    }\n})\n.catch(err => {\n    console.error('Submit error:', err);\n    alert('Submission failed. Please try again.');\n});",
+      "params": {}
+    }
+  },
+  "formValidator": "const value = formData.serial_no;\n\n  if (!value || String(value).trim() === '') {\n    return undefined;\n  }\n\n  const savedToken = localStorage.getItem('dlms_auth_token');\n  if (!savedToken) {\n    return undefined;\n  }\n\n  const serialNumber = String(value).trim();\n\n  try {\n    const res = await fetch(`https://dlms-api.iotnp.com/api/v1/serial-numbers/check?serial_number=${encodeURIComponent(serialNumber)}`, {\n      method: 'GET',\n      headers: {\n        'accept': 'application/json',\n        'Authorization': `Bearer ${savedToken}`\n      }\n    });\n\n    const response = await res.json();\n    console.log('API Response for', serialNumber, ':', response);\n\n    if (response.exists === true) {\n      const templateInfo = response.template_name ? ` in \"${response.template_name}\"` : '';\n      return { serial_no: `Serial number \"${serialNumber}\" already exists${templateInfo}` };\n    }\n\n    console.log('No duplicate, returning undefined');\n    return undefined;\n\n  } catch (err) {\n    console.error(`Error checking ${serialNumber}:`, err);\n    return undefined;\n  }",
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "string": "    background: transparent;"
+      }
+    },
+    "events": {},
+    "children": [
+      {
+        "css": {
+          "any": {
+            "string": "border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background-color: #FCFCFC;"
+          }
+        },
+        "key": "assembly_entry_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "key": "header_assembly",
+            "type": "RsHeader",
+            "props": {
+              "content": {
+                "value": "Assembly Logsheet Entry"
+              },
+              "headerSize": {
+                "value": "h5"
+              }
+            },
+            "wrapperCss": {
+              "any": {
+                "object": {
+                  "borderBottom": "1px solid #E2E8F0",
+                  "paddingBottom": "10px"
+                }
+              }
+            },
+            "css": {
+              "any": {
+                "object": {
+                  "textAlign": "center"
+                }
+              }
+            }
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_1_assembly",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "serial_no",
+                "dataKey": "serial_no",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Serial No"
+                  },
+                  "placeholder": {
+                    "value": "Enter Serial No"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    },
+                    {
+                      "key": "code",
+                      "args": {
+                        "message": "Serial Number Already Exists",
+                        "code": "  if (!window._serialValidation) {\n    window._serialValidation = {\n      timer: null,\n      abortController: null,\n      lastValue: null,\n      lastResult: true\n    };\n  }\n\n  const state = window._serialValidation;\n\n  if (!value || String(value).trim() === '') {\n    return true;\n  }\n\n  const serialNumber = String(value).trim();\n\n  if (serialNumber === state.lastValue && state.lastResult !== null) {\n    return state.lastResult;\n  }\n\n  if (state.abortController) {\n    state.abortController.abort();\n  }\n\n  return new Promise((resolve) => {\n    if (state.timer) {\n      clearTimeout(state.timer);\n    }\n\n    state.timer = setTimeout(async () => {\n      const savedToken = localStorage.getItem('dlms_auth_token');\n      if (!savedToken) {\n        state.lastValue = serialNumber;\n        state.lastResult = true;\n        resolve(true);\n        return;\n      }\n\n      state.abortController = new AbortController();\n      const signal = state.abortController.signal;\n\n      try {\n        const res = await fetch(\n          `https://dlms-api.iotnp.com/api/v1/serial-numbers/check?serial_number=${encodeURIComponent(serialNumber)}`,\n          {\n            method: 'GET',\n            headers: {\n              'accept': 'application/json',\n              'Authorization': `Bearer ${savedToken}`\n            },\n            signal\n          }\n        );\n        const response = await res.json();\n        const exists = response.exists === true;\n\n        state.lastValue = serialNumber;\n        state.lastResult = !exists;\n        resolve(!exists);\n      } catch (err) {\n        if (err.name === 'AbortError') return;\n        state.lastValue = serialNumber;\n        state.lastResult = true;\n        resolve(true);\n      }\n    }, 300);\n  });"
+                      },
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "casting_name_dropdown",
+                "dataKey": "casting_name",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Casting Name"
+                  },
+                  "data": {
+                    "value": []
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "events": {
+                  "onLoadData": [
+                    {
+                      "name": "fetch_casting_name",
+                      "type": "code"
+                    }
+                  ],
+                  "onSelect": [
+                    {
+                      "name": "on_select_casting_name",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_2_assembly",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "heatname",
+                "dataKey": "heat_no",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Heat Name"
+                  },
+                  "placeholder": {
+                    "value": "Enter Heat Name (optional)"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": []
+                }
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row",
+                  "justifyContent": "flex-end",
+                  "marginTop": "20px"
+                }
+              }
+            },
+            "key": "row_submit",
+            "type": "RsContainer",
+            "props": {},
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

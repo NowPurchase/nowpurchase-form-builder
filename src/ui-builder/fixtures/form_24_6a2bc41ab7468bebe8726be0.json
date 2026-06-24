@@ -1,0 +1,542 @@
+{
+  "version": "1",
+  "actions": {
+    "set_shift": {
+      "body": "    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n      const targetKey = `${args.field_data_key}`;\n      const time = e.args[0]; // e.g., '22:00:00'\n        const shift = getShift(time);\n        e.data[targetKey] = shift;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "submitForm": {
+      "body": "console.log('Form Submitted', e.data); alert('Form Submitted Successfully');",
+      "params": {}
+    },
+    "initFormData": {
+      "body": "if (e) { \n  e.data = e.data || {}; \n  // Default Dates\n  if (!e.data.moulding_date) e.data.moulding_date = new Date().toISOString();\n  if (!e.data.closure_date) e.data.closure_date = new Date().toISOString();\n  \n  // Default Supervisor\n  if (!e.data.supervisor) e.data.supervisor = \"John Doe (Current User)\";\n\n  // Simple Auto-Shift Logic based on current hour\n  const hour = new Date().getHours();\n  let currentShift = \"A\";\n  if (hour >= 6 && hour < 14) currentShift = \"A\";\n  else if (hour >= 14 && hour < 22) currentShift = \"B\";\n  else currentShift = \"C\";\n  \n  if (!e.data.moulding_shift) e.data.moulding_shift = currentShift;\n  if (!e.data.closure_shift) e.data.closure_shift = currentShift;\n}",
+      "params": {}
+    },
+    "set_operator_name": {
+      "body": "const dlms_config = window.__DLMS_CONFIG || {};\nif(e?.data?.disabled__supervisor){\n    return e?.data?.disabled__supervisor;\n}\nlet savedToken = localStorage.getItem('tokenv2') || localStorage.getItem('auth');\n\nconsole.log('Token used:', savedToken);\n\nconst finalToken = savedToken;\n\n// 1. Updated URL to user-detail endpoint\nfetch(`${dlms_config.npBaseUrl}/api/user-detail/`, {\n    method: 'GET',\n    headers: {\n        'accept': 'application/json',\n        'authorization': `Token ${finalToken}` \n    }\n})\n.then(res => res.json())\n.then(userData => {\n    // 2. Set the operator name from the response 'name' field\n    // Assuming 'e' is your form or state object available in this scope\n    if (userData && userData.name) {\n        e.data.disabled__supervisor = userData.name; \n    }\n\n    // 3. Adapt for loadCallback if you are still using this for a UI component\n    // We wrap the single user object in an array to keep the callback logic consistent\n\n\n})\n.catch((error) => {\n    console.error('Fetch error:', error);\n});",
+      "params": {}
+    },
+    "fetch_casting_name": {
+      "body": "const dlms_config = window.__DLMS_CONFIG || {};\n\n    const [searchValue, loadCallback, currentDataLength] = e.args;\n\n    console.log(e.args);\n\n    // ✅ Clear previous debounce timer\n    if (window._dropdownDebounceTimer) {\n        clearTimeout(window._dropdownDebounceTimer);\n    }\n\n    // ✅ Abort previous pending request\n    if (window._dropdownAbortController) {\n        window._dropdownAbortController.abort();\n    }\n\n    // ✅ Create new abort controller for this request\n    window._dropdownAbortController = new AbortController();\n    const signal = window._dropdownAbortController.signal;\n\n    // ✅ Debounce: Wait 300ms before making API call\n    window._dropdownDebounceTimer = setTimeout(async () => {\n\n        // Auth Token\n        let savedToken = localStorage.getItem('dlms_auth_token');\n\n        // Logic to determine requestBody\n        let requestBody = {\n            \"fields\": [\"main__data__casting_name\"],\n            \"filters\": [],\n            \"search\": [],\n            \"flat\": false,\n            \"status\": \"completed\",\n            \"limit\": 100\n        };\n\n        if (searchValue) {\n            requestBody = {\n                \"fields\": [\"main__data__casting_name\"],\n                \"search_fields\": [\"main__data__casting_name\"],\n                \"filters\": [],\n                \"search\": [searchValue],\n                \"flat\": false,\n                \"status\": \"completed\",\n                \"limit\": 20\n            };\n        }\n\n        try {\n            const res = await fetch(`${dlms_config.dlmsBaseUrl}/api/v1/templates/logsheets_casting-master__449d6152-c7cc-447e-8b13-a6a7eeeae503/dropdown`, {\n                method: 'POST',\n                headers: {\n                    'accept': 'application/json',\n                    'Content-Type': 'application/json',\n                    'Authorization': `Bearer ${savedToken}`\n                },\n                body: JSON.stringify(requestBody),\n                signal: signal\n            });\n\n            const response = await res.json();\n            const items = Array.isArray(response.data) ? response.data : [];\n\n            // Filter items based on search value\n            const filteredItems = items.filter(item => {\n                const name = item.main?.data?.casting_name || \"\";\n                return name.toLowerCase().includes((searchValue || \"\").toLowerCase());\n            });\n\n            // Create unique map to remove duplicates\n            const uniqueMap = new Map();\n            filteredItems.forEach(item => {\n                const castingName = item.main?.data?.casting_name || \"Unnamed Item\";\n                if (!uniqueMap.has(castingName)) {\n                    uniqueMap.set(castingName, {\n                        value: castingName,\n                        label: castingName,\n                        data: item\n                    });\n                }\n            });\n\n            // Convert map to array and apply pagination\n            const preparedData = [...uniqueMap.values()]\n                .slice(currentDataLength || 0, (currentDataLength || 0) + 20);\n\n            // SAFETY CHECK: Ensure loadCallback is actually a function before calling it\n            if (typeof loadCallback === 'function') {\n                loadCallback(preparedData);\n            } else {\n                console.warn(\"loadCallback is not a function. Check e.args structure:\", e.args);\n            }\n\n        } catch (err) {\n            // Ignore abort errors (expected when cancelling)\n            if (err.name === 'AbortError') {\n                console.log('Previous request cancelled');\n                return;\n            }\n            console.error(\"Dropdown fetch error:\", err);\n            if (typeof loadCallback === 'function') loadCallback([]);\n        }\n\n    }, 300);",
+      "params": {}
+    },
+    "set_date_on_mount": {
+      "body": "    if(!e.data?.moulding_date){\n        e.data.moulding_date = new Date();\n    }",
+      "params": {}
+    },
+    "set_shift_on_time": {
+      "body": " if(!e.data?.moulding_time){\n        e.data.moulding_time = new Date();\n    }\n\n    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n    if(!e.data?.moulding_shift){\n      const time = e.data.moulding_time;\n        const shift = getShift(time);\n        e.data[\"moulding_shift\"] = shift;\n        }",
+      "params": {}
+    },
+    "set_time_closure": {
+      "body": " if(!e.data?.time){\n        e.data.time = new Date();\n    }\n\n    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n    if(!e.data?.shift){\n      const time = e.data.time;\n        const shift = getShift(time);\n        e.data[\"shift\"] = shift;\n        }",
+      "params": {}
+    },
+    "set_closure_date_on_mount": {
+      "body": "    if(!e.data?.date){\n        e.data.date = new Date();\n    }",
+      "params": {}
+    }
+  },
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "string": "    background: transparent;"
+      }
+    },
+    "events": {
+      "onLoadData": [
+        {
+          "name": "initFormData",
+          "type": "code"
+        }
+      ]
+    },
+    "children": [
+      {
+        "key": "rsContainer1",
+        "type": "RsContainer",
+        "props": {},
+        "css": {
+          "any": {
+            "object": {
+              "flexDirection": "row",
+              "alignItems": "center",
+              "justifyContent": "space-between"
+            },
+            "string": " background-color: #ffffff;\n  color: rgba(0, 0, 0, 0.87);\n\n  border-radius: 8px;\n  padding: 16px;\n\n  background-color: white;\n  border-radius: 0.5rem;\n  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);\n  padding: 1.5rem;\n  transition: box-shadow 0.3s ease;\n\n  box-sizing: border-box;\n  transition: box-shadow 200ms ease, transform 200ms ease;"
+          }
+        },
+        "children": [
+          {
+            "key": "rsHeader2",
+            "type": "RsHeader",
+            "props": {
+              "content": {
+                "value": "Casting Name:",
+                "computeType": "function",
+                "fnSource": "    return \"Casting Name: \" + form.data?.parent_data__casting_name;"
+              },
+              "headerSize": {
+                "value": "h6"
+              }
+            }
+          },
+          {
+            "key": "rsHeader3",
+            "type": "RsHeader",
+            "props": {
+              "content": {
+                "value": "Created At:",
+                "computeType": "function",
+                "fnSource": "  return \"Created At: \" + new Date(form.data?.created_at)\n    .toLocaleString(\"en-IN\", {\n      timeZone: \"Asia/Kolkata\",\n      day: \"2-digit\",\n      month: \"short\",\n      hour: \"2-digit\",\n      minute: \"2-digit\",\n      hour12: true\n    });"
+              },
+              "headerSize": {
+                "value": "h6"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background-color: #FCFCFC;"
+          }
+        },
+        "key": "closure_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_1_closure",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "closure_date",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "enableTime": {
+                    "value": true
+                  },
+                  "format": {
+                    "value": "dd-MM-yyyy"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "dataKey": "date",
+                "events": {
+                  "onDidMount": [
+                    {
+                      "name": "set_closure_date_on_mount",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "closure_time",
+                "type": "RsTimePicker",
+                "props": {},
+                "events": {
+                  "onChange": [
+                    {
+                      "args": {
+                        "field_data_key": "shift"
+                      },
+                      "name": "set_shift",
+                      "type": "code"
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "set_time_closure",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "dataKey": "time",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "closure_shift",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_2_closure",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDropdown3",
+                "dataKey": "closure_name",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Closure Name"
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "Tanmoy Ghosh",
+                        "label": "Tanmoy Ghosh"
+                      },
+                      {
+                        "value": "Khurshid Alam",
+                        "label": "Khurshid Alam"
+                      },
+                      {
+                        "value": "Babai Sarkar",
+                        "label": "Babai Sarkar"
+                      },
+                      {
+                        "value": "Biswnath Poddar",
+                        "label": "Biswnath Poddar"
+                      },
+                      {
+                        "value": "Laltu",
+                        "label": "Laltu"
+                      },
+                      {
+                        "value": "Aminur",
+                        "label": "Aminur"
+                      },
+                      {
+                        "value": "Noor Alam",
+                        "label": "Noor Alam"
+                      },
+                      {
+                        "value": "Sk Yarul",
+                        "label": "Sk Yarul"
+                      },
+                      {
+                        "value": "Prashanto Roy",
+                        "label": "Prashanto Roy"
+                      },
+                      {
+                        "value": "Vikas Sarkar",
+                        "label": "Vikas Sarkar"
+                      },
+                      {
+                        "value": "Bapi Biswas",
+                        "label": "Bapi Biswas"
+                      },
+                      {
+                        "value": "Santosh",
+                        "label": "Santosh"
+                      },
+                      {
+                        "value": "Shiv",
+                        "label": "Shiv"
+                      },
+                      {
+                        "value": "Raju Sarkar",
+                        "label": "Raju Sarkar"
+                      },
+                      {
+                        "value": "Rahul",
+                        "label": "Rahul"
+                      },
+                      {
+                        "value": "Ananta",
+                        "label": "Ananta"
+                      },
+                      {
+                        "value": "Jayanta",
+                        "label": "Jayanta"
+                      },
+                      {
+                        "value": "Dipankar",
+                        "label": "Dipankar"
+                      },
+                      {
+                        "value": "Md Salil",
+                        "label": "Md Salil"
+                      },
+                      {
+                        "value": "Asgar Ali",
+                        "label": "Asgar Ali"
+                      },
+                      {
+                        "value": "Gopi Pradhan",
+                        "label": "Gopi Pradhan"
+                      },
+                      {
+                        "value": "Zakir Hussain",
+                        "label": "Zakir Hussain"
+                      },
+                      {
+                        "value": "Sanjay Thapa",
+                        "label": "Sanjay Thapa"
+                      },
+                      {
+                        "value": "Nasim Ansari",
+                        "label": "Nasim Ansari"
+                      },
+                      {
+                        "value": "Shamshad",
+                        "label": "Shamshad"
+                      },
+                      {
+                        "value": "Sahil",
+                        "label": "Sahil"
+                      },
+                      {
+                        "value": "Shubhojit",
+                        "label": "Shubhojit"
+                      },
+                      {
+                        "value": "Surajit",
+                        "label": "Surajit"
+                      },
+                      {
+                        "value": "Prem Shaw",
+                        "label": "Prem Shaw"
+                      }
+                    ]
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background-color: #FCFCFC;"
+          }
+        },
+        "key": "footer_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_footer_users",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "supervisor",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Supervisor"
+                  },
+                  "readOnly": {
+                    "value": false
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "dataKey": "disabled__supervisor",
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_operator_name",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "rsDropdown1",
+                "dataKey": "operator_name",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Operator Name:"
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "Raju Sarkar",
+                        "label": "Raju Sarkar"
+                      },
+                      {
+                        "value": "Rahul",
+                        "label": "Rahul"
+                      },
+                      {
+                        "value": "Noor Alam",
+                        "label": "Noor Alam"
+                      },
+                      {
+                        "value": "Santosh",
+                        "label": "Santosh"
+                      },
+                      {
+                        "value": "Khurshid Alam",
+                        "label": "Khurshid Alam"
+                      },
+                      {
+                        "value": "Sanajy Thapa",
+                        "label": "Sanajy Thapa"
+                      },
+                      {
+                        "value": "Wasim Ansari",
+                        "label": "Wasim Ansari"
+                      },
+                      {
+                        "value": "Sameer Mondal",
+                        "label": "Sameer Mondal"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

@@ -455,6 +455,29 @@
 
   .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 28px 28px 28px 12px; }
 
+  /* Collapse toggle (desktop) — lives in the brand row */
+  .app-collapse {
+    margin-left: auto; width: 30px; height: 30px; border-radius: 9999px; flex-shrink: 0;
+    background: rgba(255,255,255,0.55); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: hsl(var(--muted-foreground));
+    transition: background 160ms ease-out, color 160ms ease-out;
+  }
+  .app-collapse:hover { background: #fff; color: hsl(var(--primary)); }
+  .app-collapse svg { width: 18px; height: 18px; }
+
+  /* Collapsed (user-toggled) — icon-only rail, mirrors the ≤860px behaviour */
+  .app-sidebar.collapsed { width: 76px; padding-left: 8px; padding-right: 8px; }
+  .app-sidebar.collapsed .app-brand { flex-direction: column; gap: 12px; padding: 4px 0 18px; }
+  .app-sidebar.collapsed .app-brand .wm,
+  .app-sidebar.collapsed .app-nav-title,
+  .app-sidebar.collapsed .app-nav-item span:not(.count),
+  .app-sidebar.collapsed .app-sidebar-foot .nm,
+  .app-sidebar.collapsed .app-sidebar-foot .org { display: none; }
+  .app-sidebar.collapsed .app-collapse { margin-left: 0; }
+  .app-sidebar.collapsed .app-nav-item { justify-content: center; padding: 0; }
+  .app-sidebar.collapsed .app-sidebar-foot { flex-direction: column; gap: 10px; }
+  .app-sidebar.collapsed .app-sidebar-foot .lo { margin-left: 0; }
+
   /* Mobile chrome — hidden on desktop, shown ≤ 768px (see media query below) */
   .app-topbar, .app-bottomnav { display: none; }
 

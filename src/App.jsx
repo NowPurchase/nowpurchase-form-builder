@@ -4,6 +4,8 @@ import { getToken, removeToken } from "./services/api";
 import Login from "./components/pages/Login";
 import Home from "./components/pages/Home";
 import NewForm from "./components/pages/NewForm";
+import UiBuilderSimplified from "./components/pages/UiBuilderSimplified";
+import FormPreview from "./components/pages/FormPreview";
 import Permissions from "./components/pages/Permissions";
 
 import TemplateConfig from "./components/pages/TemplateConfig";
@@ -52,6 +54,9 @@ function AppContent() {
     <>
       <ToastContainer />
       <Routes>
+        {/* Public, ungated live preview — no auth, no app shell. The form
+            travels compressed in the URL fragment (/preview#f=...). */}
+        <Route path="/preview" element={<FormPreview />} />
         <Route
           path="/"
           element={
@@ -77,6 +82,17 @@ function AppContent() {
           element={
             isAuthenticated ? (
               <NewForm />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/ui-builder"
+          element={
+            isAuthenticated ? (
+              <UiBuilderSimplified />
             ) : (
               <Navigate to="/" replace />
             )

@@ -1,0 +1,566 @@
+import React from 'react';
+import { validateContainerName } from '../../engine/dataKey.js';
+import { createTableConfig, createColumn, siblingNames, FIELD_PALETTE } from '../../state/formState.js';
+import Icon from '../Icon.jsx';
+
+// Friendly name per field type (panel header), from the palette.
+const TYPE_META = FIELD_PALETTE.reduce((m, p) => { m[p.type] = p; return m; }, {});
+const typeLabel = (t) => (TYPE_META[t]?.label || t);
+const ICON_NAME = {
+  text: 'text', number: 'number', date: 'date', time: 'time', shift: 'shift',
+  dropdown_fixed: 'dropdown', dropdown_async: 'link', tags_fixed: 'tag', tags_async: 'tag',
+  checkbox: 'checkbox', toggle: 'toggle', textarea: 'textarea', upload: 'file', header: 'heading',
+  divider: 'divider', supervisor: 'supervisor', spectrometer: 'spectrometer', chips: 'tag',
+};
+const iconName = (t) => ICON_NAME[t] || 'text';
+
+// Plain-English column types (non-tech friendly). Value = stored field_type.
+const COLUMN_TYPES = [
+  ['input', '📝 Text'],
+  ['number', '🔢 Number'],
+  ['date', '📅 Date'],
+  ['time', '🕐 Time'],
+  ['dropdown_fixed', '▼ Dropdown'],
+  ['dropdown_async', '🔗 Dropdown (master data)'],
+  ['checkbox', '☑ Checkbox'],
+  ['toggle', '🔘 Toggle'],
+  ['tags_fixed', '🏷 Tags'],
+  ['textarea', '📄 Text Area'],
+  ['readonly', '🔒 Read-only display'],
+];
+
+function Field({ label, children, hint }) {
+  return (
+    <div>
+      <label className="fld">{label}</label>
+      {children}
+      {hint && <div className="hint">{hint}</div>}
+    </div>
+  );
+}
+function Check({ label, checked, onChange }) {
+  return (
+    <div className={`check ${checked ? 'on' : ''}`} onClick={() => onChange(!checked)}>
+      <span className="box">{checked && <Icon name="check" size={12} stroke={2.4} />}</span>
+      <span className="lab">{label}</span>
+    </div>
+  );
+}
+
+const WIDTHS = ['25%', '33%', '50%', '66%', '75%', '100%'];
+
+// ---- type-specific config editors ----------------------------------------
+function TypeConfig({ field, set }) {
+  const c = field.type_config || {};
+  switch (field.field_type) {
+    case 'date':
+      return (
+        <>
+          <Check label="Auto-fill today on mount" checked={c.auto_fill_today} onChange={(v) => set({ auto_fill_today: v })} />
+          <Field label="Format"><input type="text" value={c.format || ''} onChange={(e) => set({ format: e.target.value })} /></Field>
+          <Check label="Enable time" checked={c.enable_time} onChange={(v) => set({ enable_time: v })} />
+        </>
+      );
+    case 'time':
+      return (
+        <>
+          <Check label="Auto-derive shift from time" checked={c.auto_derive_shift} onChange={(v) => set({ auto_derive_shift: v })} />
+          {c.auto_derive_shift && <Field label="Shift target dataKey"><input type="text" value={c.shift_target_key || 'shift'} onChange={(e) => set({ shift_target_key: e.target.value })} /></Field>}
+        </>
+      );
+    case 'number':
+      return (
+        <>
+          <Check label="Allow negative" checked={c.allow_negative} onChange={(v) => set({ allow_negative: v })} />
+          <Field label="Decimal scale"><input type="number" value={c.decimal_scale ?? 0} onChange={(e) => set({ decimal_scale: Number(e.target.value) })} /></Field>
+          <Field label="Prefix"><input type="text" value={c.prefix || ''} onChange={(e) => set({ prefix: e.target.value })} /></Field>
+          <Field label="Suffix"><input type="text" value={c.suffix || ''} onChange={(e) => set({ suffix: e.target.value })} /></Field>
+        </>
+      );
+    case 'textarea':
+      return <Field label="Rows"><input type="number" value={c.rows ?? 2} onChange={(e) => set({ rows: Number(e.target.value) })} /></Field>;
+    case 'upload':
+      return (
+        <>
+          <Check label="Allow multiple files" checked={c.multiple !== false} onChange={(v) => set({ multiple: v })} />
+        </>
+      );
+    case 'dropdown_fixed':
+    case 'tags_fixed':
+      return <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />;
+    case 'dropdown_async':
+    case 'tags_async':
+      return (
+        <>
+          <Field label="Entity (master data) ID" hint="e.g. casting_master"><input type="text" value={c.entity_id || ''} onChange={(e) => set({ entity_id: e.target.value })} /></Field>
+          <Field label="Search field"><input type="text" value={c.search_fields || ''} onChange={(e) => set({ search_fields: e.target.value })} /></Field>
+          <PopulateEditor field={field} mappings={c.on_select_populate || []} onChange={(on_select_populate) => set({ on_select_populate })} />
+        </>
+      );
+    case 'spectrometer':
+      return (
+        <>
+          <Field label="Reading endpoint URL" hint="spectrometer device / API endpoint"><input type="text" value={c.url || ''} onChange={(e) => set({ url: e.target.value })} /></Field>
+          <Field label="Elements" hint='comma-separated symbols, e.g. "C,Si,Mn,P,S"'><input type="text" value={c.elements || ''} onChange={(e) => set({ elements: e.target.value })} /></Field>
+          <Field label="Columns per row"><input type="number" value={c.columns_per_row ?? 4} onChange={(e) => set({ columns_per_row: Number(e.target.value) })} /></Field>
+          <Check label="Show connection status" checked={c.show_connection_status !== false} onChange={(v) => set({ show_connection_status: v })} />
+        </>
+      );
+    case 'chips':
+      return (
+        <>
+          <Check label="Allow duplicate values" checked={!!c.allow_duplicates} onChange={(v) => set({ allow_duplicates: v })} />
+          <Field label="Max chips" hint="0 = unlimited"><input type="number" value={c.max_chips ?? 0} onChange={(e) => set({ max_chips: Number(e.target.value) })} /></Field>
+        </>
+      );
+    case 'computed':
+      return (
+        <>
+          <Field label="Calculate">
+            <select value={c.op || 'sum'} onChange={(e) => set({ op: e.target.value })}>
+              {['sum', 'avg', 'min', 'max', 'count'].map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Of these fields" hint="comma-separated dataKeys, e.g. mould__a, mould__b">
+            <input type="text" value={(c.source_fields || []).join(', ')} onChange={(e) => set({ source_fields: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} />
+          </Field>
+          <Field label="…or a formula" hint='overrides the above, e.g. form.data.qty * form.data.rate'>
+            <input type="text" value={c.expression || ''} onChange={(e) => set({ expression: e.target.value })} />
+          </Field>
+        </>
+      );
+    default:
+      return null;
+  }
+}
+
+// PLAN Rule 7 — when this dropdown is selected, also auto-fill other fields
+// from the selected record. target_key follows the nested-object convention
+// {field_name}__{subkey}; source_path is a dotted path into the record.
+function PopulateEditor({ field, mappings, onChange }) {
+  const prefix = field.field_name || 'field';
+  const add = () => onChange([...mappings, { target_key: `${prefix}__`, source_path: '' }]);
+  const setRow = (i, patch) => onChange(mappings.map((m, j) => (j === i ? { ...m, ...patch } : m)));
+  return (
+    <Field label="On select, also fill these fields" hint="Pulls values from the selected master-data record.">
+      {mappings.map((m, i) => (
+        <div className="col-editor" key={i}>
+          <div className="inline">
+            <input type="text" placeholder="target dataKey (e.g. casting__weight)" value={m.target_key} onChange={(e) => setRow(i, { target_key: e.target.value })} />
+            <button className="mini danger" onClick={() => onChange(mappings.filter((_, j) => j !== i))}>✕</button>
+          </div>
+          <input type="text" style={{ marginTop: 4 }} placeholder="source path in record (e.g. main.data.weight)" value={m.source_path} onChange={(e) => setRow(i, { source_path: e.target.value })} />
+          <div className="key">{m.target_key || '?'} ← record.{m.source_path || '?'}</div>
+        </div>
+      ))}
+      <button className="mini" style={{ marginTop: 4 }} onClick={add}>+ Field to fill</button>
+    </Field>
+  );
+}
+
+function OptionsEditor({ options, onChange }) {
+  return (
+    <Field label="Options">
+      {options.map((o, i) => (
+        <div className="inline" key={i} style={{ marginBottom: 4 }}>
+          <input type="text" placeholder="label" value={o.label} onChange={(e) => { const n = [...options]; n[i] = { ...o, label: e.target.value }; onChange(n); }} />
+          <input type="text" placeholder="value" value={o.value} onChange={(e) => { const n = [...options]; n[i] = { ...o, value: e.target.value }; onChange(n); }} />
+          <button className="mini danger" onClick={() => onChange(options.filter((_, j) => j !== i))}>✕</button>
+        </div>
+      ))}
+      <button className="mini" onClick={() => onChange([...options, { label: '', value: '' }])}>+ Option</button>
+    </Field>
+  );
+}
+
+// ---- table config editor ---------------------------------------------------
+function TableEditor({ section, dispatch }) {
+  const cfg = section.table_config;
+  const setCfg = (patch) => dispatch({ type: 'SET_TABLE_CONFIG', sectionId: section.id, config: { ...cfg, ...patch } });
+  const setCol = (i, patch) => { const cols = cfg.columns.map((c, j) => (j === i ? { ...c, ...patch } : c)); setCfg({ columns: cols }); };
+
+  const fixed = cfg.row_mode === 'fixed';
+  return (
+    <>
+      <Field label="Rows" hint={fixed ? 'A static number of rows (no add/remove).' : 'Users can add/remove rows.'}>
+        <select value={cfg.row_mode || 'dynamic'} onChange={(e) => setCfg({ row_mode: e.target.value })}>
+          <option value="dynamic">Dynamic (add / remove rows)</option>
+          <option value="fixed">Fixed (static rows)</option>
+        </select>
+      </Field>
+
+      {fixed ? (
+        <Field label="Number of rows"><input type="number" value={cfg.fixed_rows ?? 3} onChange={(e) => setCfg({ fixed_rows: Number(e.target.value) })} /></Field>
+      ) : (
+        <>
+          <div className="inline">
+            <div style={{ flex: 1 }}><Field label="Start with" hint="rows shown initially"><input type="number" value={cfg.initial_rows ?? 1} onChange={(e) => setCfg({ initial_rows: Number(e.target.value) })} /></Field></div>
+            <div style={{ flex: 1 }}><Field label="Min rows" hint="can't delete below"><input type="number" min={0} value={cfg.min_rows ?? 1} onChange={(e) => setCfg({ min_rows: Number(e.target.value) })} /></Field></div>
+            <div style={{ flex: 1 }}><Field label="Max rows"><input type="number" value={cfg.max_rows} onChange={(e) => setCfg({ max_rows: Number(e.target.value) })} /></Field></div>
+          </div>
+          <Field label="Add-row button label"><input type="text" value={cfg.add_row_label ?? '+ Add Row'} onChange={(e) => setCfg({ add_row_label: e.target.value })} /></Field>
+        </>
+      )}
+
+      <label className="fld">Columns <span className="hint">(each column is a field — pick its type)</span></label>
+      {cfg.columns.map((col, i) => {
+        const setColCfg = (patch) => setCol(i, { type_config: { ...(col.type_config || {}), ...patch } });
+        return (
+          <div className="col-editor" key={col.key}>
+            <div className="inline">
+              <input type="text" placeholder="Header shown to user" value={col.header} onChange={(e) => setCol(i, { header: e.target.value })} />
+              <button className="mini" disabled={i === 0} onClick={() => { const c = [...cfg.columns]; [c[i - 1], c[i]] = [c[i], c[i - 1]]; setCfg({ columns: c }); }}>↑</button>
+              <button className="mini" disabled={i === cfg.columns.length - 1} onClick={() => { const c = [...cfg.columns]; [c[i + 1], c[i]] = [c[i], c[i + 1]]; setCfg({ columns: c }); }}>↓</button>
+              <button className="mini danger" onClick={() => setCfg({ columns: cfg.columns.filter((_, j) => j !== i) })}>✕</button>
+            </div>
+            <select value={col.field_type} onChange={(e) => setCol(i, { field_type: e.target.value })}>
+              {COLUMN_TYPES.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
+            </select>
+            <div className="inline" style={{ marginTop: 6 }}>
+              <input type="text" placeholder="key suffix (e.g. char)" value={col.dataKey_suffix} onChange={(e) => setCol(i, { dataKey_suffix: e.target.value })} />
+              <input type="number" placeholder="width %" style={{ width: 80 }} value={col.width_percent} onChange={(e) => setCol(i, { width_percent: Number(e.target.value) })} />
+            </div>
+            <div className="inline" style={{ marginTop: 6, gap: 16 }}>
+              <label className="inline">
+                <input type="checkbox" checked={!!col.required} onChange={(e) => setCol(i, { required: e.target.checked })} />
+                <span style={{ fontSize: 12 }}>Required</span>
+              </label>
+              {col.field_type !== 'checkbox' && col.field_type !== 'toggle' && (
+                <label className="inline" title="Value must be unique across all rows in this column">
+                  <input type="checkbox" checked={!!col.unique} onChange={(e) => setCol(i, { unique: e.target.checked })} />
+                  <span style={{ fontSize: 12 }}>Unique</span>
+                </label>
+              )}
+            </div>
+
+            {(col.field_type === 'dropdown_fixed' || col.field_type === 'tags_fixed') && (
+              <OptionsEditor options={col.type_config?.options || []} onChange={(options) => setColCfg({ options })} />
+            )}
+            {(col.field_type === 'dropdown_async' || col.field_type === 'tags_async') && (
+              <>
+                <Field label="Entity (master data) ID" hint="e.g. casting_master"><input type="text" value={col.type_config?.entity_id || ''} onChange={(e) => setColCfg({ entity_id: e.target.value })} /></Field>
+                <Field label="Search field"><input type="text" value={col.type_config?.search_fields || ''} onChange={(e) => setColCfg({ search_fields: e.target.value })} /></Field>
+              </>
+            )}
+
+            <div className="key">{section.container_name || 'table'}[ ].{col.dataKey_suffix || '?'}</div>
+          </div>
+        );
+      })}
+      <button className="mini" style={{ marginTop: 6 }} onClick={() => setCfg({ columns: [...cfg.columns, createColumn(cfg.columns.length + 1)] })}>+ Column</button>
+    </>
+  );
+}
+
+// ---- section properties ----------------------------------------------------
+function SectionProps({ section, state, dispatch }) {
+  const others = siblingNames(state.sections, section.id) || [];
+  const nameErr = validateContainerName(section.container_name, others.filter((n) => n !== section.container_name));
+  const upd = (patch) => dispatch({ type: 'UPDATE_SECTION', sectionId: section.id, patch });
+
+  const isTable = section.type === 'table';
+  return (
+    <>
+      <div className="prop-head">
+        <span className="title"><span className="ico"><Icon name={isTable ? 'nested' : 'heading'} size={16} /></span>{isTable ? 'Table' : 'Section'}</span>
+        {section.container_name && <span className="kind">{section.container_name}</span>}
+      </div>
+      <div className="prop-body">
+        <Field label="Title" hint="Heading shown above this section.">
+          <input type="text" value={section.label || ''} placeholder="e.g. Moulding Details" onChange={(e) => upd({ label: e.target.value || null })} />
+        </Field>
+        <Field label="Name" hint="Lowercase id used in the data keys.">
+          <input type="text" value={section.container_name} placeholder="e.g. moulding" onChange={(e) => upd({ container_name: e.target.value })} />
+          {nameErr && <div className="err">{nameErr}</div>}
+          {section._effPrefix && <div className="key" style={{ marginTop: 4 }}>{isTable ? section._effPrefix + '[ ]' : section._effPrefix + '__‹field›'}</div>}
+        </Field>
+        <Check label="Show the title" checked={section.show_header} onChange={(v) => upd({ show_header: v })} />
+
+        <Field label="Layout">
+          <select value={isTable ? 'table' : 'standard'} onChange={(e) => {
+            if (e.target.value === 'table') dispatch({ type: 'SET_TABLE_CONFIG', sectionId: section.id, config: section.table_config || createTableConfig('standard') });
+            else dispatch({ type: 'SET_SECTION_TYPE', sectionId: section.id, tableType: null });
+          }}>
+            <option value="standard">Fields (a form section)</option>
+            <option value="table">Table (repeating rows)</option>
+          </select>
+        </Field>
+
+        {isTable && section.table_config
+          ? <TableEditor section={section} dispatch={dispatch} />
+          : (
+            <Field label="Columns per row">
+              <select value={section.fields_per_row} onChange={(e) => upd({ fields_per_row: Number(e.target.value) })}>
+                <option value={1}>1 per row</option><option value={2}>2 per row</option><option value={3}>3 per row</option>
+              </select>
+            </Field>
+          )}
+
+        <button className="mini block" style={{ marginTop: 14 }} onClick={() => dispatch({ type: 'ADD_SUBCONTAINER', parentId: section.id })}>▢ Add nested group</button>
+
+        <label className="fld">Show this section when…</label>
+        <RenderWhenEditor
+          value={section.render_when}
+          onChange={(rw) => upd({ render_when: rw })}
+          fieldOptions={collectFieldOptions(state, null).filter((o) => o.section !== section.container_name)}
+        />
+
+        <details className="advanced">
+          <summary>Advanced</summary>
+          <Field label="Custom CSS" hint="Raw CSS layered onto this container, on top of the theme. e.g. background:#fff7e6; or .rs-input{border-color:#e43e2b;}">
+            <textarea
+              rows={4} spellCheck={false} placeholder="background:#fafafa; border:1px solid #eee;"
+              style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+              value={section.custom_css || ''}
+              onChange={(e) => upd({ custom_css: e.target.value })}
+            />
+          </Field>
+        </details>
+      </div>
+    </>
+  );
+}
+
+// ---- field properties ------------------------------------------------------
+function FieldProps({ section, field, dispatch, fieldOptions }) {
+  const upd = (patch) => dispatch({ type: 'UPDATE_FIELD', sectionId: section.id, fieldId: field.id, patch });
+  const setCfg = (patch) => dispatch({ type: 'UPDATE_FIELD_CONFIG', sectionId: section.id, fieldId: field.id, patch });
+  const isDisplay = field.field_type === 'header' || field.field_type === 'divider';
+
+  return (
+    <>
+      <div className="prop-head">
+        <span className="title"><span className="ico"><Icon name={iconName(field.field_type)} size={16} /></span>{typeLabel(field.field_type)} field</span>
+        <span className="kind">{typeLabel(field.field_type)}</span>
+      </div>
+      <div className="prop-body">
+        {field._raw && <div className="tag" style={{ marginBottom: 8, color: '#92400e' }}>⚠ Imported field — exports verbatim. Editing label re-derives its key.</div>}
+
+        {field.field_type !== 'divider' && (
+          <Field label="Label" hint="Shown above the field."><input type="text" value={field.label || ''} onChange={(e) => upd({ label: e.target.value })} /></Field>
+        )}
+
+        {!isDisplay && (
+          <>
+            <Check label="Required" checked={field.required} onChange={(v) => upd({ required: v })} />
+            <Field label="Placeholder"><input type="text" value={field.placeholder || ''} onChange={(e) => upd({ placeholder: e.target.value || null })} /></Field>
+
+            <TypeConfig field={field} set={setCfg} />
+
+            <label className="fld">Show this field when…</label>
+            <RenderWhenEditor value={field.render_when} onChange={(rw) => upd({ render_when: rw })} fieldOptions={fieldOptions} />
+
+            <label className="fld">Default value (on open)</label>
+            <DefaultValueEditor value={field.default_value} onChange={(dv) => upd({ default_value: dv })} fieldOptions={fieldOptions} />
+
+            <label className="fld">Validation rules</label>
+            <ValidationsEditor value={field.validations} onChange={(vs) => upd({ validations: vs })} fieldOptions={fieldOptions} />
+
+            <details className="advanced">
+              <summary>Advanced</summary>
+
+              <div className="inline">
+                <div style={{ flex: 1 }}>
+                  <Field label="Width">
+                    <select value={field.width_override || ''} onChange={(e) => upd({ width_override: e.target.value || null })}>
+                      <option value="">auto</option>
+                      {WIDTHS.map((w) => <option key={w} value={w}>{w}</option>)}
+                    </select>
+                  </Field>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Field label="Align">
+                    <select value={field.align || ''} onChange={(e) => upd({ align: e.target.value || null })}>
+                      <option value="">Left</option>
+                      <option value="left">⟸ Left</option>
+                      <option value="center">⟺ Center</option>
+                      <option value="right">⟹ Right</option>
+                    </select>
+                  </Field>
+                </div>
+              </div>
+
+              <Check label="Disabled" checked={field.disabled} onChange={(v) => upd({ disabled: v })} />
+              <Check label="Read only" checked={field.read_only} onChange={(v) => upd({ read_only: v })} />
+
+              <Field label="Field name (override)" hint="Auto-derived from the label.">
+                <input type="text" value={field.field_name} onChange={(e) => upd({ field_name: e.target.value })} />
+              </Field>
+
+              <Field label="Special prefix">
+                <select value={field.special_prefix || ''} onChange={(e) => upd({ special_prefix: e.target.value || null })}>
+                  <option value="">none ({section.container_name}__)</option>
+                  <option value="disabled__">disabled__ (read-only, auto-populated)</option>
+                  <option value="meta__">meta__ (hidden metadata)</option>
+                  <option value="derived__">derived__ (computed display)</option>
+                </select>
+              </Field>
+
+              <label className="fld">dataKey (auto)</label>
+              <div className="datakey">{field.dataKey || '—'}</div>
+              <label className="inline" style={{ marginTop: 6 }}>
+                <input type="checkbox" checked={!!field._dataKeyOverridden} onChange={(e) => { if (!e.target.checked) upd({ dataKey: '', _dataKeyOverridden: false, label: field.label }); else upd({ dataKey: field.dataKey }); }} />
+                <span style={{ fontSize: 12 }}>Override manually</span>
+              </label>
+              {field._dataKeyOverridden && <input type="text" style={{ marginTop: 4 }} value={field.dataKey} onChange={(e) => upd({ dataKey: e.target.value })} />}
+
+              <Field label="Custom CSS" hint="Raw CSS layered onto this field, on top of the theme. e.g. .rs-input{border-color:#e43e2b;}">
+                <textarea
+                  rows={3} spellCheck={false} placeholder=".rs-input{background:#fff7e6;}"
+                  style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+                  value={field.custom_css || ''}
+                  onChange={(e) => upd({ custom_css: e.target.value })}
+                />
+              </Field>
+            </details>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+// All referenceable fields in the form (real dataKeys + friendly labels), so
+// the user picks a field instead of hand-typing a dataKey (which caused the
+// info_age vs info__age bug). Excludes the current field and display-only nodes.
+function collectFieldOptions(state, currentFieldId) {
+  const opts = [];
+  const walk = (nodes) => (nodes || []).forEach((s) => {
+    (s.fields || []).forEach((f) => {
+      if (f.id === currentFieldId) return;
+      if (!f.dataKey || f.field_type === 'header' || f.field_type === 'divider') return;
+      opts.push({ dataKey: f.dataKey, label: f.label || f.field_name || f.dataKey, section: s.container_name });
+    });
+    // Table cells are row-scoped (relative) keys inside an array, so they are
+    // not addressable as flat form dataKeys — intentionally not offered here.
+    walk(s.children); // nested containers contribute their fields too
+  });
+  walk(state.sections);
+  return opts;
+}
+
+function RenderWhenEditor({ value, onChange, fieldOptions }) {
+  const rw = value || { mode: 'always', field: '', operator: 'equals', value: '' };
+  const set = (patch) => onChange({ ...rw, ...patch });
+  const noValue = ['is_empty', 'is_not_empty'].includes(rw.operator);
+  const known = fieldOptions.some((o) => o.dataKey === rw.field);
+  const custom = rw.field && !known;
+
+  return (
+    <>
+      <select value={rw.mode} onChange={(e) => onChange(e.target.value === 'always' ? null : { ...rw, mode: 'condition' })}>
+        <option value="always">Always show</option>
+        <option value="condition">Show only when…</option>
+      </select>
+      {rw.mode === 'condition' && (
+        <div className="col-editor">
+          <label className="fld" style={{ marginTop: 0 }}>Field</label>
+          <select value={custom ? '__custom__' : rw.field} onChange={(e) => set({ field: e.target.value === '__custom__' ? '' : e.target.value })}>
+            <option value="">— pick a field —</option>
+            {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} · {o.dataKey}</option>)}
+            <option value="__custom__">Custom dataKey…</option>
+          </select>
+          {custom && <input type="text" style={{ marginTop: 4 }} placeholder="form.data.<key>" value={rw.field} onChange={(e) => set({ field: e.target.value })} />}
+
+          <select style={{ marginTop: 4 }} value={rw.operator} onChange={(e) => set({ operator: e.target.value })}>
+            <option value="equals">equals</option><option value="not_equals">not equals</option>
+            <option value="is_empty">is empty</option><option value="is_not_empty">is not empty</option>
+            <option value="greater_than">greater than</option><option value="less_than">less than</option>
+          </select>
+          {!noValue && <input type="text" style={{ marginTop: 4 }} placeholder="value" value={rw.value} onChange={(e) => set({ value: e.target.value })} />}
+          {rw.field && <div className="key" style={{ marginTop: 4 }}>uses form.data.{rw.field}</div>}
+        </div>
+      )}
+    </>
+  );
+}
+
+// Default value on open — auto-fill today/now/user/fixed/another field.
+function DefaultValueEditor({ value, onChange, fieldOptions }) {
+  const dv = value || { mode: 'none', value: '', source_field: '' };
+  const set = (patch) => { const next = { ...dv, ...patch }; onChange(next.mode === 'none' ? null : next); };
+  return (
+    <>
+      <select value={dv.mode} onChange={(e) => set({ mode: e.target.value })}>
+        <option value="none">No default</option>
+        <option value="today">Today (date)</option>
+        <option value="now">Now (time)</option>
+        <option value="datetime">Now (date + time)</option>
+        <option value="user">Current user</option>
+        <option value="fixed">Fixed value…</option>
+        <option value="from_field">Copy from another field…</option>
+      </select>
+      {dv.mode === 'fixed' && <input type="text" style={{ marginTop: 4 }} placeholder="value" value={dv.value} onChange={(e) => set({ value: e.target.value })} />}
+      {dv.mode === 'from_field' && (
+        <select style={{ marginTop: 4 }} value={dv.source_field} onChange={(e) => set({ source_field: e.target.value })}>
+          <option value="">— pick a field —</option>
+          {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} · {o.dataKey}</option>)}
+        </select>
+      )}
+    </>
+  );
+}
+
+const VAL_TYPES = [['min_value', 'Min value'], ['max_value', 'Max value'], ['between', 'Between'], ['compare_field', 'Compare to field'], ['required_when', 'Required when'], ['code', 'Custom code']];
+// Validation rules beyond "Required" (which is the checkbox above).
+function ValidationsEditor({ value, onChange, fieldOptions }) {
+  const required = (value || []).filter((v) => v.type === 'required');
+  const list = (value || []).filter((v) => v.type !== 'required');
+  const commit = (next) => onChange([...required, ...next]);
+  const add = () => commit([...list, { type: 'min_value' }]);
+  const setRow = (i, patch) => commit(list.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  const del = (i) => commit(list.filter((_, j) => j !== i));
+  return (
+    <>
+      {list.map((v, i) => (
+        <div className="col-editor" key={i}>
+          <div className="inline">
+            <select value={v.type} onChange={(e) => setRow(i, { type: e.target.value })}>
+              {VAL_TYPES.map(([t, l]) => <option key={t} value={t}>{l}</option>)}
+            </select>
+            <button className="mini danger" onClick={() => del(i)}>✕</button>
+          </div>
+          {(v.type === 'min_value' || v.type === 'max_value') && <input type="number" style={{ marginTop: 4 }} placeholder="bound" value={v.value ?? ''} onChange={(e) => setRow(i, { value: e.target.value })} />}
+          {v.type === 'between' && (
+            <div className="inline" style={{ marginTop: 4 }}>
+              <input type="number" placeholder="min" value={v.min ?? ''} onChange={(e) => setRow(i, { min: Number(e.target.value) })} />
+              <input type="number" placeholder="max" value={v.max ?? ''} onChange={(e) => setRow(i, { max: Number(e.target.value) })} />
+            </div>
+          )}
+          {v.type === 'compare_field' && (
+            <div className="inline" style={{ marginTop: 4 }}>
+              <select value={v.op || '>'} onChange={(e) => setRow(i, { op: e.target.value })}>{['>', '<', '>=', '<=', '==', '!='].map((o) => <option key={o} value={o}>{o}</option>)}</select>
+              <select value={v.other_field || ''} onChange={(e) => setRow(i, { other_field: e.target.value })}><option value="">— field —</option>{fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label}</option>)}</select>
+            </div>
+          )}
+          {v.type === 'required_when' && <input type="text" style={{ marginTop: 4 }} placeholder="form.data.<key> condition" value={v.validate_when || ''} onChange={(e) => setRow(i, { validate_when: e.target.value })} />}
+          {v.type === 'code' && <input type="text" style={{ marginTop: 4 }} placeholder="return <bool>" value={v.code || ''} onChange={(e) => setRow(i, { code: e.target.value })} />}
+          <input type="text" style={{ marginTop: 4 }} placeholder="error message (optional)" value={v.message || ''} onChange={(e) => setRow(i, { message: e.target.value })} />
+        </div>
+      ))}
+      <button className="mini" style={{ marginTop: 4 }} onClick={add}>+ Validation</button>
+    </>
+  );
+}
+
+export default function PropertyPanel({ state, dispatch, section, fieldId }) {
+  if (!section) {
+    return (
+      <div className="panel panel-right">
+        <div className="empty">
+          <Icon name="empty" size={34} stroke={1.3} />
+          <div>Select a section or field to edit its properties.</div>
+        </div>
+      </div>
+    );
+  }
+  const field = fieldId ? section.fields.find((f) => f.id === fieldId) : null;
+  const fieldOptions = field ? collectFieldOptions(state, field.id) : [];
+  return (
+    <div className="panel panel-right">
+      {field
+        ? <FieldProps section={section} field={field} dispatch={dispatch} fieldOptions={fieldOptions} />
+        : <SectionProps section={section} state={state} dispatch={dispatch} />}
+    </div>
+  );
+}

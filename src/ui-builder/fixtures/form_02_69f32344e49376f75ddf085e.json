@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "actions": {
+    "onSubmit": {
+      "body": "    console.log(\"Form Submitted\")",
+      "params": {}
+    }
+  },
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "children": []
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

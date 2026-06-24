@@ -1,0 +1,3926 @@
+{
+  "version": "1",
+  "actions": {
+    "addCoreRow": {
+      "body": "if (e) {\n  e.data = e.data || {};\n  const max = 17;\n  // reuse a deleted row first\n  for (let i = 2; i <= max; i++) {\n    if (e.data['deleted_' + i] === true) {\n      e.data['deleted_' + i] = false;\n      // ensure core_count is at least i\n      const n = Number(e.data.core_count || 2);\n      e.data.core_count = Math.max(n, i);\n      return;\n    }\n  }\n  const n = Number(e.data.core_count || 2);\n  e.data.core_count = Math.min(n + 1, max);\n}",
+      "params": {}
+    },
+    "initCoreCount": {
+      "body": "if (e) {\n  e.data = e.data || {};\n  if (e.data.core_count == null) e.data.core_count = 2;\n}",
+      "params": {}
+    },
+    "removeCoreRow": {
+      "body": "console.log(args);\nif (e) {\n  e.data = e.data || {};\n  const idx = Number(args.index);\n  if (!Number.isNaN(idx) && idx >= 2 && idx <= 17) {\n    e.data['deleted_' + idx] = true;\n  }\n}",
+      "params": {
+        "index": "number"
+      }
+    },
+    "set_shift": {
+      "body": "    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n      const targetKey = `${args.field_data_key}`;\n      const time = e.args[0]; // e.g., '22:00:00'\n        const shift = getShift(time);\n        e.data[targetKey] = shift;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "set_date_on_mount": {
+      "body": "    \n    // Helper to wait until 'e' object is available\n    const waitForE = async (timeout = 2000, interval = 50) => {\n        const start = Date.now();\n        while (Date.now() - start < timeout) {\n            if (e && e.data) {\n                return e;\n            }\n            await new Promise(resolve => setTimeout(resolve, interval));\n        }\n        return null;\n    };\n\n    // Promise handler for robust execution and error catching\n    Promise.resolve().then(async () => {\n        \n        // Wait for 'e' to be available\n        const resolvedE = await waitForE();\n\n        if (!resolvedE) {\n            console.warn(\"Action: 'e' object was not available within timeout.\");\n            return;\n        }\n\n        // Now safe to access e.data\n        if (!resolvedE.data?.date) {\n            resolvedE.data.date = new Date();\n        }\n\n    }).catch((err) => {\n        console.error(\"Caught error in Action:\", err);\n    });",
+      "params": {}
+    },
+    "set_time_on_mount": {
+      "body": "    if(!e.data?.time){\n        e.data.time = new Date();\n    }\n\n    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n\n      const time = e.data.time;\n        const shift = getShift(time);\n        e.data[\"shift\"] = shift;",
+      "params": {}
+    },
+    "total_sum": {
+      "body": "\n    let sum = 0;\n    \n    // Loop through core__quantity_1 to core__quantity_10\n    for (let i = 0; i < 10; i++) {\n        const fieldName = `cd__${i}__core_qty`;\n        const value = parseFloat(e.data[fieldName]) || 0;\n        sum += value;\n    }\n    \n    // Store the total sum\n    e.data.meta = {\"total_sum\": sum}\n    \n    console.log(\"Total Core Sum:\", sum);\n",
+      "params": {}
+    }
+  },
+  "formValidator": "const errors = {};\n\nfor (let i = 0; i < 15; i++) {\n    const nameField = `cd__${i}__core_name`;\n    const quantityField = `cd__${i}__core_qty`;\n\n    const nameValue = formData[nameField];\n    const quantityValue = formData[quantityField];\n\n    if (nameValue && !quantityValue) {\n        errors[quantityField] = `Quantity is required when name is provided`;\n    }\n\n    if (quantityValue && !nameValue) {\n        errors[nameField] = `Name is required when quantity is provided`;\n    }\n}\n\nreturn Object.keys(errors).length > 0 ? errors : undefined;",
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "object": {
+          "gap": "10px"
+        }
+      }
+    },
+    "children": [
+      {
+        "css": {
+          "any": {
+            "object": {
+              "gap": "10px",
+              "alignItems": "center",
+              "flexDirection": "row"
+            },
+            "string": "border: 1.2px #E2E8F0;\nbackground-color:white;\nborder-radius: 8px;\nborder: 1px solid #E2E8F0;"
+          }
+        },
+        "key": "rsContainer2",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "key": "date",
+            "type": "RsDatePicker",
+            "props": {
+              "label": {
+                "value": "Date "
+              }
+            },
+            "schema": {
+              "validations": [
+                {
+                  "key": "required"
+                }
+              ],
+              "autoValidate": true
+            },
+            "dataKey": "date",
+            "wrapperCss": {
+              "any": {
+                "object": {
+                  "marginTop": "10px",
+                  "marginBottom": "10px",
+                  "marginInlineStart": "10px"
+                }
+              }
+            },
+            "events": {
+              "onDidMount": [
+                {
+                  "name": "set_date_on_mount",
+                  "type": "code"
+                }
+              ]
+            }
+          },
+          {
+            "key": "time",
+            "type": "RsTimePicker",
+            "props": {},
+            "events": {
+              "onChange": [
+                {
+                  "name": "set_shift",
+                  "type": "code",
+                  "args": {
+                    "field_data_key": "shift"
+                  }
+                }
+              ],
+              "onClose": [],
+              "onDidMount": [
+                {
+                  "name": "set_time_on_mount",
+                  "type": "code"
+                }
+              ]
+            },
+            "schema": {
+              "validations": [
+                {
+                  "key": "required"
+                }
+              ]
+            },
+            "dataKey": "time"
+          },
+          {
+            "key": "shift",
+            "type": "RsDropdown",
+            "props": {
+              "data": {
+                "value": [
+                  {
+                    "label": "A",
+                    "value": "A"
+                  },
+                  {
+                    "label": "B",
+                    "value": "B"
+                  },
+                  {
+                    "label": "C",
+                    "value": "C"
+                  }
+                ]
+              },
+              "label": {
+                "value": "Shift "
+              },
+              "disabled": {
+                "value": true
+              }
+            },
+            "schema": {
+              "validations": [
+                {
+                  "key": "required"
+                }
+              ]
+            },
+            "dataKey": "shift",
+            "wrapperCss": {
+              "any": {
+                "object": {
+                  "marginTop": "10px",
+                  "marginBottom": "10px",
+                  "marginInlineEnd": "10px"
+                }
+              }
+            }
+          }
+        ],
+        "wrapperCss": {
+          "any": {
+            "object": {}
+          }
+        }
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;\nborder: 1px solid #E2E8F0;\nborder-radius: 8px;\npadding: 10px;",
+            "object": {
+              "gap": "0px"
+            }
+          }
+        },
+        "key": "core_rows_container",
+        "type": "RsContainer",
+        "props": {},
+        "events": {
+          "onLoadData": [
+            {
+              "name": "initCoreCount",
+              "type": "code"
+            }
+          ]
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "borderBottom": "1px solid #E2E8F0",
+                  "flexDirection": "row",
+                  "backgroundColor": "#F8FAFC"
+                }
+              }
+            },
+            "key": "header_row",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "lbl_core_name",
+                "type": "RsHeader",
+                "props": {
+                  "content": {
+                    "value": "S No."
+                  },
+                  "headerSize": {
+                    "value": "h6"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%",
+                      "marginBottom": "0px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsHeader1",
+                "type": "RsHeader",
+                "props": {
+                  "content": {
+                    "value": "Core Name "
+                  },
+                  "headerSize": {
+                    "value": "h6"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "45%",
+                      "marginBottom": "0px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "lbl_qty",
+                "type": "RsHeader",
+                "props": {
+                  "content": {
+                    "value": "Quantity "
+                  },
+                  "headerSize": {
+                    "value": "h6"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "45%",
+                      "marginBottom": "0px"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "core_row_1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel1",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "1"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsDropdown1",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "dataKey": "cd__0__core_name",
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "quantity_1",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required",
+                      "validateWhen": {
+                        "value": ""
+                      }
+                    },
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__0__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel2",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "2"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_2",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__1__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput3",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__1__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer4",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel3",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "3"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_3",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__2__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput7",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__2__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer5",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel4",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "4"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_4",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__3__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput4",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__3__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer6",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel5",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "5"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_5",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__4__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput8",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__4__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer7",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel6",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "6"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_6",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__5__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput10",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__5__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer8",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel7",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "7"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_7",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__6__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput12",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__6__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer9",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel8",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "8"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_8",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__7__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput14",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__7__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer10",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel9",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "9"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_9",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__8__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput16",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__8__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer11",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel10",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "10"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_10",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__9__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput18",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__9__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer12",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel11",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "11"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "core_name_11",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__10__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput20",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__10__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer13",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel12",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "12"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput21",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__11__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput22",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__11__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer14",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel13",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "13"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput23",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__12__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput24",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__12__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer15",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": ""
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel14",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "14"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput25",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__13__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput26",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__13__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer16",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "padding": "12px 16px",
+                  "alignItems": "center",
+                  "borderBottom": "1px solid #F1F5F9",
+                  "flexDirection": "row"
+                },
+                "string": "    border-bottom: none;"
+              }
+            },
+            "children": [
+              {
+                "key": "rsLabel15",
+                "dataKey": "",
+                "type": "RsLabel",
+                "props": {
+                  "text": {
+                    "value": "15"
+                  }
+                },
+                "css": {
+                  "any": {
+                    "string": "text-align: center;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "8%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsInput27",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": ""
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "HS Sideframe",
+                        "label": "HS Sideframe"
+                      },
+                      {
+                        "value": "HS Bolster",
+                        "label": "HS Bolster"
+                      },
+                      {
+                        "value": "LWLH Bolster",
+                        "label": "LWLH Bolster"
+                      },
+                      {
+                        "value": "LWLH Sideframe",
+                        "label": "LWLH Sideframe"
+                      },
+                      {
+                        "value": "NLB Bolster",
+                        "label": "NLB Bolster"
+                      },
+                      {
+                        "value": "NLC Bolster",
+                        "label": "NLC Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Coupler",
+                        "label": "Coupler"
+                      },
+                      {
+                        "value": "Yoke",
+                        "label": "Yoke"
+                      },
+                      {
+                        "value": "Follower",
+                        "label": "Follower"
+                      },
+                      {
+                        "value": "HT Follower",
+                        "label": "HT Follower"
+                      },
+                      {
+                        "value": "YPSP",
+                        "label": "YPSP"
+                      },
+                      {
+                        "value": "Striker",
+                        "label": "Striker"
+                      },
+                      {
+                        "value": "Knuckle",
+                        "label": "Knuckle"
+                      },
+                      {
+                        "value": "Corner Casting",
+                        "label": "Corner Casting"
+                      },
+                      {
+                        "value": "Heat Treatment Tray",
+                        "label": "Heat Treatment Tray"
+                      },
+                      {
+                        "value": "InHouse Casting",
+                        "label": "InHouse Casting"
+                      },
+                      {
+                        "value": "Annealing Plate",
+                        "label": "Annealing Plate"
+                      },
+                      {
+                        "value": "Spun",
+                        "label": "Spun"
+                      },
+                      {
+                        "value": "Grandcooler",
+                        "label": "Grandcooler"
+                      },
+                      {
+                        "value": "Archcooler",
+                        "label": "Archcooler"
+                      },
+                      {
+                        "value": "Clamp",
+                        "label": "Clamp"
+                      },
+                      {
+                        "value": "Tunion",
+                        "label": "Tunion"
+                      },
+                      {
+                        "value": "BVCM Bolster",
+                        "label": "BVCM Bolster"
+                      },
+                      {
+                        "value": "MODII Bolster",
+                        "label": "MODII Bolster"
+                      },
+                      {
+                        "value": "Minor Draft Gear",
+                        "label": "Minor Draft Gear"
+                      },
+                      {
+                        "value": "Corner Casting (RH)-C.S-AS CAST",
+                        "label": "Corner Casting (RH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "Corner Casting (LH)-C.S-AS CAST",
+                        "label": "Corner Casting (LH)-C.S-AS CAST"
+                      },
+                      {
+                        "value": "TT Coupler",
+                        "label": "TT Coupler"
+                      },
+                      {
+                        "value": "TT Striker",
+                        "label": "TT Striker"
+                      },
+                      {
+                        "value": "Clavis",
+                        "label": "Clavis"
+                      },
+                      {
+                        "value": "LWLH 25-T CP Top",
+                        "label": "LWLH 25-T CP Top"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "dataKey": "cd__14__core_name",
+                "schema": {
+                  "validations": []
+                }
+              },
+              {
+                "key": "rsInput28",
+                "type": "RsInput",
+                "props": {
+                  "type": {
+                    "value": "number"
+                  },
+                  "label": {
+                    "value": ""
+                  },
+                  "placeholder": {
+                    "value": "Enter quantity"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(value && Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Qty Should be greater than zero"
+                      }
+                    }
+                  ]
+                },
+                "dataKey": "cd__14__core_qty",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%",
+                      "paddingRight": "10px"
+                    }
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "total_sum",
+                      "type": "code"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "wrapperCss": {
+          "any": {
+            "object": {}
+          }
+        }
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

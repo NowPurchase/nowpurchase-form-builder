@@ -1,0 +1,609 @@
+{
+  "version": "1",
+  "actions": {
+    "set_shift": {
+      "body": "    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n      const targetKey = `${args.field_data_key}`;\n      const time = e.args[0]; // e.g., '22:00:00'\n        const shift = getShift(time);\n        e.data[targetKey] = shift;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "submitForm": {
+      "body": "console.log('Form Submitted', e.data); alert('Form Submitted Successfully');",
+      "params": {}
+    },
+    "initFormData": {
+      "body": "if (e) { \n  e.data = e.data || {}; \n  // Default Dates\n  if (!e.data.moulding_date) e.data.moulding_date = new Date().toISOString();\n  if (!e.data.closure_date) e.data.closure_date = new Date().toISOString();\n  \n  // Default Supervisor\n  if (!e.data.supervisor) e.data.supervisor = \"John Doe (Current User)\";\n\n  // Simple Auto-Shift Logic based on current hour\n  const hour = new Date().getHours();\n  let currentShift = \"A\";\n  if (hour >= 6 && hour < 14) currentShift = \"A\";\n  else if (hour >= 14 && hour < 22) currentShift = \"B\";\n  else currentShift = \"C\";\n  \n  if (!e.data.moulding_shift) e.data.moulding_shift = currentShift;\n  if (!e.data.closure_shift) e.data.closure_shift = currentShift;\n}",
+      "params": {}
+    },
+    "set_operator_name": {
+      "body": "     if (e?.data?.disabled__supervisor) {\n    console.log('Supervisor already set');\n    return e?.data?.disabled__supervisor;\n  }\nlet savedToken = localStorage.getItem('tokenv2') || localStorage.getItem('nowpurchase_token') || localStorage.getItem('auth') ;\n\nconsole.log('Token used:', savedToken);\n\nconst finalToken = savedToken;\n\n// 1. Updated URL to user-detail endpoint\nfetch('https://api.nowpurchase.com/api/user-detail/', {\n    method: 'GET',\n    headers: {\n        'accept': 'application/json',\n        'authorization': `Token ${finalToken}` \n    }\n})\n.then(res => res.json())\n.then(userData => {\n    // 2. Set the operator name from the response 'name' field\n    // Assuming 'e' is your form or state object available in this scope\n    if (userData && userData.name) {\n        e.data.disabled__supervisor = userData.name; \n    }\n\n    // 3. Adapt for loadCallback if you are still using this for a UI component\n    // We wrap the single user object in an array to keep the callback logic consistent\n\n\n})\n.catch((error) => {\n    console.error('Fetch error:', error);\n});",
+      "params": {}
+    },
+    "fetch_casting_name": {
+      "body": "\n    const [searchValue, loadCallback, currentDataLength] = e.args;\n\n    console.log(e.args);\n\n    // ✅ Clear previous debounce timer\n    if (window._dropdownDebounceTimer) {\n        clearTimeout(window._dropdownDebounceTimer);\n    }\n\n    // ✅ Abort previous pending request\n    if (window._dropdownAbortController) {\n        window._dropdownAbortController.abort();\n    }\n\n    // ✅ Create new abort controller for this request\n    window._dropdownAbortController = new AbortController();\n    const signal = window._dropdownAbortController.signal;\n\n    // ✅ Debounce: Wait 300ms before making API call\n    window._dropdownDebounceTimer = setTimeout(async () => {\n\n        // Auth Token\n        let savedToken = localStorage.getItem('dlms_auth_token');\n\n        // Logic to determine requestBody\n        let requestBody = {\n            \"fields\": [\"main__data__casting_name\",\"main__data__weight\" ],\n            \"filters\": [],\n            \"search\": [],\n            \"flat\": false,\n            \"status\": \"completed\",\n            \"limit\": 100\n        };\n\n        if (searchValue) {\n            requestBody = {\n                \"fields\": [\"main__data__casting_name\",\"main__data__weight\" ],\n                \"search_fields\": [\"main__data__casting_name\",\"main__data__weight\" ],\n                \"filters\": [],\n                \"search\": [searchValue],\n                \"flat\": false,\n                \"status\": \"completed\",\n                \"limit\": 20\n            };\n        }\n\n        try {\n            const res = await fetch('https://dlms-api.iotnp.com/api/v1/templates/casting_master/dropdown', {\n                method: 'POST',\n                headers: {\n                    'accept': 'application/json',\n                    'Content-Type': 'application/json',\n                    'Authorization': `Bearer ${savedToken}`\n                },\n                body: JSON.stringify(requestBody),\n                signal: signal\n            });\n\n            const response = await res.json();\n            const items = Array.isArray(response.data) ? response.data : [];\n\n            // Filter items based on search value\n            const filteredItems = items.filter(item => {\n                const name = item.main?.data?.casting_name || \"\";\n                const weight = item.main?.data?.weight || \"\";\n                // return name.toLowerCase().includes((searchValue || \"\").toLowerCase());\n                const search = (searchValue || \"\").toLowerCase();\n\n                return (\n                    name.toLowerCase().includes(search) ||\n                    weight.toString().includes(search)\n                );\n            });\n\n            // Create unique map to remove duplicates\n            const uniqueMap = new Map();\n            filteredItems.forEach(item => {\n                const castingName = item.main?.data?.casting_name || \"Unnamed Item\";\n                const id = item._id;\n                const weight = item.main?.data?.weight ?? \"N/A\";\n                if (!uniqueMap.has(castingName)) {\n                    uniqueMap.set(castingName, {\n                        value: castingName,\n                        label: castingName,\n                        id: id,\n                        weight: weight,\n                        data: item\n                    });\n                }\n            });\n\n            // Convert map to array and apply pagination\n            const preparedData = [...uniqueMap.values()]\n                .slice(currentDataLength || 0, (currentDataLength || 0) + 20);\n\n            // SAFETY CHECK: Ensure loadCallback is actually a function before calling it\n            if (typeof loadCallback === 'function') {\n                loadCallback(preparedData);\n            } else {\n                console.warn(\"loadCallback is not a function. Check e.args structure:\", e.args);\n            }\n\n        } catch (err) {\n            // Ignore abort errors (expected when cancelling)\n            if (err.name === 'AbortError') {\n                console.log('Previous request cancelled');\n                return;\n            }\n            console.error(\"Dropdown fetch error:\", err);\n            if (typeof loadCallback === 'function') loadCallback([]);\n        }\n\n    }, 300);",
+      "params": {}
+    },
+    "set_date_on_mount": {
+      "body": "    if(!e.data?.date){\n        e.data.date = new Date();\n    }",
+      "params": {}
+    },
+    "set_shift_on_time": {
+      "body": " if(!e.data?.time){\n        e.data.time = new Date();\n    }\n\n    function getShift(timeString) {\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A';\n    } else if (hours >= 14 && hours < 22) {\n        return 'B';\n    } else {\n        return 'C';\n    }\n}\n    if(!e.data?.shift){\n      const time = e.data.time;\n        const shift = getShift(time);\n        e.data[\"shift\"] = shift;\n        }",
+      "params": {}
+    },
+    "set_time_closure": {
+      "body": " if(!e.data?.closure_time){\n        e.data.closure_time = new Date();\n    }\n\n    function getShift(timeString) {\n    // Extract hours from time string (e.g., '22:00:00' -> 22)\n    const hours = parseInt(timeString.split(':')[0], 10);\n    \n    if (hours >= 6 && hours < 14) {\n        return 'A'; // Shift A: 06:00 - 14:00\n    } else if (hours >= 14 && hours < 22) {\n        return 'B'; // Shift B: 14:00 - 22:00\n    } else {\n        return 'C'; // Shift C: 22:00 - 06:00\n    }\n}\n\n    if(!e.data?.closure_shift){\n      const time = e.data.closure_time;\n        const shift = getShift(time);\n        e.data[\"closure_shift\"] = shift;\n        }",
+      "params": {}
+    },
+    "set_closure_date_on_mount": {
+      "body": "    if(!e.data?.closure_date){\n        e.data.closure_date = new Date();\n    }",
+      "params": {}
+    },
+    "on_select_casting_name": {
+      "body": "    console.log(\"Casting name select\", e.args);\n\n    var data = e.args[1];\n    e.data.casting = {\"casting_id\" : data.id, \"id\": data.id, \"value\": data.value, \"casting_name\": data.value , \"weight\": data.weight};",
+      "params": {}
+    }
+  },
+  "formValidator": "const value = formData.serial_no;\n\n  if (!value || value.trim() === '') {\n    return undefined;\n  }\n\n  const savedToken = localStorage.getItem('dlms_auth_token');\n  if (!savedToken) {\n    return undefined;\n  }\n\n  const serialNumbers = value\n    .split(',')\n    .map(sn => sn.trim())\n    .filter(sn => sn !== '');\n\n  if (serialNumbers.length === 0) {\n    return undefined;\n  }\n\n  // Check for duplicate entries in user input\n  const seen = new Set();\n  const duplicatesInInput = [];\n  \n  for (const sn of serialNumbers) {\n    if (seen.has(sn)) {\n      if (!duplicatesInInput.includes(sn)) {\n        duplicatesInInput.push(sn);\n      }\n    } else {\n      seen.add(sn);\n    }\n  }\n\n  if (duplicatesInInput.length > 0) {\n    if (duplicatesInInput.length === 1) {\n      return { serial_no: `Duplicate serial number entered: \"${duplicatesInInput[0]}\"` };\n    } else {\n      return { serial_no: `Duplicate serial numbers entered: ${duplicatesInInput.join(', ')}` };\n    }\n  }\n\n  // Check all serial numbers in parallel (API validation)\n  const checkPromises = serialNumbers.map(async (serialNumber) => {\n    try {\n      const res = await fetch(`https://dlms-api.iotnp.com/api/v1/serial-numbers/check?serial_number=${encodeURIComponent(serialNumber)}`, {\n        method: 'GET',\n        headers: {\n          'accept': 'application/json',\n          'Authorization': `Bearer ${savedToken}`\n        }\n      });\n\n      const response = await res.json();\n      console.log('API Response for', serialNumber, ':', response);\n\n      if (response.exists === true) {\n        return {\n          serialNumber,\n          exists: true,\n          templateName: response.template_name\n        };\n      }\n\n      return { serialNumber, exists: false };\n    } catch (err) {\n      console.error(`Error checking ${serialNumber}:`, err);\n      return { serialNumber, exists: false };\n    }\n  });\n\n  const results = await Promise.all(checkPromises);\n  console.log('All results:', results);\n\n  const duplicates = results.filter(r => r.exists === true);\n  console.log('Duplicates found:', duplicates);\n\n  if (duplicates.length > 0) {\n    const duplicateSerialNumbers = duplicates.map(d => d.serialNumber);\n\n    let errorMessage;\n    if (duplicateSerialNumbers.length === 1) {\n      const templateInfo = duplicates[0].templateName ? ` in \"${duplicates[0].templateName}\"` : '';\n      errorMessage = `Serial number \"${duplicateSerialNumbers[0]}\" already exists${templateInfo}`;\n    } else {\n      const dupNames = duplicateSerialNumbers.join(', ');\n      errorMessage = `Serial numbers already exist: ${dupNames}`;\n    }\n\n    console.log('🚨 RETURNING ERROR:', errorMessage);\n    \n    return { serial_no: errorMessage };\n  }\n\n  console.log('✅ No duplicates, returning undefined');\n  return undefined;",
+  "errorType": "RsErrorMessage",
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "string": "    background: transparent;"
+      }
+    },
+    "events": {
+      "onLoadData": [
+        {
+          "name": "initFormData",
+          "type": "code"
+        }
+      ]
+    },
+    "children": [
+      {
+        "css": {
+          "any": {
+            "string": "border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background-color: #FCFCFC;"
+          }
+        },
+        "key": "sand",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "key": "header_closure",
+            "type": "RsHeader",
+            "props": {
+              "content": {
+                "value": "Moulding"
+              },
+              "headerSize": {
+                "value": "h5"
+              }
+            },
+            "wrapperCss": {
+              "any": {
+                "object": {
+                  "borderBottom": "1px solid #E2E8F0",
+                  "paddingBottom": "10px"
+                }
+              }
+            },
+            "css": {
+              "any": {
+                "object": {
+                  "textAlign": "center"
+                }
+              }
+            }
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_1_moulding",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "moulding_date",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "enableTime": {
+                    "value": true
+                  },
+                  "format": {
+                    "value": "dd-MM-yyyy"
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "dataKey": "date",
+                "events": {
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "time",
+                "type": "RsTimePicker",
+                "props": {},
+                "events": {
+                  "onChange": [
+                    {
+                      "args": {
+                        "field_data_key": "shift"
+                      },
+                      "name": "set_shift",
+                      "type": "code"
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "set_shift_on_time",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "dataKey": "time",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "shift",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift",
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "51%"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_2_moulding",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDropdown2",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Casting Name:"
+                  },
+                  "data": {
+                    "value": []
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "events": {
+                  "onLoadData": [
+                    {
+                      "name": "fetch_casting_name",
+                      "type": "code"
+                    }
+                  ],
+                  "onDidMount": [],
+                  "onSelect": [
+                    {
+                      "name": "on_select_casting_name",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "casting_name__label"
+              },
+              {
+                "key": "serial_no",
+                "dataKey": "serial_no",
+                "type": "RsChipInput",
+                "props": {
+                  "label": {
+                    "value": "Serial No"
+                  },
+                  "placeholder": {
+                    "value": "Enter serial numbers (comma separated)"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    },
+                    {
+                      "key": "code",
+                      "args": {
+                        "message": "Serial Number Already Exists",
+                        "code": "// Initialize debounce state on window if not exists\n  if (!window._serialValidation) {\n    window._serialValidation = {\n      timer: null,\n      abortController: null,\n      lastValue: null,\n      lastResult: true\n    };\n  }\n\n  const state = window._serialValidation;\n\n  // Early return for empty values\n  if (!value || value.trim() === '') {\n    return true;\n  }\n\n  // If same value as last validated, return cached result\n  if (value === state.lastValue && state.lastResult !== null) {\n    return state.lastResult;\n  }\n\n  // Abort previous request\n  if (state.abortController) {\n    state.abortController.abort();\n  }\n\n  // Create debounced validation\n  return new Promise((resolve) => {\n    // Clear previous timer\n    if (state.timer) {\n      clearTimeout(state.timer);\n    }\n\n    state.timer = setTimeout(async () => {\n      const savedToken = localStorage.getItem('dlms_auth_token');\n      if (!savedToken) {\n        state.lastValue = value;\n        state.lastResult = true;\n        resolve(true);\n        return;\n      }\n\n      const serialNumbers = value\n        .split(',')\n        .map(sn => sn.trim())\n        .filter(sn => sn !== '');\n\n      if (serialNumbers.length === 0) {\n        state.lastValue = value;\n        state.lastResult = true;\n        resolve(true);\n        return;\n      }\n\n      // Check for duplicate entries in user input\n      const seen = new Set();\n      for (const sn of serialNumbers) {\n        if (seen.has(sn)) {\n          state.lastValue = value;\n          state.lastResult = false;\n          resolve(false);\n          return;\n        }\n        seen.add(sn);\n      }\n\n      // API validation\n      state.abortController = new AbortController();\n      const signal = state.abortController.signal;\n\n      try {\n        const checkPromises = serialNumbers.map(async (serialNumber) => {\n          try {\n            const res = await fetch(\n              `https://dlms-api.iotnp.com/api/v1/serial-numbers/check?serial_number=${encodeURIComponent(serialNumber)}`,\n              {\n                method: 'GET',\n                headers: {\n                  'accept': 'application/json',\n                  'Authorization': `Bearer ${savedToken}`\n                },\n                signal\n              }\n            );\n            const response = await res.json();\n            return response.exists === true;\n          } catch (err) {\n            if (err.name === 'AbortError') throw err;\n            return false;\n          }\n        });\n\n        const results = await Promise.all(checkPromises);\n        const hasDuplicate = results.some(exists => exists === true);\n\n        state.lastValue = value;\n        state.lastResult = !hasDuplicate;\n        resolve(!hasDuplicate);\n      } catch (err) {\n        if (err.name === 'AbortError') {\n          // Don't resolve - new request will handle it\n          return;\n        }\n        state.lastValue = value;\n        state.lastResult = true;\n        resolve(true);\n      }\n    }, 300); // 300ms debounce\n  });"
+                      },
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsTagPicker1",
+            "dataKey": "moulder_name",
+            "type": "RsTagPicker",
+            "props": {
+              "label": {
+                "value": "Moulder_name"
+              },
+              "data": {
+                "value": [
+                  {
+                    "value": "Rahim",
+                    "label": "Rahim"
+                  },
+                  {
+                    "value": "Ashok",
+                    "label": "Ashok"
+                  },
+                  {
+                    "value": "Shambhu",
+                    "label": "Shambhu"
+                  },
+                  {
+                    "value": "JoyPrakash",
+                    "label": "JoyPrakash"
+                  },
+                  {
+                    "value": "Firoz",
+                    "label": "Firoz"
+                  },
+                  {
+                    "value": "Mukesh",
+                    "label": "Mukesh"
+                  },
+                  {
+                    "value": "Gazi",
+                    "label": "Gazi"
+                  },
+                  {
+                    "value": "Bain",
+                    "label": "Bain"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_3_moulding",
+            "type": "RsContainer",
+            "props": {},
+            "children": []
+          },
+          {
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsNumberFormat1",
+                "dataKey": "fresh_sand_cosumption",
+                "type": "RsNumberFormat",
+                "props": {
+                  "placeholder": {
+                    "value": "Enter Fresh Sand Consumption"
+                  },
+                  "label": {
+                    "value": "Fresh Sand Consumption"
+                  },
+                  "allowNegative": {
+                    "value": false
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Consumption should be greater than zero"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "rsNumberFormat2",
+                "dataKey": "reclaimed_sand_cosumption",
+                "type": "RsNumberFormat",
+                "props": {
+                  "placeholder": {
+                    "value": "Enter Reclaimed Sand Consumption"
+                  },
+                  "label": {
+                    "value": "Reclaimed Sand Consumption"
+                  },
+                  "allowNegative": {
+                    "value": false
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "code",
+                      "validateWhen": {
+                        "computeType": "function",
+                        "fnSource": "    return true;"
+                      },
+                      "args": {
+                        "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                        "message": "Consumption should be greater than zero"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background-color: #FCFCFC;"
+          }
+        },
+        "key": "footer_card",
+        "type": "RsContainer",
+        "props": {},
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_footer_users",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "supervisor",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Supervisor"
+                  },
+                  "readOnly": {
+                    "value": false
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "dataKey": "disabled__supervisor",
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_operator_name",
+                      "type": "code"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "rsDropdown1",
+                "dataKey": "operator_name",
+                "type": "RsDropdown",
+                "props": {
+                  "label": {
+                    "value": "Operator Name:"
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "Sameer",
+                        "label": "Sameer"
+                      },
+                      {
+                        "value": "Somnath",
+                        "label": "Somnath"
+                      },
+                      {
+                        "value": "Sanatan",
+                        "label": "Sanatan"
+                      },
+                      {
+                        "value": "Ashok",
+                        "label": "Ashok"
+                      }
+                    ]
+                  },
+                  "placement": {
+                    "value": "topStart"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "50%"
+                    }
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}

@@ -1,0 +1,734 @@
+{
+  "version": "1",
+  "actions": {
+    "setShiftByTime": {
+      "body": "function getShift(timeString) {\n    const hours = parseInt(timeString.split(':')[0], 10);\n    if (hours >= 6 && hours < 14) {\n        return 'A';\n    } else if (hours >= 14 && hours < 22) {\n        return 'B';\n    } else {\n        return 'C';\n    }\n}\n\nconst targetKey = `${args.field_data_key}`;\nconst time = e.args[0];\nconst shift = getShift(time);\ne.data[targetKey] = shift;",
+      "params": {
+        "field_data_key": "string"
+      }
+    },
+    "set_current_logged_in_user": {
+      "body": "if (e?.data?.disabled__supervisor ) {\n    return e?.data?.disabled__supervisor;\n}\nlet savedToken = localStorage.getItem('tokenv2') || localStorage.getItem('nowpurchase_token');\n\nconst finalToken = savedToken;\n\nfetch('https://api.nowpurchase.com/api/user-detail/', {\n    method: 'GET',\n    headers: {\n        'accept': 'application/json',\n        'authorization': `Token ${finalToken}`\n    }\n})\n.then(res => res.json())\n.then(userData => {\n    if (userData && userData.name) {\n        e.data.disabled__supervisor = userData.name;\n    }\n})\n.catch((error) => {\n    console.error('Fetch error:', error);\n});",
+      "params": {}
+    },
+    "upload_url_set": {
+      "body": "    if (e.args[1]?.fileKey && e.args[0]?.file_url) {\n        // Store in global map\n        if (!window.__fileUrlMap) window.__fileUrlMap = {};\n        window.__fileUrlMap[e.args[1].fileKey] = e.args[0].file_url;\n\n        // Sync ALL stored URLs to current attachment array\n        if (e.data.attachment) {\n            e.data.attachment.forEach(item => {\n                if (window.__fileUrlMap[item.fileKey]) {\n                    item.file_url = window.__fileUrlMap[item.fileKey];\n                    item.status = 'finished';\n                }\n            });\n        }\n    }",
+      "params": {}
+    },
+    "set_time_on_mount": {
+      "body": "if(!e.data?.time){\n    e.data.time = new Date();\n}\n\nfunction getShift(timeString) {\n    const hours = parseInt(timeString.split(':')[0], 10);\n    if (hours >= 6 && hours < 14) {\n        return 'A';\n    } else if (hours >= 14 && hours < 22) {\n        return 'B';\n    } else {\n        return 'C';\n    }\n}\n\nif(!e.data?.shift){\n    const time = e.data.time;\n    const shift = getShift(time);\n    e.data[\"shift\"] = shift;\n}",
+      "params": {}
+    },
+    "set_date_on_mount": {
+      "body": "if(!e.data?.date){\n    e.data.date = new Date();\n}",
+      "params": {}
+    }
+  },
+  "form": {
+    "key": "Screen",
+    "type": "Screen",
+    "props": {},
+    "css": {
+      "any": {
+        "object": {
+          "gap": "10px"
+        }
+      }
+    },
+    "children": [
+      {
+        "key": "rsContainer8",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "10px"
+            }
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "rsContainer9",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsContainer11",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader9",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Heat No:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader6",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "    return form.data.parent_data__heat_no || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": ""
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "column",
+                      "gap": "0px"
+                    }
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer13",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader8",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Pouring Date:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader7",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "    var pouringDate = form.data.parent_data__pouring_date; // e.g., \"2026-05-11\"\n    var pouringTime = form.data.parent_data__pouring_time; // e.g., \"00:04:00\"\n    var formatted = pouringDate;\n\n    try {\n        var date;\n\n        if (pouringDate && pouringTime) {\n            // Combine date and time — treat as local IST (already saved that way)\n            date = new Date(pouringDate + 'T' + pouringTime);\n        } else if (pouringDate) {\n            date = new Date(pouringDate + 'T00:00:00');\n        }\n\n        if (date && !isNaN(date.getTime())) {\n            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',\n                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];\n\n            var month = months[date.getMonth()];\n            var day = date.getDate();\n            var year = date.getFullYear();\n\n            var hours = date.getHours();\n            var minutes = date.getMinutes();\n            var ampm = hours >= 12 ? 'PM' : 'AM';\n\n            hours = hours % 12;\n            hours = hours ? hours : 12;\n\n            var minutesStr = minutes < 10 ? '0' + minutes : minutes;\n\n            if (pouringTime) {\n                // Format with time: \"May 11, 2026 - 12:04 AM\"\n                formatted = month + ' ' + day + ', ' + year + ' - ' + hours + ':' + minutesStr + ' ' + ampm;\n            } else {\n                // Date only: \"May 11, 2026\"\n                formatted = month + ' ' + day + ', ' + year;\n            }\n        }\n    } catch (e) {\n        // Return original value on error\n    }\n\n    return formatted || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "gap": "0px"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer14",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "rsContainer16",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader12",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Serial No:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader13",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "      return form.data.parent_data__serial_no || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "gap": "0px"
+                    }
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsContainer15",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "rsHeader10",
+                    "type": "RsHeader",
+                    "props": {
+                      "headerSize": {
+                        "value": "h6"
+                      },
+                      "content": {
+                        "value": "Casting Name:"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-weight: normal;"
+                      }
+                    }
+                  },
+                  {
+                    "key": "rsHeader11",
+                    "type": "RsHeader",
+                    "props": {
+                      "content": {
+                        "value": "Header",
+                        "computeType": "function",
+                        "fnSource": "    return form.data.parent_data__casting_name || \"-\";"
+                      },
+                      "headerSize": {
+                        "value": "h6"
+                      }
+                    },
+                    "css": {
+                      "any": {
+                        "string": "    font-size: 15px;"
+                      }
+                    },
+                    "renderWhen": {
+                      "value": ""
+                    }
+                  }
+                ],
+                "css": {
+                  "any": {
+                    "object": {
+                      "flexDirection": "column",
+                      "gap": "0px"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "14px"
+            }
+          }
+        },
+        "key": "card_main",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "key": "row_datetime_shift",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsDateTime",
+                "type": "RsDatePicker",
+                "props": {
+                  "label": {
+                    "value": "Date"
+                  },
+                  "calendarDefaultDate": {
+                    "fnSource": "return new Date();",
+                    "computeType": "function"
+                  },
+                  "format": {
+                    "value": "dd-MM-yyyy"
+                  }
+                },
+                "events": {
+                  "onChange": [],
+                  "onDidMount": [
+                    {
+                      "name": "set_date_on_mount",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ],
+                  "autoValidate": true
+                },
+                "dataKey": "date",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsTimePicker1",
+                "dataKey": "time",
+                "type": "RsTimePicker",
+                "props": {
+                  "label": {
+                    "value": "Time"
+                  }
+                },
+                "events": {
+                  "onChange": [
+                    {
+                      "name": "setShiftByTime",
+                      "type": "code",
+                      "args": {
+                        "field_data_key": "shift"
+                      }
+                    }
+                  ],
+                  "onDidMount": [
+                    {
+                      "name": "set_time_on_mount",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "rsContainer1",
+            "type": "RsContainer",
+            "props": {},
+            "css": {
+              "any": {
+                "object": {
+                  "flexDirection": "row"
+                }
+              }
+            },
+            "children": [
+              {
+                "key": "shift",
+                "type": "RsDropdown",
+                "props": {
+                  "data": {
+                    "value": [
+                      {
+                        "label": "A",
+                        "value": "A"
+                      },
+                      {
+                        "label": "B",
+                        "value": "B"
+                      },
+                      {
+                        "label": "C",
+                        "value": "C"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "value": "Shift"
+                  },
+                  "disabled": {
+                    "value": true
+                  },
+                  "cleanable": {
+                    "value": false
+                  },
+                  "readOnly": {
+                    "value": true
+                  }
+                },
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "dataKey": "shift",
+                "wrapperCss": {
+                  "any": {
+                    "object": {}
+                  }
+                }
+              },
+              {
+                "key": "rsContainer2",
+                "type": "RsContainer",
+                "props": {},
+                "children": [
+                  {
+                    "key": "temperature",
+                    "type": "RsNumberFormat",
+                    "props": {
+                      "label": {
+                        "value": "Temperature"
+                      },
+                      "allowNegative": {
+                        "value": false
+                      }
+                    },
+                    "schema": {
+                      "validations": [
+                        {
+                          "key": "required"
+                        },
+                        {
+                          "key": "code",
+                          "validateWhen": {
+                            "computeType": "function",
+                            "fnSource": "    return true;"
+                          },
+                          "args": {
+                            "code": "    if(Number(value) <= 0){\n        return false;\n    }\n    return true;",
+                            "message": "Temperature should be greater than zero"
+                          }
+                        }
+                      ]
+                    },
+                    "dataKey": "temperature",
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "flex": "1",
+                          "minWidth": "120px"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "10px",
+                  "flexDirection": "column"
+                }
+              }
+            },
+            "key": "row_attachment",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "rsContainer3",
+                "type": "RsContainer",
+                "props": {},
+                "css": {
+                  "any": {
+                    "string": ".rs-uploader-trigger-btn {\n  width: 32.1% !important;\n  height: 42px !important;\n  display: flex !important;\n  align-items: center !important;\n  justify-content: center !important;"
+                  }
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "width": "100%"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "key": "rsCameraCapture1",
+                    "dataKey": "attachment",
+                    "type": "RsCameraCapture",
+                    "props": {
+                      "label": {
+                        "value": "Attachment:"
+                      },
+                      "name": {
+                        "value": "file"
+                      },
+                      "method": {
+                        "value": "POST"
+                      },
+                      "removable": {
+                        "value": true
+                      },
+                      "action": {
+                        "computeType": "function",
+                        "fnSource": "let savedToken = localStorage.getItem('dlms_auth_token');\nreturn \"https://dlms-api.iotnp.com/api/v1/upload/image?token=\" + savedToken;"
+                      },
+                      "multiple": {
+                        "value": true
+                      }
+                    },
+                    "events": {
+                      "onSuccess": [
+                        {
+                          "name": "upload_url_set",
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    "css": {
+                      "any": {
+                        "string": ".rs-uploader-trigger-btn {\n  width: 100% !important;\n  height: 42px !important;\n  display: flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n}"
+                      }
+                    },
+                    "wrapperCss": {
+                      "any": {
+                        "object": {
+                          "width": "100%"
+                        }
+                      }
+                    },
+                    "schema": {
+                      "validations": [
+                        {
+                          "key": "required"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "css": {
+          "any": {
+            "string": "background-color:white;border-radius:0.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);padding:10px 12px;",
+            "object": {
+              "gap": "14px"
+            }
+          }
+        },
+        "key": "card_footer",
+        "type": "RsContainer",
+        "props": {
+          "className": {
+            "value": "fe-card"
+          }
+        },
+        "children": [
+          {
+            "css": {
+              "any": {
+                "object": {
+                  "gap": "12px",
+                  "flexDirection": "row",
+                  "flexWrap": "wrap"
+                }
+              }
+            },
+            "key": "row_supervisor_operator",
+            "type": "RsContainer",
+            "props": {},
+            "children": [
+              {
+                "key": "supervisor",
+                "type": "RsInput",
+                "props": {
+                  "label": {
+                    "value": "Supervisor"
+                  },
+                  "disabled": {
+                    "value": true
+                  }
+                },
+                "events": {
+                  "onDidMount": [
+                    {
+                      "name": "set_current_logged_in_user",
+                      "type": "code"
+                    }
+                  ]
+                },
+                "dataKey": "disabled__supervisor",
+                "schema": {
+                  "validations": [
+                    {
+                      "key": "required"
+                    }
+                  ]
+                },
+                "wrapperCss": {
+                  "any": {
+                    "object": {
+                      "flex": "1",
+                      "minWidth": "150px"
+                    }
+                  }
+                }
+              },
+              {
+                "key": "rsTagPicker1",
+                "dataKey": "operator",
+                "type": "RsTagPicker",
+                "props": {
+                  "label": {
+                    "value": "Operator"
+                  },
+                  "data": {
+                    "value": [
+                      {
+                        "value": "Yunus Ali",
+                        "label": "Yunus Ali"
+                      },
+                      {
+                        "value": "Kailash",
+                        "label": "Kailash"
+                      },
+                      {
+                        "value": "Mongraj",
+                        "label": "Mongraj"
+                      },
+                      {
+                        "value": "Pabitra",
+                        "label": "Pabitra"
+                      },
+                      {
+                        "value": "Biswajeet",
+                        "label": "Biswajeet"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "localization": {},
+  "languages": [
+    {
+      "code": "en",
+      "dialect": "US",
+      "name": "English",
+      "description": "American English",
+      "bidi": "ltr"
+    }
+  ],
+  "defaultLanguage": "en-US"
+}
