@@ -18,6 +18,12 @@ export default function PreviewModal({ form, onClose }) {
 
   return (
     <div style={OVERLAY} onClick={onClose}>
+      {/* rsuite picker menus (dropdown/date/time/tag) portal to <body> with a low
+          z-index (7) — without rsuite's own .rs-modal-open they'd open BEHIND this
+          overlay (z-index 1000), so options look missing. Lift them above it while
+          the preview popup is open. (The standalone /preview tab has no overlay,
+          so it already works there.) */}
+      <style>{`.rs-picker-popup{z-index:${PICKER_Z} !important;}`}</style>
       <div style={MODAL} onClick={(e) => e.stopPropagation()}>
         <div style={HEAD}>
           <b style={{ fontFamily: "'Urbanist', sans-serif", fontSize: 15 }}>Live Preview</b>
@@ -41,8 +47,10 @@ export default function PreviewModal({ form, onClose }) {
   );
 }
 
+const OVERLAY_Z = 1000;
+const PICKER_Z = OVERLAY_Z + 100; // rsuite picker menus must sit above the overlay
 const OVERLAY = {
-  position: "fixed", inset: 0, zIndex: 1000,
+  position: "fixed", inset: 0, zIndex: OVERLAY_Z,
   background: "rgba(2,30,79,.35)", backdropFilter: "blur(2px)",
   display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
 };
