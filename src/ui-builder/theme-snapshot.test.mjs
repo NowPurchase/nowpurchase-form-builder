@@ -78,6 +78,20 @@ ok('metalcloud node count unchanged', current.nodes.length === golden.nodes.leng
 ok('metalcloud screen css unchanged', JSON.stringify(current.screen) === JSON.stringify(golden.screen));
 ok('metalcloud full style fingerprint unchanged', a === b);
 
+// --- metalv2 must be a genuinely DIFFERENT design (proves themes own layout) --
+const mc = fingerprint(exportJSON({ ...state, theme: 'metalcloud' }));
+const v2 = fingerprint(exportJSON({ ...state, theme: 'metalv2' }));
+const cardRadius = (fp) => {
+  const card = fp.nodes.find((n) => n.css && n.css.any && n.css.any.object && 'borderRadius' in n.css.any.object);
+  return card ? card.css.any.object.borderRadius : null;
+};
+const screenVar = (fp, name) => fp.screen && fp.screen.any && fp.screen.any.object ? fp.screen.any.object[name] : null;
+ok('metalv2 fingerprint differs from metalcloud', JSON.stringify(v2) !== JSON.stringify(mc));
+ok('metalv2 card is square (borderRadius 0px)', cardRadius(v2) === '0px');
+ok('metalcloud card stays rounded', cardRadius(mc) === 'var(--radius-card)');
+ok('metalv2 overrides --radius-card var to 0px', screenVar(v2, '--radius-card') === '0px');
+ok('metalv2 kills the drop shadow', screenVar(v2, '--shadow-drop') === 'none');
+
 if (a !== b) {
   // point at the first differing node to make drift easy to locate
   const n = Math.max(current.nodes.length, golden.nodes.length);

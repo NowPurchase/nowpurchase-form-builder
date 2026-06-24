@@ -132,16 +132,73 @@ const MC_COMPONENT_CSS = {
   RsButton: 'height:44px;border-radius:var(--radius-pill);font:600 14px var(--font-heading);padding:0 var(--space-6);border:1px solid var(--stroke-primary);background:transparent;color:var(--text-body);cursor:pointer;',
 };
 
-// Single theme: MetalCloud. Standard sections render as the gallery's `.section`
-// (white card, drop shadow, rounded, no border line). The bordered/boxed look is
-// reserved for TABLES. Control styling (inputs, pickers, buttons) is shared.
-const SHARED = { componentCss: MC_COMPONENT_CSS, removeBtnCss: MC_REMOVE_BTN, table: MC_TABLE };
+// ---------------------------------------------------------------------------
+// Themes are first-class DESIGN SYSTEMS, not CSS-var overrides. A theme owns
+// everything the export engine emits:
+//   • tokens       — layout geometry (spacing, radii, borders, table flex,
+//                    action-col width, shadows). The export engine reads these,
+//                    so a theme can change LAYOUT/DENSITY/SHAPE, not just colour.
+//   • componentCss — per-FormEngine-type raw CSS (control look)
+//   • card/screen  — section card + Screen (CSS vars + global rules)
+//   • table/removeBtnCss — table-specific styling
+// `defineTheme(overrides)` deep-merges onto BASE so a new theme (metalv2, …) is
+// a small delta that can override anything. Add a key to THEMES and it appears
+// in the builder's theme dropdown automatically.
+// ---------------------------------------------------------------------------
+
+// Base layout geometry. Mirrors state/tokens.js (the export engine's historical
+// constants) so metalcloud — which inherits these unchanged — emits identical
+// output. A theme overrides only the token groups it wants to change.
+const BASE_TOKENS = {
+  color: { surface: '#FFFFFF', pageBg: 'transparent', border: '#E2E8F0', headerBg: '#F8FAFC' },
+  radius: { card: '8px', control: '6px' },
+  space: { xs: '6px', sm: '8px', md: '10px', lg: '14px', xl: '16px', xxl: '20px' },
+  shadow: {
+    soft: '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
+    elevated: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+  },
+  size: { actionCol: '48px' },
+};
+
+const BASE_THEME = {
+  name: 'Base',
+  tokens: BASE_TOKENS,
+  componentCss: {},
+  card: null,
+  screen: screen(),
+  table: null,
+  removeBtnCss: null,
+};
+
+// Deep-merge token groups (color/radius/space/shadow/size) so a theme can
+// override just a few values; unspecified groups/keys fall back to BASE_TOKENS.
+function mergeTokens(base, ovr) {
+  if (!ovr) return base;
+  const out = {};
+  for (const k of Object.keys(base)) out[k] = { ...base[k], ...(ovr[k] || {}) };
+  for (const k of Object.keys(ovr)) if (!out[k]) out[k] = ovr[k];
+  return out;
+}
+
+// Build a theme from a delta over BASE. Top-level fields replace; tokens and
+// componentCss merge (so a theme adds/overrides without re-listing everything).
+function defineTheme(overrides = {}) {
+  return {
+    ...BASE_THEME,
+    ...overrides,
+    tokens: mergeTokens(BASE_THEME.tokens, overrides.tokens),
+    componentCss: { ...BASE_THEME.componentCss, ...(overrides.componentCss || {}) },
+  };
+}
 
 const THEMES = {
-  metalcloud: {
+  // MetalCloud — the gallery's `.section`: white card, drop shadow, rounded, no
+  // border line (boxed look reserved for tables). Inherits BASE_TOKENS unchanged.
+  metalcloud: defineTheme({
     name: 'MetalCloud',
-    // The gallery's `.section`: white card, drop shadow, rounded — and NO 1px
-    // border line (that boxed look is reserved for tables). Padding 24px.
+    componentCss: MC_COMPONENT_CSS,
+    removeBtnCss: MC_REMOVE_BTN,
+    table: MC_TABLE,
     card: { any: { object: {
       backgroundColor: 'var(--surface-card)',
       borderRadius: 'var(--radius-card)',
@@ -156,8 +213,47 @@ const THEMES = {
       gap: 'var(--space-6)',
       fontFamily: 'var(--font-body)',
     }),
-    ...SHARED,
-  },
+  }),
+
+  // MetalV2 — a deliberately DIFFERENT design system, proving a theme can change
+  // layout/shape/shadow, not just colour: flat (no drop shadow), SQUARE corners,
+  // DENSE spacing, hard 2px borders. Controls restyle two ways at once — token
+  // overrides change geometry, var overrides re-skin the shared component CSS.
+  metalv2: defineTheme({
+    name: 'MetalV2 (Flat)',
+    tokens: {
+      color: { border: '#0F172A', headerBg: '#0F172A' },
+      radius: { card: '0px', control: '0px' },
+      space: { xs: '4px', sm: '6px', md: '6px', lg: '8px', xl: '10px', xxl: '12px' },
+      shadow: { soft: 'none', elevated: 'none' },
+    },
+    // Hard-edged boxed card instead of a soft floating one.
+    card: { any: { object: {
+      backgroundColor: '#ffffff',
+      border: '2px solid #0F172A',
+      borderRadius: '0px',
+      boxShadow: 'none',
+      padding: '12px',
+      gap: '8px',
+    } } },
+    // Reuse the shared component CSS but flip the vars it reads → square, flat,
+    // dark-bordered controls with no extra CSS to write.
+    componentCss: {
+      ...MC_COMPONENT_CSS,
+      RsButton: 'height:40px;border-radius:0;font:600 13px var(--font-heading);padding:0 var(--space-5);border:2px solid var(--stroke-active);background:var(--surface-action);color:#fff;cursor:pointer;',
+    },
+    screen: screen({
+      '--font-heading': '"Urbanist", system-ui, sans-serif',
+      '--font-body': '"Oxanium", ui-sans-serif, system-ui, sans-serif',
+      backgroundColor: '#E2E8F0',
+      gap: '12px',
+      fontFamily: 'var(--font-body)',
+      // flat + square: kill rounding and shadows, darken strokes
+      '--radius-xs': '0px', '--radius-sm': '0px', '--radius-md': '0px', '--radius-lg': '0px', '--radius-xl': '0px', '--radius-card': '0px', '--radius-pill': '0px',
+      '--stroke-primary': '#0F172A', '--stroke-hover': '#0F172A', '--stroke-active': '#1579be',
+      '--shadow-drop': 'none', '--shadow-drop-lg': 'none', '--shadow-focus': '0 0 0 2px rgba(21,121,190,.35)',
+    }),
+  }),
 };
 
-export { THEMES };
+export { THEMES, defineTheme };

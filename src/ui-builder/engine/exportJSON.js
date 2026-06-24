@@ -15,7 +15,7 @@
 
 import { collectUsedActions } from '../state/actions.js';
 import { THEMES } from '../state/themes.js';
-import { TOKENS, hairline } from '../state/tokens.js';
+import { TOKENS } from '../state/tokens.js';
 
 // Maps builder field types → FormEngine component type-ids.
 const FIELD_TYPE_MAP = {
@@ -81,18 +81,18 @@ const WIDTH_MAP = { 1: '100%', 2: '50%', 3: '33%' };
 const v = (value) => ({ value }); // prop value wrapper
 
 // The theme being exported. Set at the start of exportJSON so deep builders
-// (buildField, buttons) can pull per-component CSS without threading it.
+// (buildField, buttons) can pull per-component CSS + layout tokens without
+// threading them. ACTIVE_TOKENS/HAIRLINE come from the theme so a theme controls
+// LAYOUT/geometry, not just colour (fallback to base TOKENS if a theme omits).
 let ACTIVE_THEME = null;
+let ACTIVE_TOKENS = TOKENS;
+let HAIRLINE = `1px solid ${ACTIVE_TOKENS.color.border}`;
 function compCss(type) {
   const map = ACTIVE_THEME && ACTIVE_THEME.componentCss;
   return map && map[type] ? map[type] : null;
 }
 function removeBtnCss() {
   return (ACTIVE_THEME && ACTIVE_THEME.removeBtnCss) || compCss('RsButton');
-}
-
-function getFieldWidth(fieldsPerRow) {
-  return WIDTH_MAP[fieldsPerRow] || '100%';
 }
 
 // --- props ----------------------------------------------------------------
@@ -368,7 +368,6 @@ function buildField(field, defaultWidth) {
   // preserve exact dataKeys/props (best-effort round-trip fidelity).
   if (field._raw) return field._raw;
 
-  const width = field.width_override || defaultWidth;
   const node = {
     key: field.id || field.field_name || field.dataKey,
     type: FIELD_TYPE_MAP[field.field_type] || 'RsInput',
@@ -448,7 +447,7 @@ function buildFieldRows(section) {
         key: `${section.container_name}_row_${rowIdx}`,
         type: 'RsContainer',
         props: {},
-        css: { any: { object: { flexDirection: 'row', gap: TOKENS.space.md, alignItems: 'flex-start' } } },
+        css: { any: { object: { flexDirection: 'row', gap: ACTIVE_TOKENS.space.md, alignItems: 'flex-start' } } },
         children: buffer.map((f) => buildField(f, 'flex')),
       });
     }
@@ -481,7 +480,7 @@ function buildSection(section, theme, parentPrefix = '', depth = 0) {
   const eff = parentPrefix ? `${parentPrefix}__${section.container_name}` : section.container_name;
   let css = depth === 0
     ? (THEMES[theme] || THEMES.metalcloud).card
-    : { any: { object: { border: hairline, borderRadius: TOKENS.radius.control, padding: TOKENS.space.lg, gap: TOKENS.space.md } } };
+    : { any: { object: { border: HAIRLINE, borderRadius: ACTIVE_TOKENS.radius.control, padding: ACTIVE_TOKENS.space.lg, gap: ACTIVE_TOKENS.space.md } } };
   // Advanced: raw custom CSS the user typed for this container is layered on
   // top of the theme card (object = theme defaults, string = user overrides).
   if (section.custom_css && String(section.custom_css).trim()) {
@@ -581,14 +580,14 @@ function buildRepeaterHeader(eff, cfg, withActions) {
       key: `${eff}_th_actions`,
       type: 'RsHeader',
       props: { content: v(''), headerSize: v('h6') },
-      wrapperCss: { any: { object: { flex: `0 0 ${TOKENS.size.actionCol}` } } },
+      wrapperCss: { any: { object: { flex: `0 0 ${ACTIVE_TOKENS.size.actionCol}` } } },
     });
   }
   return {
     key: `${eff}_thead`,
     type: 'RsContainer',
     props: {},
-    css: { any: { object: { gap: TOKENS.space.md, flexDirection: 'row', alignItems: 'center', borderBottom: hairline, padding: `${TOKENS.space.sm} ${TOKENS.space.sm}` } } },
+    css: { any: { object: { gap: ACTIVE_TOKENS.space.md, flexDirection: 'row', alignItems: 'center', borderBottom: HAIRLINE, padding: `${ACTIVE_TOKENS.space.sm} ${ACTIVE_TOKENS.space.sm}` } } },
     children,
   };
 }
@@ -645,7 +644,7 @@ function buildRepeaterRow(eff, cfg, withRemove) {
       props: { children: v('×'), size: v('sm') },
       // min defaults to 1 so users can't delete the last row; set min_rows:0 to allow emptying.
       events: { onClick: [{ name: 'removeRow', type: 'common', args: { min: cfg.min_rows == null ? 1 : cfg.min_rows } }] },
-      wrapperCss: { any: { object: { flex: `0 0 ${TOKENS.size.actionCol}`, display: 'flex', justifyContent: 'center' } } },
+      wrapperCss: { any: { object: { flex: `0 0 ${ACTIVE_TOKENS.size.actionCol}`, display: 'flex', justifyContent: 'center' } } },
       ...(removeBtnCss() ? { css: { any: { string: removeBtnCss() } } } : {}),
     });
   }
@@ -654,7 +653,7 @@ function buildRepeaterRow(eff, cfg, withRemove) {
     key: `${eff}_row`,
     type: 'RsContainer',
     props: {},
-    css: { any: { object: { gap: TOKENS.space.md, alignItems: 'center', flexDirection: 'row', padding: `${TOKENS.space.sm} ${TOKENS.space.sm}` } } },
+    css: { any: { object: { gap: ACTIVE_TOKENS.space.md, alignItems: 'center', flexDirection: 'row', padding: `${ACTIVE_TOKENS.space.sm} ${ACTIVE_TOKENS.space.sm}` } } },
     children,
   };
 }
@@ -686,7 +685,7 @@ function buildRepeaterTable(section, eff) {
     type: 'Repeater',
     dataKey: eff,
     props: { value: v(initial) },
-    wrapperCss: { any: { object: { flexDirection: 'column', gap: TOKENS.space.sm } } },
+    wrapperCss: { any: { object: { flexDirection: 'column', gap: ACTIVE_TOKENS.space.sm } } },
     children: [buildRepeaterRow(eff, cfg, !fixed)],
   });
 
@@ -697,7 +696,7 @@ function buildRepeaterTable(section, eff) {
       type: 'RsButton',
       props: { children: v(cfg.add_row_label || '+ Add Row'), appearance: v('ghost') },
       events: { onClick: [{ name: 'addRow', type: 'common', args: { dataKey: eff, max: cfg.max_rows || 20, rowData: JSON.stringify(seed) } }] },
-      wrapperCss: { any: { object: { width: '100%', marginTop: TOKENS.space.xs } } },
+      wrapperCss: { any: { object: { width: '100%', marginTop: ACTIVE_TOKENS.space.xs } } },
       ...(addCss ? { css: { any: { string: addCss } } } : {}),
     });
   }
@@ -776,7 +775,7 @@ _uniqueGroups.forEach(function (g) {
 function buildFormTree(state) {
   const theme = THEMES[state.theme] || THEMES.metalcloud;
   // A theme may restyle the whole page via `screen`; else use default tokens.
-  const screenCss = theme.screen || { any: { object: { backgroundColor: TOKENS.color.pageBg, gap: TOKENS.space.xl } } };
+  const screenCss = theme.screen || { any: { object: { backgroundColor: ACTIVE_TOKENS.color.pageBg, gap: ACTIVE_TOKENS.space.xl } } };
   // For imported forms, re-emit the original Screen's props/css/events so
   // screen-level behaviour (e.g. onLoadData wiring) survives a round-trip.
   const scr = (state._imported && state._imported.screen) || {};
@@ -803,6 +802,8 @@ const DEFAULT_LANGUAGES = [{
 
 function exportJSON(state) {
   ACTIVE_THEME = THEMES[state.theme] || THEMES.metalcloud;
+  ACTIVE_TOKENS = (ACTIVE_THEME && ACTIVE_THEME.tokens) || TOKENS;
+  HAIRLINE = `1px solid ${ACTIVE_TOKENS.color.border}`;
   const imp = state._imported || {};
   const out = {
     version: imp.version || '1',
