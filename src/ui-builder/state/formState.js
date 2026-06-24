@@ -23,8 +23,8 @@ export const FIELD_PALETTE = [
   { type: 'shift', label: 'Shift', icon: '🔄' },
   { type: 'dropdown_fixed', label: 'Dropdown', icon: '▼' },
   { type: 'dropdown_async', label: 'Dropdown (master data)', icon: '🔗' },
-  { type: 'tags_fixed', label: 'Tags', icon: '🏷' },
-  { type: 'tags_async', label: 'Tags (master data)', icon: '🏷' },
+  { type: 'tags_fixed', label: 'Dropdown (multi-select)', icon: '🏷' },
+  { type: 'tags_async', label: 'Dropdown multi-select (master data)', icon: '🏷' },
   { type: 'checkbox', label: 'Checkbox', icon: '☑' },
   { type: 'toggle', label: 'Toggle', icon: '🔘' },
   { type: 'textarea', label: 'Text Area', icon: '📄' },
@@ -43,7 +43,7 @@ function defaultTypeConfig(fieldType) {
     case 'dropdown_fixed':
     case 'tags_fixed': return { options: [], clearable: true };
     case 'dropdown_async':
-    case 'tags_async': return { entity_id: '', search_fields: '', on_select_populate: [] };
+    case 'tags_async': return { entity_id: '', search_fields: '', filters: [], on_select_populate: [] };
     case 'number': return { allow_negative: false, decimal_scale: 0, prefix: '', suffix: '' };
     case 'textarea': return { rows: 2 };
     case 'supervisor': return { api_field: 'name' };

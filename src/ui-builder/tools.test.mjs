@@ -476,6 +476,40 @@ function findType(form, type) { let hit = null; (function w(n) { if (!n) return;
   ok('duplicate async selection detected', Object.keys(dupSel).length > 0);
 }
 
+// ============ master-dropdown: entity registry + filters wiring ============
+{
+  const findType = (form, type) => { let h = null; (function w(n) { if (!n) return; if (n.type === type && !h) h = n; (n.children || []).forEach(w); })(form); return h; };
+
+  // entity registry sanity
+  const reg = await import('./state/entities.js');
+  ok('entity registry non-empty', Array.isArray(reg.ENTITIES) && reg.ENTITIES.length > 0);
+  ok('entities have id/label/fields', reg.ENTITIES.every((e) => e.id && e.label && Array.isArray(e.fields)));
+  ok('getEntity resolves a known id', !!reg.getEntity('casting_master') && reg.getEntity('nope') === null);
+
+  // build a master dropdown, set entity/search + filters, and export
+  let s = build([['add_section', { container_name: 'm' }], ['add_field', { section: 'm', field_type: 'dropdown_async', label: 'Material' }]]);
+  s = applyTool(s, 'configure_field', { section: 'm', field: 'Material', entity_id: 'casting_master', search_fields: 'name' }).state;
+  // filters aren't a tool arg (set via the config popup UI) — set on type_config directly
+  const fld = sec(s, 'm').fields.find((f) => f.label === 'Material');
+  fld.type_config.filters = [
+    { key: 'status', source: 'static', value: 'pending' },
+    { key: 'grade', source: 'field', field: 'm__grade' },
+  ];
+
+  const node = findType(exportJSON(s).form, 'RsDropdown');
+  const args = node.events.onLoadData[0].args;
+  eq('export carries entity_id', args.entity_id, 'casting_master');
+  eq('export carries search field', args.search_fields, 'name');
+  ok('export carries filters array', Array.isArray(args.filters) && args.filters.length === 2);
+  ok('static filter preserved', args.filters.some((x) => x.key === 'status' && x.source === 'static' && x.value === 'pending'));
+  ok('field-sourced filter preserved', args.filters.some((x) => x.key === 'grade' && x.source === 'field' && x.field === 'm__grade'));
+
+  // the generated fetch_dropdown runtime action must apply filters (static + from field)
+  const fd = (exportJSON(s).actions || {}).fetch_dropdown;
+  ok('fetch_dropdown action emitted', !!fd && typeof fd.body === 'string');
+  ok('fetch_dropdown applies filters', /filters/.test(fd.body) && /e\.data\[flt\.field\]/.test(fd.body));
+}
+
 // ---------------------------------------------------------------------------
 console.log(`\ntools.test: ${pass} passed, ${fail} failed`);
 if (fail) { console.log('FAILED:\n- ' + fails.join('\n- ')); process.exit(1); }

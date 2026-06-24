@@ -304,7 +304,13 @@ function buildEvents(field) {
       events.onLoadData = [{
         name: 'fetch_dropdown',
         type: 'code',
-        args: { entity_id: cfg.entity_id || '', search_fields: cfg.search_fields || '' },
+        args: {
+          entity_id: cfg.entity_id || '',
+          search_fields: cfg.search_fields || '',
+          // configurable request filters: static value, or pulled from another
+          // field at fetch time (cascade). fetch_dropdown applies these.
+          filters: Array.isArray(cfg.filters) ? cfg.filters.filter((f) => f && f.key) : [],
+        },
       }];
       if (Array.isArray(cfg.on_select_populate) && cfg.on_select_populate.length) {
         events.onSelect = [{

@@ -8,14 +8,14 @@ const COMMON = [
 ];
 const MORE = [
   ['time', 'Time', 'time'], ['shift', 'Shift', 'shift'], ['dropdown_async', 'Dropdown · Master', 'link'],
-  ['tags_fixed', 'Tags', 'tag'], ['tags_async', 'Tags · Master', 'tag'], ['toggle', 'Toggle', 'toggle'],
+  ['tags_fixed', 'Dropdown · Multi', 'tag'], ['tags_async', 'Dropdown · Multi Master', 'tag'], ['toggle', 'Toggle', 'toggle'],
   ['upload', 'File / Image', 'file'], ['header', 'Section Title', 'heading'], ['divider', 'Divider', 'divider'],
   ['supervisor', 'Supervisor', 'supervisor'], ['spectrometer', 'Spectrometer', 'spectrometer'],
   ['chips', 'Chips · Free tags', 'tag'],
 ];
 const TYPE_LABEL = {
   text: 'Text', number: 'Number', date: 'Date', time: 'Time', shift: 'Shift',
-  dropdown_fixed: 'Dropdown', dropdown_async: 'Dropdown · Master', tags_fixed: 'Tags', tags_async: 'Tags · Master',
+  dropdown_fixed: 'Dropdown', dropdown_async: 'Dropdown · Master', tags_fixed: 'Dropdown · Multi', tags_async: 'Dropdown · Multi Master',
   checkbox: 'Checkbox', toggle: 'Toggle', textarea: 'Text Area', upload: 'File', header: 'Section Title',
   divider: 'Divider', supervisor: 'Supervisor', spectrometer: 'Spectrometer', chips: 'Chips',
 };

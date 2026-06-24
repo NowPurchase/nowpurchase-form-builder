@@ -54,10 +54,10 @@ const ACTION_REGISTRY = {
 
   fetch_dropdown: {
     // Included when any field is dropdown_async or tags_async
-    params: { entity_id: 'string', search_fields: 'string' },
+    params: { entity_id: 'string', search_fields: 'string', filters: 'array' },
     body: `
       const [searchValue, loadCallback, currentDataLength] = e.args;
-      const { entity_id, search_fields } = args;
+      const { entity_id, search_fields, filters } = args;
 
       if (window._dropdownDebounceTimer)
         clearTimeout(window._dropdownDebounceTimer);
@@ -76,9 +76,18 @@ const ACTION_REGISTRY = {
           search: searchValue ? [searchValue] : [],
           search_fields: search_fields ? [search_fields] : [],
           flat: false,
-          status: 'completed',
           limit: searchValue ? 20 : 100
         };
+
+        // Apply configured filters. 'static' uses the fixed value; 'field' pulls
+        // the value from another form field at fetch time (cascade).
+        (filters || []).forEach(function (flt) {
+          if (!flt || !flt.key) return;
+          var val = flt.source === 'field' ? (e.data ? e.data[flt.field] : undefined) : flt.value;
+          if (val !== undefined && val !== null && val !== '') body[flt.key] = val;
+        });
+        // Preserve the historical default unless a filter set it explicitly.
+        if (body.status === undefined) body.status = 'completed';
 
         try {
           const res = await fetch(url, {

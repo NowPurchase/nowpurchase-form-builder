@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { validateContainerName } from '../../engine/dataKey.js';
 import { createTableConfig, createColumn, siblingNames, FIELD_PALETTE } from '../../state/formState.js';
+import { ENTITIES, getEntity } from '../../state/entities.js';
+import EntityConfigModal from './EntityConfigModal.jsx';
 import Icon from '../Icon.jsx';
 
 // Friendly name per field type (panel header), from the palette.
@@ -24,7 +26,7 @@ const COLUMN_TYPES = [
   ['dropdown_async', '🔗 Dropdown (master data)'],
   ['checkbox', '☑ Checkbox'],
   ['toggle', '🔘 Toggle'],
-  ['tags_fixed', '🏷 Tags'],
+  ['tags_fixed', '🏷 Dropdown (multi-select)'],
   ['textarea', '📄 Text Area'],
   ['readonly', '🔒 Read-only display'],
 ];
@@ -50,7 +52,7 @@ function Check({ label, checked, onChange }) {
 const WIDTHS = ['25%', '33%', '50%', '66%', '75%', '100%'];
 
 // ---- type-specific config editors ----------------------------------------
-function TypeConfig({ field, set }) {
+function TypeConfig({ field, set, fieldOptions = [] }) {
   const c = field.type_config || {};
   switch (field.field_type) {
     case 'date':
@@ -90,13 +92,7 @@ function TypeConfig({ field, set }) {
       return <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />;
     case 'dropdown_async':
     case 'tags_async':
-      return (
-        <>
-          <Field label="Entity (master data) ID" hint="e.g. casting_master"><input type="text" value={c.entity_id || ''} onChange={(e) => set({ entity_id: e.target.value })} /></Field>
-          <Field label="Search field"><input type="text" value={c.search_fields || ''} onChange={(e) => set({ search_fields: e.target.value })} /></Field>
-          <PopulateEditor field={field} mappings={c.on_select_populate || []} onChange={(on_select_populate) => set({ on_select_populate })} />
-        </>
-      );
+      return <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} />;
     case 'spectrometer':
       return (
         <>
@@ -134,27 +130,43 @@ function TypeConfig({ field, set }) {
   }
 }
 
-// PLAN Rule 7 — when this dropdown is selected, also auto-fill other fields
-// from the selected record. target_key follows the nested-object convention
-// {field_name}__{subkey}; source_path is a dotted path into the record.
-function PopulateEditor({ field, mappings, onChange }) {
-  const prefix = field.field_name || 'field';
-  const add = () => onChange([...mappings, { target_key: `${prefix}__`, source_path: '' }]);
-  const setRow = (i, patch) => onChange(mappings.map((m, j) => (j === i ? { ...m, ...patch } : m)));
+// Master-data dropdown config: basic choices on the right panel (entity +
+// search/display field), a "Configure…" button for the full popup (filters +
+// auto-fill), and a raw-value Advanced disclosure so power is never hidden.
+function AsyncConfig({ c, set, fieldOptions }) {
+  const [open, setOpen] = useState(false);
+  const entity = getEntity(c.entity_id);
+  const nFilters = (c.filters || []).length;
+  const nFill = (c.on_select_populate || []).length;
   return (
-    <Field label="On select, also fill these fields" hint="Pulls values from the selected master-data record.">
-      {mappings.map((m, i) => (
-        <div className="col-editor" key={i}>
-          <div className="inline">
-            <input type="text" placeholder="target dataKey (e.g. casting__weight)" value={m.target_key} onChange={(e) => setRow(i, { target_key: e.target.value })} />
-            <button className="mini danger" onClick={() => onChange(mappings.filter((_, j) => j !== i))}>✕</button>
-          </div>
-          <input type="text" style={{ marginTop: 4 }} placeholder="source path in record (e.g. main.data.weight)" value={m.source_path} onChange={(e) => setRow(i, { source_path: e.target.value })} />
-          <div className="key">{m.target_key || '?'} ← record.{m.source_path || '?'}</div>
-        </div>
-      ))}
-      <button className="mini" style={{ marginTop: 4 }} onClick={add}>+ Field to fill</button>
-    </Field>
+    <>
+      <Field label="Entity (master data)">
+        <select value={c.entity_id || ''} onChange={(e) => set({ entity_id: e.target.value })}>
+          <option value="">Select an entity…</option>
+          {ENTITIES.map((en) => <option key={en.id} value={en.id}>{en.label}</option>)}
+          {c.entity_id && !entity && <option value={c.entity_id}>{c.entity_id} (custom)</option>}
+        </select>
+      </Field>
+      <Field label="Search / display field">
+        {entity ? (
+          <select value={c.search_fields || ''} onChange={(e) => set({ search_fields: e.target.value })}>
+            <option value="">Select a field…</option>
+            {entity.fields.map((fl) => <option key={fl.key} value={fl.key}>{fl.label}</option>)}
+            {c.search_fields && !entity.fields.some((fl) => fl.key === c.search_fields) && <option value={c.search_fields}>{c.search_fields} (custom)</option>}
+          </select>
+        ) : (
+          <input type="text" value={c.search_fields || ''} placeholder="field name (e.g. name)" onChange={(e) => set({ search_fields: e.target.value })} />
+        )}
+      </Field>
+      <button className="mini block" style={{ marginTop: 8 }} onClick={() => setOpen(true)}>⚙ Configure filters &amp; auto-fill…</button>
+      {(nFilters || nFill) ? <div className="key" style={{ marginTop: 4 }}>{nFilters} filter{nFilters === 1 ? '' : 's'} · {nFill} auto-fill</div> : null}
+      <details className="advanced" style={{ marginTop: 8 }}>
+        <summary>Advanced (raw)</summary>
+        <Field label="Entity ID"><input type="text" value={c.entity_id || ''} onChange={(e) => set({ entity_id: e.target.value })} /></Field>
+        <Field label="Search field"><input type="text" value={c.search_fields || ''} onChange={(e) => set({ search_fields: e.target.value })} /></Field>
+      </details>
+      {open && <EntityConfigModal value={c} fieldOptions={fieldOptions} onChange={(patch) => set(patch)} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -345,7 +357,7 @@ function FieldProps({ section, field, dispatch, fieldOptions }) {
             <Check label="Required" checked={field.required} onChange={(v) => upd({ required: v })} />
             <Field label="Placeholder"><input type="text" value={field.placeholder || ''} onChange={(e) => upd({ placeholder: e.target.value || null })} /></Field>
 
-            <TypeConfig field={field} set={setCfg} />
+            <TypeConfig field={field} set={setCfg} fieldOptions={fieldOptions} />
 
             <label className="fld">Show this field when…</label>
             <RenderWhenEditor value={field.render_when} onChange={(rw) => upd({ render_when: rw })} fieldOptions={fieldOptions} />
