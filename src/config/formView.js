@@ -17,6 +17,7 @@ import { rSuiteTableComponents } from '@react-form-builder/components-rsuite-tab
 import { BiDi, createView } from '@react-form-builder/core';
 import { rsChipInput, rsSpectrometerReading } from 'np-dlms-components';
 import { rsDropdownOverride } from './rsDropdownOverride';
+import { rsTagPickerOverride } from './rsTagPickerOverride';
 import { rsCameraCaptureOverride } from './rsCameraCaptureOverride';
 
 const customComponents = [
@@ -24,10 +25,14 @@ const customComponents = [
   rsCameraCaptureOverride,
   rsChipInput,
   rsDropdownOverride,
+  rsTagPickerOverride,
 ];
 
+// Drop the stock RsDropdown + RsTagPicker — both are replaced by overrides that
+// support async master-data loading (the stock TagPicker strips onLoadData).
+const OVERRIDDEN = new Set(['RsDropdown', 'RsTagPicker']);
 const components = [
-  ...rSuiteComponents.filter((c) => c.build().model.type !== 'RsDropdown'),
+  ...rSuiteComponents.filter((c) => !OVERRIDDEN.has(c.build().model.type)),
   ...rSuiteTableComponents,
   ...customComponents,
 ].map((c) => c.build().model);
