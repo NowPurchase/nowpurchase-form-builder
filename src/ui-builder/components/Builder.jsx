@@ -25,6 +25,7 @@ export default function Builder({ initialForm = null, onSaveTemplate = null, onP
   const [selSection, setSelSection] = useState(null);
   const [selField, setSelField] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [dark, setDark] = useState(false); // builder chrome light/dark
   const [modal, setModal] = useState(null); // 'export' | 'import'
   const [importText, setImportText] = useState('');
   const [importErr, setImportErr] = useState('');
@@ -67,7 +68,7 @@ export default function Builder({ initialForm = null, onSaveTemplate = null, onP
   const totalSections = countSections(state.sections);
 
   return (
-    <div className="app">
+    <div className={`app ${dark ? 'dark' : ''}`}>
       <div className="topbar">
         <div className="brand">
           <span className="mark"><Icon name="logo" size={14} /></span>
@@ -96,6 +97,7 @@ export default function Builder({ initialForm = null, onSaveTemplate = null, onP
           </div>
         </div>
         <div className="tb-actions">
+          <button className="iconbtn" title={dark ? 'Switch to light' : 'Switch to dark'} onClick={() => setDark((v) => !v)}><Icon name={dark ? 'moon' : 'sun'} size={16} stroke={1.6} /></button>
           <button className="iconbtn" title="Form settings" onClick={() => setModal('settings')}><Icon name="gear" size={16} stroke={1.6} /></button>
           <button className="assistant" onClick={() => setChatOpen((v) => !v)}><Icon name="spark" size={14} stroke={1.5} /> Assistant</button>
           <button onClick={() => { setModal('import'); setImportErr(''); }}>Import</button>

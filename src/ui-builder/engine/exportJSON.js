@@ -56,6 +56,7 @@ function computedFnSource(cfg) {
       case 'avg': return `var a=${nums};return a.length?(a.reduce(function(x,y){return x+y;},0)/a.length):0;`;
       case 'min': return `var a=${nums};return a.length?Math.min.apply(null,a):0;`;
       case 'max': return `var a=${nums};return a.length?Math.max.apply(null,a):0;`;
+      case 'product': return `return ${nums}.reduce(function(x,y){return x*y;},1);`;
       default: return `return ${nums}.reduce(function(x,y){return x+y;},0);`;
     }
   }
@@ -69,6 +70,7 @@ function computedFnSource(cfg) {
     case 'avg': return `var a=${nums};return a.length?(a.reduce(function(x,y){return x+y;},0)/a.length):0;`;
     case 'min': return `var a=${nums};return a.length?Math.min.apply(null,a):0;`;
     case 'max': return `var a=${nums};return a.length?Math.max.apply(null,a):0;`;
+    case 'product': return `return ${nums}.reduce(function(x,y){return x*y;},1);`;
     default: return `return ${nums}.reduce(function(x,y){return x+y;},0);`;
   }
 }
@@ -473,7 +475,8 @@ function buildSectionHeader(section, depth = 0) {
 
 function buildFieldRows(section) {
   const rows = [];
-  const perRow = section.fields_per_row || 1;
+  // Horizontal (default) = fields_per_row columns side-by-side; Vertical = stacked.
+  const perRow = section.layout_orientation === 'vertical' ? 1 : (section.fields_per_row || 2);
   let buffer = [];
   let rowIdx = 0;
 
@@ -707,6 +710,41 @@ function seedRow(cfg) {
   return o;
 }
 
+// Totals footer: a flex row mirroring the header, with a read-only computed
+// field under each column that has a `summary` (sum/avg/min/max/count/product).
+// Each total reads the table array (form.data[eff]) — it's a sibling of the
+// Repeater, so it sees every row. Returns null if no column has a summary.
+function buildRepeaterFooter(eff, cfg, withActions) {
+  if (!cfg.columns.some((col) => col.summary)) return null;
+  // Totals are always computed + saved (derived__… keys); the row is only shown
+  // when show_totals is on — otherwise hidden (display:none), surfaced on demand.
+  const hidden = !cfg.show_totals;
+  const children = cfg.columns.map((col) => {
+    if (!col.summary) {
+      return { key: `${eff}_tf_${col.dataKey_suffix}_sp`, type: 'RsContainer', props: {}, children: [], wrapperCss: { any: { object: { flex: colFlex(cfg, col) } } } };
+    }
+    const fn = computedFnSource({ source_table: eff, source_column: cellDataKey(col), op: col.summary });
+    return {
+      key: `${eff}_tf_${col.dataKey_suffix}`,
+      type: 'RsInput',
+      dataKey: `derived__${eff}__${col.dataKey_suffix}__${col.summary}`,
+      props: { label: v(''), readOnly: v(true), value: { computeType: 'function', fnSource: fn } },
+      wrapperCss: { any: { object: { flex: colFlex(cfg, col), textAlign: 'center' } } },
+    };
+  });
+  if (withActions) {
+    children.push({ key: `${eff}_tf_actions`, type: 'RsContainer', props: {}, children: [], wrapperCss: { any: { object: { flex: `0 0 ${ACTIVE_TOKENS.size.actionCol}` } } } });
+  }
+  return {
+    key: `${eff}_tfoot`,
+    type: 'RsContainer',
+    props: {},
+    css: { any: { object: { gap: ACTIVE_TOKENS.space.md, flexDirection: 'row', alignItems: 'center', borderTop: HAIRLINE, padding: `${ACTIVE_TOKENS.space.sm} ${ACTIVE_TOKENS.space.sm}` } } },
+    ...(hidden ? { wrapperCss: { any: { object: { display: 'none' } } } } : {}),
+    children,
+  };
+}
+
 // Build the table block (header strip + Repeater + add button) as an array of
 // nodes that become direct children of the section card. `eff` is the chained
 // container name and is used verbatim as the array key.
@@ -739,6 +777,8 @@ function buildRepeaterTable(section, eff) {
       ...(addCss ? { css: { any: { string: addCss } } } : {}),
     });
   }
+  const foot = buildRepeaterFooter(eff, cfg, !fixed);
+  if (foot) nodes.push(foot);
   return nodes;
 }
 

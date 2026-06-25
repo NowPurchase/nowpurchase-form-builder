@@ -63,7 +63,8 @@ export function createSection() {
     container_name: '',
     label: null,
     show_header: true,
-    fields_per_row: 1,
+    layout_orientation: 'horizontal', // 'horizontal' (N per row, default) | 'vertical' (stacked)
+    fields_per_row: 2,                // columns per row when horizontal (1–5)
     fields: [],
     children: [],          // nested sub-containers (chained prefix)
     type: 'standard',
@@ -84,6 +85,7 @@ export function createColumn(n = 1) {
     dataKey_suffix: `col${n}`,
     required: false,
     unique: false, // value must be unique across all rows in this column
+    summary: '',   // '' | sum | avg | min | max | count | product — total shown under the table
     placeholder: '',
     type_config: {},
   };
@@ -98,6 +100,7 @@ export function createTableConfig() {
     initial_rows: 1,
     min_rows: 1,              // can't delete below this many rows (dynamic)
     add_row_label: '+ Add Row',
+    show_totals: false,       // render the column-summary totals row (computed+saved regardless)
     row_count_key: 'table_row_count',
     data_prefix: 'table',
     deleted_prefix: 'deleted_table_',

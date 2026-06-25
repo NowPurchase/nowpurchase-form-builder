@@ -35,6 +35,8 @@ const PATHS = {
   handle: <path d="M5 6h8M5 9h8M5 12h8" />,
   eye: <><path d="M1.5 9S4 3.5 9 3.5 16.5 9 16.5 9 14 14.5 9 14.5 1.5 9 1.5 9z" /><circle cx="9" cy="9" r="2.4" /></>,
   gear: <><circle cx="9" cy="9" r="2.3" /><path d="M9 1.6v2M9 14.4v2M3.4 3.4l1.4 1.4M13.2 13.2l1.4 1.4M1.6 9h2M14.4 9h2M3.4 14.6l1.4-1.4M13.2 4.8l1.4-1.4" /></>,
+  sun: <><circle cx="9" cy="9" r="3.2" /><path d="M9 1.8v1.8M9 14.4v1.8M2.4 9H.6M17.4 9h-1.8M4 4l1.3 1.3M12.7 12.7 14 14M14 4l-1.3 1.3M5.3 12.7 4 14" /></>,
+  moon: <path d="M14.5 10.2A6 6 0 1 1 7.8 3.5a4.8 4.8 0 0 0 6.7 6.7z" />,
 };
 
 export default function Icon({ name, size = 14, stroke = 1.6, className, style }) {

@@ -26,27 +26,52 @@ const TYPE_LABEL = {
   divider: 'Divider', supervisor: 'Supervisor', spectrometer: 'Spectrometer', chips: 'Free tags', computed: 'Computed',
 };
 
-function FieldRow({ field, active, onSelect, onUp, onDown, onRemove }) {
+// field_type → Icon glyph for the chip's icon tile.
+const CHIP_ICON = {
+  text: 'text', number: 'number', date: 'date', time: 'time', shift: 'shift',
+  dropdown_fixed: 'dropdown', dropdown_async: 'link', tags_fixed: 'tag', tags_async: 'tag',
+  checkbox: 'checkbox', toggle: 'toggle', textarea: 'textarea', upload: 'file',
+  header: 'heading', divider: 'divider', supervisor: 'supervisor', spectrometer: 'spectrometer',
+  chips: 'tag', computed: 'number',
+};
+
+// Clean field chip: click to select (reorder lives in the right panel for the
+// selected field). A subtle ✕ appears on hover/select for quick removal.
+function FieldRow({ field, active, onSelect, onRemove }) {
   const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
   const labelled = !!(field.label || field.field_name);
   return (
     <div className={`field-chip ${active ? 'active' : ''}`} onClick={onSelect}>
       <span className="handle"><Icon name="handle" size={14} stroke={1.8} /></span>
+      <span className="chip-ico"><Icon name={CHIP_ICON[field.field_type] || 'text'} size={17} stroke={1.7} /></span>
       <div className="body">
         <div className="lbl-row">
           <span className={`lbl ${labelled ? '' : 'untitled'}`}>{field.label || field.field_name || 'Untitled field'}</span>
-          {field.required && <span className="req">required</span>}
+          {field.required && <span className="req" title="Required">*</span>}
         </div>
         {field.dataKey && <div className="key">{field.dataKey}</div>}
       </div>
       <span className="type">{TYPE_LABEL[field.field_type] || field.field_type}</span>
-      <div className="controls">
-        <button className="iconbtn" title="Move up" onClick={stop(onUp)}><Icon name="up" size={13} stroke={1.8} /></button>
-        <button className="iconbtn" title="Move down" onClick={stop(onDown)}><Icon name="down" size={13} stroke={1.8} /></button>
-        <button className="iconbtn del" title="Remove" onClick={stop(onRemove)}><Icon name="x" size={13} stroke={1.8} /></button>
-      </div>
+      <button className="iconbtn del chip-del" title="Remove" onClick={stop(onRemove)}><Icon name="x" size={13} stroke={1.8} /></button>
     </div>
   );
+}
+
+// Group a section's fields into visual rows that mirror the export layout, so
+// the canvas shows the real arrangement (Horizontal N-per-row vs Vertical
+// stacked) without opening the preview. header/divider break to a full row.
+function layoutRows(node) {
+  const perRow = (node.layout_orientation || 'horizontal') === 'vertical' ? 1 : (node.fields_per_row || 2);
+  const groups = [];
+  let buf = [];
+  const flush = () => { if (buf.length) { groups.push(buf); buf = []; } };
+  (node.fields || []).forEach((f) => {
+    if (f.field_type === 'header' || f.field_type === 'divider') { flush(); groups.push([f]); return; }
+    buf.push(f);
+    if (buf.length === perRow) flush();
+  });
+  flush();
+  return groups;
 }
 
 function SectionCard({ node, depth, dispatch, selSection, setSelSection, selField, setSelField }) {
@@ -83,14 +108,18 @@ function SectionCard({ node, depth, dispatch, selSection, setSelSection, selFiel
         <>
           <div className="field-grid">
             {node.fields.length === 0 && <div className="hint" style={{ marginTop: 0 }}>No fields yet — add one below.</div>}
-            {node.fields.map((f) => (
-              <FieldRow
-                key={f.id} field={f} active={f.id === selField && node.id === selSection}
-                onSelect={() => { setSelSection(node.id); setSelField(f.id); }}
-                onUp={() => dispatch({ type: 'MOVE_FIELD', sectionId: node.id, fieldId: f.id, dir: -1 })}
-                onDown={() => dispatch({ type: 'MOVE_FIELD', sectionId: node.id, fieldId: f.id, dir: 1 })}
-                onRemove={() => { dispatch({ type: 'REMOVE_FIELD', sectionId: node.id, fieldId: f.id }); if (f.id === selField) setSelField(null); }}
-              />
+            {layoutRows(node).map((group, gi) => (
+              <div className="field-lyt-row" key={gi} style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                {group.map((f) => (
+                  <div key={f.id} style={{ flex: 1, minWidth: 0 }}>
+                    <FieldRow
+                      field={f} active={f.id === selField && node.id === selSection}
+                      onSelect={() => { setSelSection(node.id); setSelField(f.id); }}
+                      onRemove={() => { dispatch({ type: 'REMOVE_FIELD', sectionId: node.id, fieldId: f.id }); if (f.id === selField) setSelField(null); }}
+                    />
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
 

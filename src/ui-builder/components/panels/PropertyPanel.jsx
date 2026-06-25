@@ -308,11 +308,12 @@ function TableEditor({ section, dispatch }) {
         <Field label="Number of rows"><input type="number" value={cfg.fixed_rows ?? 3} onChange={(e) => setCfg({ fixed_rows: Number(e.target.value) })} /></Field>
       ) : (
         <>
-          <div className="inline">
-            <div style={{ flex: 1 }}><Field label="Start with" hint="rows shown initially"><input type="number" value={cfg.initial_rows ?? 1} onChange={(e) => setCfg({ initial_rows: Number(e.target.value) })} /></Field></div>
-            <div style={{ flex: 1 }}><Field label="Min rows" hint="can't delete below"><input type="number" min={0} value={cfg.min_rows ?? 1} onChange={(e) => setCfg({ min_rows: Number(e.target.value) })} /></Field></div>
-            <div style={{ flex: 1 }}><Field label="Max rows"><input type="number" value={cfg.max_rows} onChange={(e) => setCfg({ max_rows: Number(e.target.value) })} /></Field></div>
+          <div className="row3">
+            <div className="row3-cell"><label className="fld">Start with</label><input type="number" value={cfg.initial_rows ?? 1} onChange={(e) => setCfg({ initial_rows: Number(e.target.value) })} /></div>
+            <div className="row3-cell"><label className="fld">Min rows</label><input type="number" min={0} value={cfg.min_rows ?? 1} onChange={(e) => setCfg({ min_rows: Number(e.target.value) })} /></div>
+            <div className="row3-cell"><label className="fld">Max rows</label><input type="number" value={cfg.max_rows} onChange={(e) => setCfg({ max_rows: Number(e.target.value) })} /></div>
           </div>
+          <div className="hint" style={{ marginTop: 6 }}>Rows shown initially · minimum kept · maximum allowed.</div>
           <Field label="Add-row button label"><input type="text" value={cfg.add_row_label ?? '+ Add Row'} onChange={(e) => setCfg({ add_row_label: e.target.value })} /></Field>
         </>
       )}
@@ -348,6 +349,18 @@ function TableEditor({ section, dispatch }) {
               )}
             </div>
 
+            <Field label="Summary (under the table)" hint="Aggregate this column across all rows.">
+              <select value={col.summary || ''} onChange={(e) => setCol(i, { summary: e.target.value })}>
+                <option value="">— none —</option>
+                <option value="sum">Sum</option>
+                <option value="avg">Average</option>
+                <option value="min">Min</option>
+                <option value="max">Max</option>
+                <option value="count">Count</option>
+                <option value="product">Product (multiply)</option>
+              </select>
+            </Field>
+
             {(col.field_type === 'dropdown_fixed' || col.field_type === 'tags_fixed') && (
               <OptionsEditor options={col.type_config?.options || []} onChange={(options) => setColCfg({ options })} />
             )}
@@ -363,6 +376,13 @@ function TableEditor({ section, dispatch }) {
         );
       })}
       <button className="mini" style={{ marginTop: 6 }} onClick={() => setCfg({ columns: [...cfg.columns, createColumn(cfg.columns.length + 1)] })}>+ Column</button>
+
+      {cfg.columns.some((c) => c.summary) && (
+        <div style={{ marginTop: 10 }}>
+          <Check label="Show totals row under the table" checked={!!cfg.show_totals} onChange={(v) => setCfg({ show_totals: v })} />
+          <div className="hint">Totals are always computed &amp; saved; this only controls whether the row is visible.</div>
+        </div>
+      )}
     </>
   );
 }
@@ -381,6 +401,12 @@ function SectionProps({ section, state, dispatch, refIndex }) {
         {section.container_name && <span className="kind">{section.container_name}</span>}
       </div>
       <div className="prop-body">
+        <Field label="Position" hint="Move this section up or down.">
+          <div className="inline" style={{ gap: 6 }}>
+            <button className="mini" onClick={() => dispatch({ type: 'MOVE_SECTION', sectionId: section.id, dir: -1 })}>↑ Up</button>
+            <button className="mini" onClick={() => dispatch({ type: 'MOVE_SECTION', sectionId: section.id, dir: 1 })}>Down ↓</button>
+          </div>
+        </Field>
         <Field label="Title" hint="Heading shown above this section.">
           <input type="text" value={section.label || ''} placeholder="e.g. Moulding Details" onChange={(e) => upd({ label: e.target.value || null })} />
         </Field>
@@ -405,14 +431,24 @@ function SectionProps({ section, state, dispatch, refIndex }) {
         {isTable && section.table_config
           ? <TableEditor section={section} dispatch={dispatch} />
           : (
-            <Field label="Columns per row">
-              <select value={section.fields_per_row} onChange={(e) => upd({ fields_per_row: Number(e.target.value) })}>
-                <option value={1}>1 per row</option><option value={2}>2 per row</option><option value={3}>3 per row</option>
-              </select>
-            </Field>
+            <>
+              <Field label="Field layout" hint="Horizontal places fields side by side; Vertical stacks them.">
+                <select value={section.layout_orientation || 'horizontal'} onChange={(e) => upd({ layout_orientation: e.target.value })}>
+                  <option value="horizontal">Horizontal (side by side)</option>
+                  <option value="vertical">Vertical (stacked)</option>
+                </select>
+              </Field>
+              {(section.layout_orientation || 'horizontal') === 'horizontal' && (
+                <Field label="Columns per row">
+                  <select value={section.fields_per_row || 2} onChange={(e) => upd({ fields_per_row: Number(e.target.value) })}>
+                    {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} per row</option>)}
+                  </select>
+                </Field>
+              )}
+            </>
           )}
 
-        <button className="mini block" style={{ marginTop: 14 }} onClick={() => dispatch({ type: 'ADD_SUBCONTAINER', parentId: section.id })}>▢ Add nested group</button>
+        <button className="block" style={{ marginTop: 14, height: 38, borderStyle: 'dashed', gap: 7 }} onClick={() => dispatch({ type: 'ADD_SUBCONTAINER', parentId: section.id })}><Icon name="nested" size={15} /> Add nested group</button>
 
         <label className="fld">Show this section when…</label>
         <RenderWhenEditor
@@ -438,6 +474,39 @@ function SectionProps({ section, state, dispatch, refIndex }) {
 }
 
 // ---- field properties ------------------------------------------------------
+// Reorder the selected field within its section — lives in the panel (not on
+// the canvas chip) so it's easy to find and the highlighted chip is easy to
+// track as it moves. Left/right (±1) + up/down a row (±perRow) in a grid; just
+// up/down when stacked.
+function PositionControl({ section, field, dispatch }) {
+  const fields = section.fields || [];
+  const idx = fields.findIndex((f) => f.id === field.id);
+  const total = fields.length;
+  if (idx < 0 || total < 2) return null;
+  const perRow = (section.layout_orientation || 'horizontal') === 'vertical' ? 1 : (section.fields_per_row || 2);
+  const grid = perRow > 1;
+  const move = (dir) => dispatch({ type: 'MOVE_FIELD', sectionId: section.id, fieldId: field.id, dir });
+  return (
+    <Field label="Position" hint="Move this field within the section.">
+      <div className="inline" style={{ gap: 6, flexWrap: 'wrap' }}>
+        {grid ? (
+          <>
+            <button className="mini" disabled={idx === 0} onClick={() => move(-1)}>← Left</button>
+            <button className="mini" disabled={idx === total - 1} onClick={() => move(1)}>Right →</button>
+            <button className="mini" disabled={idx < perRow} onClick={() => move(-perRow)}>↑ Up</button>
+            <button className="mini" disabled={idx + perRow >= total} onClick={() => move(perRow)}>Down ↓</button>
+          </>
+        ) : (
+          <>
+            <button className="mini" disabled={idx === 0} onClick={() => move(-1)}>↑ Up</button>
+            <button className="mini" disabled={idx === total - 1} onClick={() => move(1)}>Down ↓</button>
+          </>
+        )}
+      </div>
+    </Field>
+  );
+}
+
 function FieldProps({ section, field, dispatch, fieldOptions, refIndex }) {
   const upd = (patch) => dispatch({ type: 'UPDATE_FIELD', sectionId: section.id, fieldId: field.id, patch });
   const setCfg = (patch) => dispatch({ type: 'UPDATE_FIELD_CONFIG', sectionId: section.id, fieldId: field.id, patch });
@@ -451,6 +520,8 @@ function FieldProps({ section, field, dispatch, fieldOptions, refIndex }) {
       </div>
       <div className="prop-body">
         {field._raw && <div className="tag" style={{ marginBottom: 8, color: '#92400e' }}>⚠ Imported field — exports verbatim. Editing label re-derives its key.</div>}
+
+        <PositionControl section={section} field={field} dispatch={dispatch} />
 
         {field.field_type !== 'divider' && (
           <Field label="Label" hint="Shown above the field."><input type="text" value={field.label || ''} onChange={(e) => upd({ label: e.target.value })} /></Field>

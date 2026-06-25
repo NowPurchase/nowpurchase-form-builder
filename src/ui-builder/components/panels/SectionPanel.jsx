@@ -19,8 +19,6 @@ function Node({ node, siblings, depth, state, dispatch, selSection, setSelSectio
           <div className="spacer" />
           <div className="controls">
             <button className="iconbtn" title="Add nested group" onClick={stop(() => dispatch({ type: 'ADD_SUBCONTAINER', parentId: node.id }))}><Icon name="nested" size={13} stroke={1.7} /></button>
-            <button className="iconbtn" title="Move up" onClick={stop(() => dispatch({ type: 'MOVE_SECTION', sectionId: node.id, dir: -1 }))}><Icon name="up" size={13} stroke={1.8} /></button>
-            <button className="iconbtn" title="Move down" onClick={stop(() => dispatch({ type: 'MOVE_SECTION', sectionId: node.id, dir: 1 }))}><Icon name="down" size={13} stroke={1.8} /></button>
             <button className="iconbtn del" title="Remove" onClick={stop(() => { dispatch({ type: 'REMOVE_SECTION', sectionId: node.id }); if (active) setSelSection(null); })}><Icon name="x" size={13} stroke={1.8} /></button>
           </div>
         </div>
