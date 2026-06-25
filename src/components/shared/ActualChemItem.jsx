@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import FormAccordion from "./FormAccordion";
 import "./ActualChemItem.css";
+
+const sanitizeNumeric = (raw) => {
+  const stripped = raw.replace(/[^0-9.]/g, "");
+  const firstDot = stripped.indexOf(".");
+  if (firstDot === -1) return stripped;
+  return stripped.slice(0, firstDot + 1) + stripped.slice(firstDot + 1).replace(/\./g, "");
+};
 
 export default function ActualChemItem({
   header,
@@ -15,14 +22,17 @@ export default function ActualChemItem({
 }) {
   const readings = spectroData?.spectro_reading_avg ?? [];
 
-  const buildValues = (rdgs) =>
-    Object.fromEntries(
-      rdgs.map((r) => {
-        const stored = formRef?.data?.["actual_chem__" + r.element_symbol];
-        const val = stored !== undefined && stored !== null ? stored : r.recovery_rate;
-        return [r.element_symbol, val !== undefined && val !== null ? String(val) : ""];
-      })
-    );
+  const buildValues = useCallback(
+    (rdgs) =>
+      Object.fromEntries(
+        rdgs.map((r) => {
+          const stored = formRef?.data?.["actual_chem__" + r.element_symbol];
+          const val = stored !== undefined && stored !== null ? stored : r.recovery_rate;
+          return [r.element_symbol, val !== undefined && val !== null ? String(val) : ""];
+        })
+      ),
+    [formRef]
+  );
 
   const spectroId = spectroData?.["id"];
   const [values, setValues] = useState(() => buildValues(readings));
@@ -34,7 +44,8 @@ export default function ActualChemItem({
 
   if (spectroData !== undefined && spectroData !== null && readings.length === 0) return null;
 
-  const handleChange = (symbol, value) => {
+  const handleChange = (symbol, raw) => {
+    const value = sanitizeNumeric(raw);
     const updated = { ...values, [symbol]: value };
     setValues(updated);
 
