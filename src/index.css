@@ -2065,3 +2065,19 @@
   .perm-btn-cancel,
   .perm-btn-confirm { min-height: 44px; }
 }
+
+/* Multi-select (master dropdown / TagPicker) selected tags rendered as chip-style
+   pills, so a "Dropdown (multiple)" reads the same as the Free-tags chip field. */
+.rs-picker-tag .rs-tag,
+.rs-picker-tag-wrapper .rs-tag {
+  border-radius: 999px;
+  background: #eef4fb;
+  border: 1px solid #cfe0f1;
+  color: #0d4972;
+  font-weight: 600;
+  padding: 2px 10px;
+}
+.rs-picker-tag .rs-tag .rs-tag-icon-close,
+.rs-picker-tag-wrapper .rs-tag .rs-tag-icon-close { color: #5b88ad; }
+.rs-picker-tag .rs-tag .rs-tag-icon-close:hover,
+.rs-picker-tag-wrapper .rs-tag .rs-tag-icon-close:hover { background: #cfe0f1; border-radius: 999px; }

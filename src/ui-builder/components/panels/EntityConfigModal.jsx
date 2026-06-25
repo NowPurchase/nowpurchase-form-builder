@@ -1,6 +1,7 @@
 import React from 'react';
 import { ENTITIES, getEntity } from '../../state/entities.js';
 import { recordSourcePath, autoSaveKey } from '../../engine/autofill.js';
+import KeyPicker from './KeyPicker.jsx';
 
 /**
  * EntityConfigModal — full point-and-click config for a master-data dropdown
@@ -98,10 +99,9 @@ export default function EntityConfigModal({ value, onChange, onClose, fieldOptio
                   <button className="mini danger" onClick={() => setFilters(filters.filter((_, j) => j !== i))}>✕</button>
                 </div>
                 {flt.source === 'field' ? (
-                  <select style={{ marginTop: 4 }} value={flt.field || ''} onChange={(e) => setFilter(i, { field: e.target.value })}>
-                    <option value="">Select a field…</option>
-                    {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} ({o.dataKey})</option>)}
-                  </select>
+                  <div style={{ marginTop: 4 }}>
+                    <KeyPicker value={flt.field || ''} onChange={(k) => setFilter(i, { field: k })} options={fieldOptions} placeholder="Select a field…" />
+                  </div>
                 ) : (meta && meta.type === 'enum') ? (
                   <select style={{ marginTop: 4 }} value={flt.value || ''} onChange={(e) => setFilter(i, { value: e.target.value })}>
                     {(meta.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
@@ -131,13 +131,17 @@ export default function EntityConfigModal({ value, onChange, onClose, fieldOptio
                   <input style={{ width: 120 }} type="text" placeholder="record field" value={m.source_path || ''} onChange={(e) => setSource(i, e.target.value)} />
                 )}
                 <span style={{ fontSize: 12, color: 'var(--faint)' }}>→</span>
-                <select value={m.target_mode === 'field' ? (m.target_key || '') : '__auto__'} onChange={(e) => setTarget(i, e.target.value)}>
+                <select value={m.target_mode === 'field' ? '__field__' : '__auto__'} onChange={(e) => setTarget(i, e.target.value === '__field__' ? (m.target_key && !m.target_key.startsWith(baseKey) ? m.target_key : '') : '__auto__')}>
                   <option value="__auto__">save with this field{autoKey(m.source_path) ? ` (${autoKey(m.source_path)})` : ''}</option>
-                  {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>copy into: {o.label}</option>)}
-                  {m.target_mode === 'field' && m.target_key && !fieldOptions.some((o) => o.dataKey === m.target_key) && <option value={m.target_key}>copy into: {m.target_key}</option>}
+                  <option value="__field__">copy into another field…</option>
                 </select>
                 <button className="mini danger" onClick={() => setPopulate(populate.filter((_, j) => j !== i))}>✕</button>
               </div>
+              {m.target_mode === 'field' && (
+                <div style={{ marginTop: 4 }}>
+                  <KeyPicker value={m.target_key || ''} onChange={(k) => setPop(i, { target_mode: 'field', target_key: k })} options={fieldOptions} placeholder="copy into which field…" />
+                </div>
+              )}
             </div>
           ))}
           <button className="mini" onClick={addPop}>+ Save another field</button>

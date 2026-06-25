@@ -18,22 +18,24 @@ export function uid(prefix = 'id') {
 export const FIELD_PALETTE = [
   { type: 'text', label: 'Text', icon: '📝' },
   { type: 'number', label: 'Number', icon: '🔢' },
-  { type: 'date', label: 'Date', icon: '📅' },
-  { type: 'time', label: 'Time', icon: '🕐' },
+  { type: 'date', label: 'Date / Time', icon: '📅' },
+  { type: 'time', label: 'Date / Time', icon: '🕐' },
   { type: 'shift', label: 'Shift', icon: '🔄' },
+  // The four dropdown variants share one "Dropdown" palette entry; the
+  // Property panel toggles source (Fixed/External) and single/multiple.
   { type: 'dropdown_fixed', label: 'Dropdown', icon: '▼' },
-  { type: 'dropdown_async', label: 'Dropdown (master data)', icon: '🔗' },
-  { type: 'tags_fixed', label: 'Dropdown (multi-select)', icon: '🏷' },
-  { type: 'tags_async', label: 'Dropdown multi-select (master data)', icon: '🏷' },
-  { type: 'checkbox', label: 'Checkbox', icon: '☑' },
-  { type: 'toggle', label: 'Toggle', icon: '🔘' },
+  { type: 'dropdown_async', label: 'Dropdown', icon: '▼' },
+  { type: 'tags_fixed', label: 'Dropdown', icon: '▼' },
+  { type: 'tags_async', label: 'Dropdown', icon: '▼' },
+  { type: 'checkbox', label: 'Checkbox / Toggle', icon: '☑' },
+  { type: 'toggle', label: 'Checkbox / Toggle', icon: '🔘' },
   { type: 'textarea', label: 'Text Area', icon: '📄' },
   { type: 'upload', label: 'File / Image Upload', icon: '📎' },
   { type: 'header', label: 'Section Title', icon: '📋' },
   { type: 'divider', label: 'Divider', icon: '—' },
   { type: 'supervisor', label: 'Supervisor', icon: '👤' },
   { type: 'spectrometer', label: 'Spectrometer Reading', icon: '🔬' },
-  { type: 'chips', label: 'Chips (free tags)', icon: '🏷' },
+  { type: 'chips', label: 'Free tags', icon: '🏷' },
 ];
 
 function defaultTypeConfig(fieldType) {

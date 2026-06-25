@@ -3,7 +3,10 @@ import { validateContainerName } from '../../engine/dataKey.js';
 import { createTableConfig, createColumn, siblingNames, FIELD_PALETTE } from '../../state/formState.js';
 import { ENTITIES, getEntity } from '../../state/entities.js';
 import { dropdownBaseKey } from '../../engine/autofill.js';
+import { referencesTo, subtreeKeys, referenceableKeys } from '../../engine/keyGraph.js';
+import { dropdownType, dropdownVariant, booleanType, booleanDisplay, dateTypeFor, dateMode } from '../../engine/fieldKind.js';
 import EntityConfigModal from './EntityConfigModal.jsx';
+import KeyPicker from './KeyPicker.jsx';
 import Icon from '../Icon.jsx';
 
 // Friendly name per field type (panel header), from the palette.
@@ -52,25 +55,48 @@ function Check({ label, checked, onChange }) {
 
 const WIDTHS = ['25%', '33%', '50%', '66%', '75%', '100%'];
 
+// Predefined date formats (rsuite-valid tokens — case matters: MM=month). Free
+// text invites invalid patterns that break the picker, so offer a shortlist.
+// For "Date + Time", export appends the time part automatically.
+const DATE_FORMATS = ['dd-MM-yyyy', 'dd/MM/yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'dd MMM yyyy'];
+
+// Warns (non-blocking) when the given key(s) are referenced by other builder
+// rules, so the user knows a rename will break them. Structured refs are exact;
+// best-effort hits (formulas / validate_when / on_submit code) are flagged as
+// such. Coverage is honest: table-internal and raw imported refs aren't scanned.
+function KeyUsageWarning({ refIndex, keys }) {
+  const consumers = referencesTo(refIndex, keys);
+  if (!consumers.length) return null;
+  const structured = consumers.filter((c) => !c.bestEffort);
+  const fuzzy = consumers.filter((c) => c.bestEffort);
+  const liStyle = { fontSize: 12, lineHeight: 1.5 };
+  return (
+    <div style={{ marginTop: 6, padding: '6px 8px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, color: '#92400e' }}>
+      <div style={{ fontSize: 12, fontWeight: 600 }}>⚠ Used in {consumers.length} rule{consumers.length === 1 ? '' : 's'} — renaming will break {consumers.length === 1 ? 'it' : 'them'}:</div>
+      {structured.length > 0 && <ul style={{ margin: '4px 0 0', paddingInlineStart: 18 }}>{structured.map((c, i) => <li key={i} style={liStyle}>{c.label}</li>)}</ul>}
+      {fuzzy.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>Possibly (best-effort scan of formulas / code):</div>
+          <ul style={{ margin: '2px 0 0', paddingInlineStart: 18 }}>{fuzzy.map((c, i) => <li key={i} style={liStyle}>{c.label}</li>)}</ul>
+        </>
+      )}
+      <div style={{ fontSize: 10, marginTop: 4, opacity: 0.8 }}>ℹ Custom formulas/code and raw imported blocks aren't fully scanned.</div>
+    </div>
+  );
+}
+
 // ---- type-specific config editors ----------------------------------------
-function TypeConfig({ field, set, fieldOptions = [] }) {
+// `set` patches type_config; `setField` patches field-level props (e.g. the
+// field_type that a merged-palette toggle switches between).
+function TypeConfig({ field, set, setField, fieldOptions = [] }) {
   const c = field.type_config || {};
   switch (field.field_type) {
     case 'date':
-      return (
-        <>
-          <Check label="Auto-fill today on mount" checked={c.auto_fill_today} onChange={(v) => set({ auto_fill_today: v })} />
-          <Field label="Format"><input type="text" value={c.format || ''} onChange={(e) => set({ format: e.target.value })} /></Field>
-          <Check label="Enable time" checked={c.enable_time} onChange={(v) => set({ enable_time: v })} />
-        </>
-      );
     case 'time':
-      return (
-        <>
-          <Check label="Auto-derive shift from time" checked={c.auto_derive_shift} onChange={(v) => set({ auto_derive_shift: v })} />
-          {c.auto_derive_shift && <Field label="Shift target dataKey"><input type="text" value={c.shift_target_key || 'shift'} onChange={(e) => set({ shift_target_key: e.target.value })} /></Field>}
-        </>
-      );
+      return <DateTimeConfig field={field} set={set} setField={setField} />;
+    case 'checkbox':
+    case 'toggle':
+      return <BooleanConfig field={field} setField={setField} />;
     case 'number':
       return (
         <>
@@ -90,10 +116,9 @@ function TypeConfig({ field, set, fieldOptions = [] }) {
       );
     case 'dropdown_fixed':
     case 'tags_fixed':
-      return <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />;
     case 'dropdown_async':
     case 'tags_async':
-      return <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} field={field} />;
+      return <DropdownConfig field={field} set={set} setField={setField} fieldOptions={fieldOptions} />;
     case 'spectrometer':
       return (
         <>
@@ -129,6 +154,81 @@ function TypeConfig({ field, set, fieldOptions = [] }) {
     default:
       return null;
   }
+}
+
+// Merged "Dropdown": one entry covers the 4 internal types. Source (Fixed list /
+// External master data) + Allow multiple toggle the underlying field_type via
+// fieldKind; the relevant editor (options vs entity config) renders below. The
+// dataKey is identical across all four, so toggling never breaks references.
+function DropdownConfig({ field, set, setField, fieldOptions }) {
+  const c = field.type_config || {};
+  const { source, multiple } = dropdownVariant(field.field_type);
+  const change = (patch) => setField({ field_type: dropdownType({ source, multiple, ...patch }) });
+  return (
+    <>
+      <Field label="Source" hint="A fixed list you define, or External master data fetched from an API.">
+        <select value={source} onChange={(e) => change({ source: e.target.value })}>
+          <option value="fixed">Fixed list</option>
+          <option value="external">External (master data)</option>
+        </select>
+      </Field>
+      <Check label="Allow multiple" checked={multiple} onChange={(v) => change({ multiple: v })} />
+      {source === 'external'
+        ? <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} field={field} />
+        : <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />}
+    </>
+  );
+}
+
+// Merged "Checkbox / Toggle": same yes/no field, choose how it renders.
+function BooleanConfig({ field, setField }) {
+  return (
+    <Field label="Display as">
+      <select value={booleanDisplay(field.field_type)} onChange={(e) => setField({ field_type: booleanType(e.target.value) })}>
+        <option value="checkbox">Checkbox</option>
+        <option value="toggle">Toggle</option>
+      </select>
+    </Field>
+  );
+}
+
+// Merged "Date / Time": Mode picks Date / Date+Time / Time. Date & Date+Time are
+// the `date` type (enable_time differs); Time is the `time` type.
+function DateTimeConfig({ field, set, setField }) {
+  const c = field.type_config || {};
+  const mode = dateMode(field);
+  const change = (m) => {
+    const next = dateTypeFor(m);
+    if (next.field_type !== field.field_type) setField({ field_type: next.field_type });
+    if (next.field_type === 'date') set({ enable_time: next.enable_time });
+  };
+  return (
+    <>
+      <Field label="Mode">
+        <select value={mode} onChange={(e) => change(e.target.value)}>
+          <option value="date">Date</option>
+          <option value="datetime">Date + Time</option>
+          <option value="time">Time</option>
+        </select>
+      </Field>
+      {field.field_type === 'date' ? (
+        <>
+          <Check label="Auto-fill today on mount" checked={c.auto_fill_today} onChange={(v) => set({ auto_fill_today: v })} />
+          <Field label="Format" hint={c.enable_time ? 'Time (HH:mm) is added automatically.' : undefined}>
+            <select value={c.format || 'dd-MM-yyyy'} onChange={(e) => set({ format: e.target.value })}>
+              {DATE_FORMATS.map((val) => <option key={val} value={val}>{val.toLowerCase()}</option>)}
+              {c.format && !DATE_FORMATS.includes(c.format) && <option value={c.format}>{c.format.toLowerCase()} (custom)</option>}
+            </select>
+          </Field>
+        </>
+      ) : (
+        <>
+          <Check label="Auto-derive shift from time" checked={c.auto_derive_shift} onChange={(v) => set({ auto_derive_shift: v })} />
+          {c.auto_derive_shift && <Field label="Shift target dataKey"><input type="text" value={c.shift_target_key || 'shift'} onChange={(e) => set({ shift_target_key: e.target.value })} /></Field>}
+        </>
+      )}
+    </>
+  );
 }
 
 // Master-data dropdown config: basic choices on the right panel (entity +
@@ -268,7 +368,7 @@ function TableEditor({ section, dispatch }) {
 }
 
 // ---- section properties ----------------------------------------------------
-function SectionProps({ section, state, dispatch }) {
+function SectionProps({ section, state, dispatch, refIndex }) {
   const others = siblingNames(state.sections, section.id) || [];
   const nameErr = validateContainerName(section.container_name, others.filter((n) => n !== section.container_name));
   const upd = (patch) => dispatch({ type: 'UPDATE_SECTION', sectionId: section.id, patch });
@@ -288,6 +388,7 @@ function SectionProps({ section, state, dispatch }) {
           <input type="text" value={section.container_name} placeholder="e.g. moulding" onChange={(e) => upd({ container_name: e.target.value })} />
           {nameErr && <div className="err">{nameErr}</div>}
           {section._effPrefix && <div className="key" style={{ marginTop: 4 }}>{isTable ? section._effPrefix + '[ ]' : section._effPrefix + '__‹field›'}</div>}
+          <KeyUsageWarning refIndex={refIndex} keys={subtreeKeys(state, section.id)} />
         </Field>
         <Check label="Show the title" checked={section.show_header} onChange={(v) => upd({ show_header: v })} />
 
@@ -317,7 +418,7 @@ function SectionProps({ section, state, dispatch }) {
         <RenderWhenEditor
           value={section.render_when}
           onChange={(rw) => upd({ render_when: rw })}
-          fieldOptions={collectFieldOptions(state, null).filter((o) => o.section !== section.container_name)}
+          fieldOptions={referenceableKeys(state, null).filter((o) => o.group !== section.container_name)}
         />
 
         <details className="advanced">
@@ -337,7 +438,7 @@ function SectionProps({ section, state, dispatch }) {
 }
 
 // ---- field properties ------------------------------------------------------
-function FieldProps({ section, field, dispatch, fieldOptions }) {
+function FieldProps({ section, field, dispatch, fieldOptions, refIndex }) {
   const upd = (patch) => dispatch({ type: 'UPDATE_FIELD', sectionId: section.id, fieldId: field.id, patch });
   const setCfg = (patch) => dispatch({ type: 'UPDATE_FIELD_CONFIG', sectionId: section.id, fieldId: field.id, patch });
   const isDisplay = field.field_type === 'header' || field.field_type === 'divider';
@@ -357,10 +458,22 @@ function FieldProps({ section, field, dispatch, fieldOptions }) {
 
         {!isDisplay && (
           <>
+            {/* Key — the dataKey other rules reference. Surfaced in Basic (right
+                under the label) so it's discoverable; manual override kept. */}
+            <Field label="Key" hint="Auto-derived from the label. Other rules reference this.">
+              <div className="datakey">{field.dataKey || '—'}</div>
+              <label className="inline" style={{ marginTop: 6 }}>
+                <input type="checkbox" checked={!!field._dataKeyOverridden} onChange={(e) => { if (!e.target.checked) upd({ dataKey: '', _dataKeyOverridden: false, label: field.label }); else upd({ dataKey: field.dataKey }); }} />
+                <span style={{ fontSize: 12 }}>Override manually</span>
+              </label>
+              {field._dataKeyOverridden && <input type="text" style={{ marginTop: 4 }} value={field.dataKey} onChange={(e) => upd({ dataKey: e.target.value })} />}
+              <KeyUsageWarning refIndex={refIndex} keys={[field.dataKey]} />
+            </Field>
+
             <Check label="Required" checked={field.required} onChange={(v) => upd({ required: v })} />
             <Field label="Placeholder"><input type="text" value={field.placeholder || ''} onChange={(e) => upd({ placeholder: e.target.value || null })} /></Field>
 
-            <TypeConfig field={field} set={setCfg} fieldOptions={fieldOptions} />
+            <TypeConfig field={field} set={setCfg} setField={upd} fieldOptions={fieldOptions} />
 
             <label className="fld">Show this field when…</label>
             <RenderWhenEditor value={field.render_when} onChange={(rw) => upd({ render_when: rw })} fieldOptions={fieldOptions} />
@@ -398,7 +511,7 @@ function FieldProps({ section, field, dispatch, fieldOptions }) {
               <Check label="Disabled" checked={field.disabled} onChange={(v) => upd({ disabled: v })} />
               <Check label="Read only" checked={field.read_only} onChange={(v) => upd({ read_only: v })} />
 
-              <Field label="Field name (override)" hint="Auto-derived from the label.">
+              <Field label="Field name (override)" hint="Auto-derived from the label. Drives the key above.">
                 <input type="text" value={field.field_name} onChange={(e) => upd({ field_name: e.target.value })} />
               </Field>
 
@@ -410,14 +523,6 @@ function FieldProps({ section, field, dispatch, fieldOptions }) {
                   <option value="derived__">derived__ (computed display)</option>
                 </select>
               </Field>
-
-              <label className="fld">dataKey (auto)</label>
-              <div className="datakey">{field.dataKey || '—'}</div>
-              <label className="inline" style={{ marginTop: 6 }}>
-                <input type="checkbox" checked={!!field._dataKeyOverridden} onChange={(e) => { if (!e.target.checked) upd({ dataKey: '', _dataKeyOverridden: false, label: field.label }); else upd({ dataKey: field.dataKey }); }} />
-                <span style={{ fontSize: 12 }}>Override manually</span>
-              </label>
-              {field._dataKeyOverridden && <input type="text" style={{ marginTop: 4 }} value={field.dataKey} onChange={(e) => upd({ dataKey: e.target.value })} />}
 
               <Field label="Custom CSS" hint="Raw CSS layered onto this field, on top of the theme. e.g. .rs-input{border-color:#e43e2b;}">
                 <textarea
@@ -435,31 +540,13 @@ function FieldProps({ section, field, dispatch, fieldOptions }) {
   );
 }
 
-// All referenceable fields in the form (real dataKeys + friendly labels), so
-// the user picks a field instead of hand-typing a dataKey (which caused the
-// info_age vs info__age bug). Excludes the current field and display-only nodes.
-function collectFieldOptions(state, currentFieldId) {
-  const opts = [];
-  const walk = (nodes) => (nodes || []).forEach((s) => {
-    (s.fields || []).forEach((f) => {
-      if (f.id === currentFieldId) return;
-      if (!f.dataKey || f.field_type === 'header' || f.field_type === 'divider') return;
-      opts.push({ dataKey: f.dataKey, label: f.label || f.field_name || f.dataKey, section: s.container_name });
-    });
-    // Table cells are row-scoped (relative) keys inside an array, so they are
-    // not addressable as flat form dataKeys — intentionally not offered here.
-    walk(s.children); // nested containers contribute their fields too
-  });
-  walk(state.sections);
-  return opts;
-}
+// Referenceable keys (real field keys + virtual dropdown/auto-fill keys, grouped)
+// now come from keyGraph.referenceableKeys — see PropertyPanel/SectionProps.
 
 function RenderWhenEditor({ value, onChange, fieldOptions }) {
   const rw = value || { mode: 'always', field: '', operator: 'equals', value: '' };
   const set = (patch) => onChange({ ...rw, ...patch });
   const noValue = ['is_empty', 'is_not_empty'].includes(rw.operator);
-  const known = fieldOptions.some((o) => o.dataKey === rw.field);
-  const custom = rw.field && !known;
 
   return (
     <>
@@ -470,12 +557,7 @@ function RenderWhenEditor({ value, onChange, fieldOptions }) {
       {rw.mode === 'condition' && (
         <div className="col-editor">
           <label className="fld" style={{ marginTop: 0 }}>Field</label>
-          <select value={custom ? '__custom__' : rw.field} onChange={(e) => set({ field: e.target.value === '__custom__' ? '' : e.target.value })}>
-            <option value="">— pick a field —</option>
-            {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} · {o.dataKey}</option>)}
-            <option value="__custom__">Custom dataKey…</option>
-          </select>
-          {custom && <input type="text" style={{ marginTop: 4 }} placeholder="form.data.<key>" value={rw.field} onChange={(e) => set({ field: e.target.value })} />}
+          <KeyPicker value={rw.field} onChange={(k) => set({ field: k })} options={fieldOptions} placeholder="— pick a field —" />
 
           <select style={{ marginTop: 4 }} value={rw.operator} onChange={(e) => set({ operator: e.target.value })}>
             <option value="equals">equals</option><option value="not_equals">not equals</option>
@@ -507,10 +589,9 @@ function DefaultValueEditor({ value, onChange, fieldOptions }) {
       </select>
       {dv.mode === 'fixed' && <input type="text" style={{ marginTop: 4 }} placeholder="value" value={dv.value} onChange={(e) => set({ value: e.target.value })} />}
       {dv.mode === 'from_field' && (
-        <select style={{ marginTop: 4 }} value={dv.source_field} onChange={(e) => set({ source_field: e.target.value })}>
-          <option value="">— pick a field —</option>
-          {fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label} · {o.dataKey}</option>)}
-        </select>
+        <div style={{ marginTop: 4 }}>
+          <KeyPicker value={dv.source_field} onChange={(k) => set({ source_field: k })} options={fieldOptions} placeholder="— pick a field —" />
+        </div>
       )}
     </>
   );
@@ -545,7 +626,7 @@ function ValidationsEditor({ value, onChange, fieldOptions }) {
           {v.type === 'compare_field' && (
             <div className="inline" style={{ marginTop: 4 }}>
               <select value={v.op || '>'} onChange={(e) => setRow(i, { op: e.target.value })}>{['>', '<', '>=', '<=', '==', '!='].map((o) => <option key={o} value={o}>{o}</option>)}</select>
-              <select value={v.other_field || ''} onChange={(e) => setRow(i, { other_field: e.target.value })}><option value="">— field —</option>{fieldOptions.map((o) => <option key={o.dataKey} value={o.dataKey}>{o.label}</option>)}</select>
+              <div style={{ flex: 1 }}><KeyPicker value={v.other_field || ''} onChange={(k) => setRow(i, { other_field: k })} options={fieldOptions} placeholder="— field —" /></div>
             </div>
           )}
           {v.type === 'required_when' && <input type="text" style={{ marginTop: 4 }} placeholder="form.data.<key> condition" value={v.validate_when || ''} onChange={(e) => setRow(i, { validate_when: e.target.value })} />}
@@ -558,7 +639,7 @@ function ValidationsEditor({ value, onChange, fieldOptions }) {
   );
 }
 
-export default function PropertyPanel({ state, dispatch, section, fieldId }) {
+export default function PropertyPanel({ state, dispatch, section, fieldId, refIndex }) {
   if (!section) {
     return (
       <div className="panel panel-right">
@@ -570,12 +651,12 @@ export default function PropertyPanel({ state, dispatch, section, fieldId }) {
     );
   }
   const field = fieldId ? section.fields.find((f) => f.id === fieldId) : null;
-  const fieldOptions = field ? collectFieldOptions(state, field.id) : [];
+  const fieldOptions = field ? referenceableKeys(state, field.id) : [];
   return (
     <div className="panel panel-right">
       {field
-        ? <FieldProps section={section} field={field} dispatch={dispatch} fieldOptions={fieldOptions} />
-        : <SectionProps section={section} state={state} dispatch={dispatch} />}
+        ? <FieldProps section={section} field={field} dispatch={dispatch} fieldOptions={fieldOptions} refIndex={refIndex} />
+        : <SectionProps section={section} state={state} dispatch={dispatch} refIndex={refIndex} />}
     </div>
   );
 }

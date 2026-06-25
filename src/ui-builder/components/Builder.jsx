@@ -3,6 +3,7 @@ import { reducer, initialState, findNode } from '../state/formState.js';
 import { THEMES } from '../state/themes.js';
 import { exportJSON } from '../engine/exportJSON.js';
 import { importJSON } from '../engine/importJSON.js';
+import { buildReferenceIndex } from '../engine/keyGraph.js';
 import { buildPreviewUrl } from '../preview-url.js';
 import SectionPanel from './panels/SectionPanel.jsx';
 import CanvasPanel from './panels/CanvasPanel.jsx';
@@ -32,6 +33,10 @@ export default function Builder({ initialForm = null, onSaveTemplate = null, onP
     () => (modal === 'export' ? exportJSON(state) : null),
     [modal, state],
   );
+
+  // Key reference index — built ONCE per state change (O(N)); PropertyPanel does
+  // O(1) lookups to warn when a rename would break a referenced key.
+  const refIndex = useMemo(() => buildReferenceIndex(state), [state]);
 
   function doImport() {
     setImportErr('');
@@ -124,6 +129,7 @@ export default function Builder({ initialForm = null, onSaveTemplate = null, onP
         <PropertyPanel
           state={state} dispatch={dispatch}
           section={activeSection} fieldId={selField}
+          refIndex={refIndex}
         />
       </div>
 

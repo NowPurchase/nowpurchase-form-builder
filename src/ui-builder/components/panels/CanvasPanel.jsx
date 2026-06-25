@@ -1,23 +1,29 @@
 import React from 'react';
 import Icon from '../Icon.jsx';
 
-// add-toolbar: a few common types inline, the rest under "More".
-const COMMON = [
-  ['text', 'Text', 'text'], ['number', 'Number', 'number'], ['date', 'Date', 'date'],
-  ['dropdown_fixed', 'Dropdown', 'dropdown'], ['checkbox', 'Checkbox', 'checkbox'], ['textarea', 'Text Area', 'textarea'],
+// add-toolbar: grouped, consolidated palette. Each entry adds ONE representative
+// internal field_type; the variant (single/multi, fixed/external, checkbox/toggle,
+// date/time mode) is then chosen in the Property panel. Shift & Supervisor are no
+// longer offered — build them from a Fixed dropdown / a Text field with the
+// "Current user" default. (Predefined templates will cover these later.)
+const PALETTE_GROUPS = [
+  { title: 'Inputs', items: [
+    ['text', 'Text', 'text'], ['number', 'Number', 'number'], ['date', 'Date / Time', 'date'],
+    ['textarea', 'Text Area', 'textarea'], ['upload', 'File / Image', 'file'], ['spectrometer', 'Spectrometer', 'spectrometer'],
+  ] },
+  { title: 'Choices', items: [
+    ['dropdown_fixed', 'Dropdown', 'dropdown'], ['checkbox', 'Checkbox / Toggle', 'checkbox'], ['chips', 'Free tags', 'tag'],
+  ] },
+  { title: 'Layout', items: [
+    ['header', 'Section Title', 'heading'], ['divider', 'Divider', 'divider'],
+  ] },
 ];
-const MORE = [
-  ['time', 'Time', 'time'], ['shift', 'Shift', 'shift'], ['dropdown_async', 'Dropdown · Master', 'link'],
-  ['tags_fixed', 'Dropdown · Multi', 'tag'], ['tags_async', 'Dropdown · Multi Master', 'tag'], ['toggle', 'Toggle', 'toggle'],
-  ['upload', 'File / Image', 'file'], ['header', 'Section Title', 'heading'], ['divider', 'Divider', 'divider'],
-  ['supervisor', 'Supervisor', 'supervisor'], ['spectrometer', 'Spectrometer', 'spectrometer'],
-  ['chips', 'Chips · Free tags', 'tag'],
-];
+// Short label for the field-row chip. Merged families collapse to one name.
 const TYPE_LABEL = {
   text: 'Text', number: 'Number', date: 'Date', time: 'Time', shift: 'Shift',
-  dropdown_fixed: 'Dropdown', dropdown_async: 'Dropdown · Master', tags_fixed: 'Dropdown · Multi', tags_async: 'Dropdown · Multi Master',
+  dropdown_fixed: 'Dropdown', dropdown_async: 'Dropdown', tags_fixed: 'Dropdown', tags_async: 'Dropdown',
   checkbox: 'Checkbox', toggle: 'Toggle', textarea: 'Text Area', upload: 'File', header: 'Section Title',
-  divider: 'Divider', supervisor: 'Supervisor', spectrometer: 'Spectrometer', chips: 'Chips',
+  divider: 'Divider', supervisor: 'Supervisor', spectrometer: 'Spectrometer', chips: 'Free tags', computed: 'Computed',
 };
 
 function FieldRow({ field, active, onSelect, onUp, onDown, onRemove }) {
@@ -90,20 +96,19 @@ function SectionCard({ node, depth, dispatch, selSection, setSelSection, selFiel
 
           <div className="palette">
             <div className="ph"><span className="t">ADD FIELD</span><span className="rule" /></div>
-            <div className="row">
-              {COMMON.map(([type, label, icon]) => (
-                <button key={type} title={label} onClick={addField(type)}><span className="pi"><Icon name={icon} size={15} /></span>{label}</button>
-              ))}
-              <details className="pal-more" onClick={(e) => e.stopPropagation()}>
-                <summary><span className="pi-caret" style={{ display: 'flex' }}><Icon name="chevron" size={13} stroke={1.8} /></span>More</summary>
-                <div className="pal-more-grid">
-                  {MORE.map(([type, label, icon]) => (
-                    <button key={type} title={label} onClick={addField(type)}><span className="pi"><Icon name={icon} size={14} /></span>{label}</button>
+            {PALETTE_GROUPS.map((grp) => (
+              <div className="pal-group" key={grp.title}>
+                <span className="pal-group-label">{grp.title}</span>
+                <div className="row">
+                  {grp.items.map(([type, label, icon]) => (
+                    <button key={type} title={label} onClick={addField(type)}><span className="pi"><Icon name={icon} size={15} /></span>{label}</button>
                   ))}
-                  <button title="nested group" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'ADD_SUBCONTAINER', parentId: node.id }); }}><span className="pi"><Icon name="nested" size={14} /></span>Nested Group</button>
+                  {grp.title === 'Layout' && (
+                    <button title="nested group" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'ADD_SUBCONTAINER', parentId: node.id }); }}><span className="pi"><Icon name="nested" size={15} /></span>Nested Group</button>
+                  )}
                 </div>
-              </details>
-            </div>
+              </div>
+            ))}
           </div>
         </>
       )}
