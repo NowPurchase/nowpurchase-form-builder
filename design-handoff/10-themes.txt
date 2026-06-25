@@ -1,0 +1,42 @@
+================================================================================
+10 — THEMES (the look of the rendered form)
+================================================================================
+
+WHAT IT IS
+A theme is a COMPLETE design system for the rendered/exported form — not just
+colors. Picked from the top-bar theme dropdown. Changing it restyles how the
+final form looks (the builder chrome itself stays constant). Current themes:
+  metalcloud, metalv2, warmAmber, brutalistMono, softMint.
+
+WHAT A THEME CONTROLS (per theme definition)
+  • name — display name in the picker.
+  • tokens — the design tokens: colors, spacing scale, radii, typography, sizes
+    (the primitives everything else builds on).
+  • componentCss — per-component styling (inputs, buttons, etc.).
+  • card — styling of section cards/containers.
+  • screen — the overall form screen/background.
+  • table — table parts: header (headCss), cells (cellCss), add-row button
+    (addBtnCss).
+  • removeBtnCss — the row remove button.
+So a theme owns layout, shape, shadow, and type — a full visual language, the
+way a real design system would. (It is NOT a thin color override.)
+
+WHERE IT SHOWS
+  • The theme dropdown in the top bar.
+  • The PREVIEW and the EXPORTED form render with the chosen theme.
+  • (The builder's own UI does not change with the theme.)
+
+DATA IN/OUT
+  Reads the THEMES registry; writes the selected theme name into form meta.
+  On export, the active theme's tokens/CSS are baked into the output.
+
+DESIGN GOALS
+  • This is the biggest lever for "how the finished form feels." A redesign
+    should treat each theme as a coherent system (e.g. "Metal Cloud" = clean
+    industrial; "Warm Amber" = warmer; "Brutalist Mono" = stark/monospace;
+    "Soft Mint" = soft/friendly).
+  • The picker should preview/communicate the vibe of each theme (swatches /
+    mini-previews would help users choose).
+  • Tokens should be the single source of truth so themes stay consistent and
+    new ones are easy to add.
+================================================================================

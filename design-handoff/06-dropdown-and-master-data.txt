@@ -1,0 +1,54 @@
+================================================================================
+06 — DROPDOWN + MASTER-DATA CONFIG (the entity config modal)
+================================================================================
+
+WHAT IT IS
+The Dropdown field can pull its options from "master data" — live lists fetched
+from an API (customers, parts, grades, heats, test results, etc.). Configuring
+that lives partly in the right panel and partly in a dedicated MODAL.
+
+IN THE RIGHT PANEL (Dropdown field config)
+  • Source: "Fixed list" or "External (master data)".
+  • Allow multiple: single vs multi-select.
+  • If Fixed: an Options editor (rows of label + value, add/remove).
+  • If External: an entity picker + search/display field, a "⚙ Configure
+    filters & auto-fill…" button (opens the modal), and an Advanced (raw) block
+    for entity id / search field.
+
+THE ENTITY CONFIG MODAL ("Configure master dropdown")
+  A centered dialog with:
+  • Entity (master data) — dropdown of available entities (e.g. "MTC · Customer",
+    "MTC · Grade", "MTC · Heat", casting/raw-material masters…). Custom id allowed.
+  • Search / display field — which field of the record is searched/shown.
+  • FILTERS — limit what the API returns. Each filter row: a key, and a value
+    that is either a Fixed value or pulled "From field" (a cascade — e.g. only
+    show Parts for the chosen Client). Uses a searchable field picker (see 08).
+  • "Also save fields from the picked record" (AUTO-FILL) — on select, copy
+    extra fields off the chosen record. Each row: "Save {record field} →
+    {destination}", where destination is either "save with this field" (stored
+    under this field's own key prefix, e.g. casting__part__grade) or "copy into
+    another field". One row per value.
+  Footer: "Done".
+
+WHAT GETS SAVED ON SELECT (behavior the design should communicate)
+  • Single dropdown: the selected record's ID is saved at the field's key, and
+    its display label at "{key}__label". If the API returns no id, the displayed
+    value is saved instead (never empty).
+  • Multi-select: an array of ids at the field's key, PLUS a parallel array of
+    objects [{id, label, …foldedFields}] at "{key}__items" (the "Also save
+    fields" rows fold into each object). Selected values render as chips.
+
+DATA IN/OUT
+  Reads the entity registry (list of entities, their request contract, fields,
+  filters) and other form fields (for cascade/copy-into pickers). Writes the
+  dropdown's config (entity, search field, filters, auto-fill rows).
+
+DESIGN GOALS
+  • The Fixed-vs-External choice must be obvious — a common confusion is adding
+    a Dropdown expecting master data but leaving it on "Fixed" (no API call).
+    Consider a clear visual cue / hint when Fixed (e.g. "no API — switch to
+    External for master data").
+  • The modal packs a lot (entity, search, filters, auto-fill). Strong sectioning
+    and plain-language labels ("Limit options…", "Also save fields…") are key.
+  • Cascades and auto-fill are powerful but conceptual — diagrams/inline examples
+    help non-technical users.

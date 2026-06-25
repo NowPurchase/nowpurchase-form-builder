@@ -1,0 +1,52 @@
+================================================================================
+05 — FIELD TYPES (the palette + what each type is)
+================================================================================
+
+WHAT IT IS
+The kinds of fields a user can add (from the canvas "ADD FIELD" palette, grouped
+Inputs / Choices / Layout). Several types are CONSOLIDATED: one palette entry +
+a toggle in the right panel picks the variant. Below: each entry, what it does,
+and its key options.
+
+INPUTS
+  • Text — single-line text.
+  • Number — numeric. Options: allow negative, decimal places, prefix/suffix
+    (e.g. "₹", "kg").
+  • Date / Time — one entry with a MODE: Date, Date + Time, or Time.
+      Format is chosen from presets (dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd, …) —
+      no free text. "Auto-fill today on mount" for date; "auto-derive shift"
+      for time (computes A/B/C shift from the time).
+  • Text Area — multi-line; configurable rows.
+  • File / Image — upload (camera/file); allow multiple.
+  • Spectrometer — a domain device-reading field: endpoint URL, element symbols
+    (e.g. "C,Si,Mn,P,S"), columns per row, connection status. (Specialized.)
+
+CHOICES
+  • Dropdown — ONE entry covering 4 internal variants via two toggles:
+      Source: "Fixed list" (you type the options) OR "External (master data)"
+              (fetched live from an API — see 06).
+      Allow multiple: off = single select, on = multi-select (renders as chips).
+  • Checkbox / Toggle — a yes/no field; "Display as" picks checkbox or toggle.
+  • Free tags — user types their own tags (not from a list); chip input; max
+    count + allow-duplicates options.
+
+LAYOUT (non-data, structural)
+  • Section Title — a heading inside a section (breaks to its own row).
+  • Divider — a horizontal rule (breaks to its own row).
+  • Nested Group — adds a sub-container (a section within the section).
+
+NOTES FOR DESIGN
+  • Each field appears in the canvas as a chip with a TYPE BADGE — the badge
+    labels collapse to the family name (all 4 dropdown variants read "Dropdown",
+    both booleans read by their display, date/time read "Date"/"Time").
+  • Icons currently: text/number/date/time/dropdown/tag/checkbox/toggle/file/
+    heading/divider/spectrometer. A redesign can restyle these but should keep
+    types instantly distinguishable.
+  • REMOVED from the palette (build them from the above instead): a standalone
+    "Shift" (use a Fixed dropdown A/B/C) and "Supervisor" (use Text + default
+    value = "Current user"). Predefined templates will reintroduce shortcuts.
+
+DESIGN GOALS
+  • Few, clear entries (simple) that still reach every variant via toggles
+    (powerful). The toggle UI must make the variant obvious.
+  • Field config in the right panel should feel consistent across types.

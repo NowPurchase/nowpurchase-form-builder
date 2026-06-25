@@ -1,0 +1,39 @@
+================================================================================
+09 — ASSISTANT (AI chat dock)
+================================================================================
+
+WHAT IT IS
+A chat panel where the user describes changes in plain English and the AI edits
+the form (adds sections/fields, sets required, adds conditions, switches theme,
+etc.). Toggled from the top bar ("✨ Assistant"). Overlays the workbench as a
+docked panel.
+
+LAYOUT
+  • Header: "🤖 Assistant", an optional "mock mode" badge (when no model endpoint
+    is configured — it falls back to pattern-matching), and a ✕ close.
+  • Message list: alternating user / assistant bubbles. Assistant replies can
+    include bullet lines summarizing the changes it made ("• added section …").
+  • A "…" typing bubble while the AI is working.
+  • Input: a 2-row textarea ("Describe a change…") + a "Send" button. Enter
+    sends; Shift+Enter for newline.
+
+BEHAVIOR
+  • On send, it runs a turn; if the AI returns tool calls, they're applied to the
+    form and the touched/added section is auto-selected (so the change is visible
+    in the canvas). The reply text + a bullet summary of applied changes shows.
+  • Seeded with an example prompt listing what it can do ("add a section called
+    moulding", "make Heat No required", "show remarks when approved is not
+    empty", "use metalcloud theme").
+  • Errors show as "⚠ {message}".
+
+DATA IN/OUT
+  Reads the current form + the current focus (selected section/field) for
+  context. Writes by replacing form state with the AI's edited version.
+
+DESIGN GOALS
+  • Should feel like a helpful co-builder, not a generic chatbot — tie replies
+    to visible changes (the auto-select + bullet summary).
+  • Make "mock mode" (no live model) understandable, not alarming.
+  • The dock shouldn't fully obscure the canvas — the user wants to see edits
+    land. Consider size/position that keeps the form visible.
+  • Clear affordance that this edits the real form (undo-ability is reassuring).

@@ -1,0 +1,48 @@
+================================================================================
+12 — RULES: SHOW-WHEN, DEFAULT VALUE, VALIDATIONS
+================================================================================
+
+WHAT IT IS
+The logic editors inside a field's (and section's) properties. They make forms
+smart: hide/show based on other answers, prefill values, and validate input.
+All of them pick other fields via the searchable KEY PICKER (see 08).
+
+SHOW THIS FIELD/SECTION WHEN… (conditional visibility)
+  • A mode select: "Always show" vs "Show only when…".
+  • When conditional: pick a Field (key picker) + an operator + a value.
+    Operators: equals, not equals, is empty, is not empty, greater than,
+    less than. ("is empty"/"is not empty" need no value, and are array-aware so
+    they work for multi-selects, chips, uploads.)
+  • A live hint shows the underlying reference ("uses form.data.<key>").
+
+DEFAULT VALUE (on open)
+  A mode select:
+    • No default
+    • Today (date) / Now (time) / Now (date+time)
+    • Current user (fills the logged-in user's name)
+    • Fixed value… (type a value)
+    • Copy from another field… (key picker)
+
+VALIDATION RULES (beyond the "Required" checkbox)
+  A list you add to; each rule has a type + inputs + optional error message:
+    • Min value / Max value (a bound)
+    • Between (min + max)
+    • Compare to field (operator + another field via key picker)
+    • Required when (a condition expression)
+    • Custom code (return a boolean) — advanced/free-text
+  Each row can carry its own error message.
+
+DATA IN/OUT
+  Reads referenceable keys (for pickers). Writes render_when / default_value /
+  validations onto the field (or render_when onto the section).
+
+DESIGN GOALS
+  • These are where non-technical users build "logic" — keep the language plain
+    ("Show only when…", "Copy from another field…") and the building blocks
+    visual (pick field → operator → value), never requiring raw expressions for
+    the common cases.
+  • The field pickers must be the searchable combobox (08), not raw selects.
+  • "Custom code" is the power escape hatch — present but visually secondary.
+  • Validation rows should read like sentences and clearly attach their error
+    message.
+================================================================================

@@ -1,0 +1,66 @@
+================================================================================
+01 — APP SHELL (top bar · three-pane layout · footer · modals)
+================================================================================
+
+WHAT IT IS
+The outer frame that holds everything: a top bar, a 3-column work area, a status
+footer, plus overlays (assistant dock, modal dialogs). Always on screen.
+
+--------------------------------------------------------------------------------
+TOP BAR (full width, fixed at top)
+--------------------------------------------------------------------------------
+Left → right:
+  • Brand: small logo mark + "DLMS Form Builder".
+  • Form name      — text input, placeholder "Form name".
+  • template_id    — text input, monospace, placeholder "template_id" (the
+                     machine id of this form).
+  • Theme          — dropdown of theme names (see 10-themes). Changes the look of
+                     the PREVIEW/exported form, not the builder chrome.
+  • Actions (right cluster):
+      ⚙  Form settings (gear) — opens the Settings modal (advanced: on-submit code).
+      ✨ Assistant — toggles the AI chat dock (see 09).
+      Import — opens Import modal (paste FormEngine JSON to load).
+      Preview — opens the rendered form in a new tab (or host callback).
+      Export JSON (primary) — opens Export modal (view/copy/download the JSON).
+      Save template (primary, optional) — present only when embedded in a host
+        app; shows "Saving…" while in flight.
+
+STATES: inputs are plain; primary buttons are accent-filled; "Save" disables +
+shows "Saving…" during save.
+
+--------------------------------------------------------------------------------
+THREE-PANE LAYOUT (fills the area between top bar and footer)
+--------------------------------------------------------------------------------
+  • LEFT  — Section panel (02). Narrow. The list of sections/groups.
+  • CENTER— Canvas (03). Widest. The form being built.
+  • RIGHT — Property panel (04). The editor for whatever is selected.
+Panels scroll independently. Left & right are fixed-ish width; center flexes.
+
+--------------------------------------------------------------------------------
+FOOTER (full width, status bar)
+--------------------------------------------------------------------------------
+  • Left: summary of the active section — "{name} · {standard|table} · N fields"
+    or "No section selected".
+  • Right: totals — "N sections" · "N fields" (counts the whole tree).
+
+--------------------------------------------------------------------------------
+OVERLAYS
+--------------------------------------------------------------------------------
+  • ASSISTANT DOCK — a floating chat panel (see 09), toggled from the top bar.
+  • EXPORT MODAL — title "Export — FormEngine JSON", a scrollable <pre> of the
+    JSON, footer buttons: "Download .json" (primary), "Copy to clipboard".
+  • IMPORT MODAL — a big textarea to paste JSON + an error line if parse/convert
+    fails; a button to load it (replaces the current form).
+  • SETTINGS MODAL — advanced form-level settings (e.g. raw on-submit JS code).
+  All modals: centered card on a dark scrim; ✕ to close; click-scrim closes.
+
+DATA IN/OUT
+Reads/writes form meta (name, template_id, theme). The Export/Preview actions
+serialize the whole form to JSON; Import parses JSON back into the builder.
+
+DESIGN GOALS
+  • The 3-pane "select on left/center, edit on right" model must stay legible.
+  • Top bar holds identity (name/id/theme) + the 5 key actions without crowding;
+    on smaller widths it should gracefully wrap or condense.
+  • Clear primary vs secondary action hierarchy (Export/Save are primary).
+  • Footer is glanceable reassurance (counts), never noisy.

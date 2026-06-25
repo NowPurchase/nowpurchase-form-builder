@@ -1,0 +1,67 @@
+================================================================================
+03 — CANVAS PANEL (CENTER: the form being built)
+================================================================================
+
+WHAT IT IS
+The middle work area: a visual representation of the form. Shows each section as
+a CARD; inside, the fields appear as "chips" arranged in their real layout
+(so the builder matches the preview). Each section card has an "ADD FIELD"
+palette at the bottom. Tables render as a column preview instead of chips.
+
+SECTION CARD
+  • Header: section title (or name), badges ("Table"/"Imported" when relevant),
+    and the effective key/prefix on the right (monospace).
+  • Body: the fields (standard) OR a table column preview (table).
+  • Nested groups render as nested cards (indented, "↳" in the title).
+
+FIELD CHIPS (standard sections)
+  Each field is a chip showing:
+    • drag handle (grip icon)
+    • Label (or "Untitled field"); a small "required" tag if required
+    • the field's key/dataKey (monospace, secondary)
+    • a TYPE badge on the right (e.g. "Dropdown", "Number")
+    • a ✕ delete that fades in on hover/selection (replaces the type badge spot,
+      so they never overlap)
+  The SELECTED chip is highlighted (accent ring). Clicking a chip selects the
+  field → loads it in the right panel.
+
+  LAYOUT VISUALIZATION (important):
+    Chips are grouped into rows that mirror the section's layout setting:
+      • Horizontal (default) → N chips side-by-side per row (N = "columns per
+        row", 1–5, default 2).
+      • Vertical → one chip per row (stacked).
+      • A Section Title or Divider field always breaks to its own full-width row.
+    So the canvas shows the true arrangement without opening preview.
+
+  REORDER: done from the RIGHT panel's "Position" control for the selected field
+  (not on the chip), to keep narrow chips clean. The selected chip stays
+  highlighted so you can watch it move.
+
+ADD-FIELD PALETTE (bottom of each section card)
+  Label "ADD FIELD", then field types grouped:
+    • Inputs  : Text, Number, Date / Time, Text Area, File / Image, Spectrometer
+    • Choices : Dropdown, Checkbox / Toggle, Free tags
+    • Layout  : Section Title, Divider, Nested Group
+  Each is a small button (icon + label). Clicking adds that field to the section
+  and selects the section. (See 05 for what each type is.)
+
+TABLE SECTIONS
+  Instead of chips, show a compact table preview: a header row of the configured
+  columns (header + key suffix), plus a hint to configure columns in the right
+  panel. (See 07.)
+
+EMPTY STATE
+  "No fields yet — add one below."
+
+DATA IN/OUT
+  Reads the section + its fields/layout. Writes: add field, remove field, select
+  field/section. Reorder is dispatched from the right panel.
+
+DESIGN GOALS
+  • The canvas should read like a faithful, lightweight preview of the form's
+    structure — layout (horizontal/vertical, columns) must be visually true.
+  • Chips must stay readable even at 5 columns (small width) — label first, key
+    secondary, type/▾ controls must not crowd out the label.
+  • The add-field palette is used constantly; grouping (Inputs/Choices/Layout)
+    should make the right type fast to find.
+  • Selection is the heartbeat — the selected chip/section must pop.

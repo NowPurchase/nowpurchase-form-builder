@@ -1,0 +1,67 @@
+================================================================================
+04 — PROPERTY PANEL (RIGHT: edit the selected section or field)
+================================================================================
+
+WHAT IT IS
+The right editor. Context-sensitive: shows the properties of whatever is
+selected — a FIELD, or a SECTION (when no field is selected). If nothing is
+selected, an empty prompt: "Select a section or field to edit its properties."
+
+================================================================================
+A) FIELD PROPERTIES (when a field is selected)
+================================================================================
+Header: an icon + "{Type} field" and a type chip.
+Body (top → bottom):
+  • (Imported badge, if the field came from imported JSON.)
+  • POSITION — move this field within its section. Buttons:
+      Horizontal grid: "← Left", "Right →", "↑ Up", "Down ↓" (up/down move a
+      whole row). Vertical: "↑ Up", "Down ↓". Disabled at the edges.
+  • Label — the text shown above the field in the form.
+  • KEY (shown in Basic, right under the label) — the dataKey other rules
+    reference. Auto-derived from the label; a checkbox "Override manually"
+    reveals a raw input. Below it, a non-blocking "⚠ Used in N rules — renaming
+    will break them" warning lists what references this key (see 08).
+  • Required — checkbox.
+  • Placeholder — text.
+  • TYPE-SPECIFIC CONFIG — varies by field type (see 05, 06, 07):
+      - Dropdown: Source (Fixed/External) + Allow multiple + options/entity config
+      - Checkbox/Toggle: Display as (checkbox/toggle)
+      - Date/Time: Mode (Date / Date+Time / Time) + format preset + options
+      - Number: allow negative, decimals, prefix/suffix
+      - Text Area: rows; Spectrometer: endpoint/elements; Free tags: max/dupes
+  • Show this field when… — conditional visibility editor (see 12).
+  • Default value (on open) — none/today/now/user/fixed/from-another-field (12).
+  • Validation rules — min/max/between/compare/required-when/custom (12).
+  • ADVANCED (collapsible): width, alignment, disabled, read-only, field-name
+    override, special prefix (disabled__/meta__/derived__), custom CSS.
+
+================================================================================
+B) SECTION PROPERTIES (when a section is selected, no field)
+================================================================================
+Header: "Section" or "Table" + the name chip.
+Body:
+  • Title — heading shown above the section.
+  • Name — the lowercase machine id used in keys (validated; shows the key
+    preview like "moulding__‹field›"); a "used in N rules" warning if renaming
+    would break references.
+  • Show the title — checkbox.
+  • Layout — "Fields (a form section)" vs "Table (repeating rows)".
+  • If standard:
+      - Field layout — Horizontal (default) / Vertical.
+      - Columns per row — 1–5 (only when Horizontal; default 2).
+  • If table: the TABLE EDITOR (see 07).
+  • "▢ Add nested group" button.
+  • Show this section when… — conditional visibility (12).
+  • ADVANCED: custom CSS for the container.
+
+DATA IN/OUT
+  Reads the selected node + all referenceable keys (for the pickers) + the key
+  reference index (for warnings). Writes field/section property updates.
+
+DESIGN GOALS
+  • This panel is dense — group related controls, use progressive disclosure
+    (Basic vs Advanced) so beginners aren't overwhelmed but power is never
+    hidden (core UX principle, see 13).
+  • The most-used controls (Label, Key, Required, type config) are near the top.
+  • Inline validation/warnings should be calm, not alarming.
+  • Field pickers (in rules) are searchable comboboxes, not raw dropdowns (08).

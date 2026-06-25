@@ -1,0 +1,45 @@
+================================================================================
+02 — SECTION PANEL (LEFT pane: the list of sections / nested groups)
+================================================================================
+
+WHAT IT IS
+The left navigator. A form is a list of SECTIONS (containers). Each section holds
+fields and can hold nested sub-groups (a tree). This panel lists them, lets you
+select one (which loads it in the center canvas + right properties), reorder,
+nest, and delete.
+
+HEADER
+  "SECTIONS" (small uppercase label) + a count chip: "{N} · {M} fields".
+
+THE LIST — each row ("section item")
+  • Name: the container's machine name (e.g. "moulding"); shows "unnamed" in a
+    faint style if not set. Nested groups are indented and prefixed "↳".
+  • Meta line (smaller, muted): "{standard|table} · N fields [· K sub]".
+  • Inline error (red) if the name is invalid/duplicate (lowercase id rules).
+  • Row controls (right side, on the row):
+      ▭ Add nested group  — adds a child container under this one.
+      ↑ Move up / ↓ Move down — reorder among siblings.
+      ✕ Remove — deletes the section (and its fields).
+  • The ACTIVE (selected) section is highlighted (accent border/tint).
+
+FOOTER OF LIST
+  "+ Add Section" button — appends a new section (auto-named section_1, etc.).
+
+INTERACTIONS
+  • Click a row → selects that section: center shows its card, right shows its
+    properties, and the field selection clears.
+  • Nesting is unlimited depth; indentation conveys hierarchy.
+  • Empty state: "No sections yet. Add one below."
+
+DATA IN/OUT
+  Reads the section tree (names, type, field counts, children). Writes via
+  add/move/remove/add-nested actions. Selection is app state (drives the other
+  two panes).
+
+DESIGN GOALS
+  • Make hierarchy obvious at a glance (indentation, ↳, the "K sub" hint).
+  • Selected state must be unmistakable since it drives the whole screen.
+  • Row controls are frequent actions — keep them reachable but not noisy
+    (consider reveal-on-hover, but the active row should always show them).
+  • Validity feedback (bad/duplicate name) should be gentle but visible.
+  • Scales to dozens of sections — needs comfortable density + scroll.

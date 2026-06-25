@@ -1,0 +1,49 @@
+================================================================================
+11 — EXPORT / IMPORT / PREVIEW
+================================================================================
+
+WHAT IT IS
+The ways the form leaves and enters the builder, and how it's previewed. All
+reached from the top-bar actions.
+
+EXPORT (modal)
+  • Title: "Export — FormEngine JSON".
+  • A scrollable code block (<pre>) of the generated JSON (the runtime form
+    definition: nodes, props, events, validations, theme).
+  • Footer: "Download .json" (primary; filename from template_id) and
+    "Copy to clipboard".
+  • This JSON is what the production runtime renders as the real form.
+
+IMPORT (modal)
+  • A large textarea to paste FormEngine JSON.
+  • A load button → converts/loads it into the builder (replaces current form),
+    selects the first section.
+  • An error line if the JSON is invalid or can't be converted.
+  • NOTE: imported content that the builder can't fully model (e.g. legacy
+    indexed tables, raw blocks) comes in as "raw"/best-effort and is flagged
+    on the canvas as "Imported". Fresh authoring is the primary path; deep
+    editing of imported legacy forms is limited.
+
+PREVIEW
+  • "Preview" opens the rendered form (new tab, or a host-provided callback)
+    using the current theme — a real, fillable form with live validation.
+  • A separate embedded preview (PreviewForm) renders the FormViewer with a
+    Submit that runs the real validators and shows pass/fail + the submitted
+    data JSON.
+
+SAVE TEMPLATE (optional, when embedded)
+  • Persists the exported JSON to the host platform (shows "Saving…").
+
+DATA IN/OUT
+  Export/Preview serialize the whole form → JSON. Import parses JSON → builder
+  state. Save sends JSON to the host.
+
+DESIGN GOALS
+  • Export/Import are developer-ish touchpoints — keep them clean and obviously
+    safe (copy/download, clear errors). The raw JSON view is intentionally
+    technical; a friendlier summary could complement it.
+  • Preview is the moment of truth — make the jump to "see the real form"
+    prominent and fast.
+  • Communicate the import limitation honestly (raw/imported badge) so users
+    aren't surprised that legacy forms aren't fully editable.
+================================================================================

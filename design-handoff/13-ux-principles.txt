@@ -1,0 +1,51 @@
+================================================================================
+13 — UX PRINCIPLES & VISUAL TONE (read before designing any part)
+================================================================================
+
+WHO USES IT
+Product Team. Mostly
+non-technical, building data-entry forms for shop-floor records (heats, moulds,
+inspections, dispatch). They are not developers, but the forms feed real
+systems, so accuracy matters.
+
+CORE PRODUCT PHILOSOPHY (must be honored in any redesign)
+  1. SIMPLE BUT POWERFUL. Default to the easy path; never hide power. Use
+     progressive disclosure — a "Basic" surface for everyone and an "Advanced"
+     disclosure for power users. (E.g. keys are auto-derived, but a manual
+     override is always available.)
+  2. AUTO-FILL SENSIBLE DEFAULTS. New sections/fields get working names, keys,
+     and defaults so the user can start immediately; everything stays editable.
+  3. TRAIN THE TEAM / BE HONEST. Surface what's happening (keys, references,
+     "saved as", warnings) plainly, even if technical, so users learn the model
+     instead of being surprised. Warnings inform, they don't block.
+  4. FRESH AUTHORING FIRST. The builder is optimized for building NEW forms.
+     Editing imported legacy forms is secondary/limited and is flagged as such.
+  5. CONSOLIDATE, DON'T PROLIFERATE. Prefer one entry + a toggle over many
+     near-duplicate entries (one "Dropdown", one "Checkbox/Toggle", one
+     "Date/Time"). Keep the palette small and the variants discoverable.
+  6. THEME = A WHOLE DESIGN SYSTEM. A theme owns layout, shape, shadow, and type
+     — not just colors (see 10).
+
+INTERACTION MODEL
+  Select on the left/center → edit on the right. Selection is the heartbeat and
+  must always be unmistakable. The canvas should be a faithful, live skeleton of
+  the real form (layout, columns, order all visually true).
+
+CURRENT VISUAL TONE (starting point — improve freely, keep the trust)
+  • Light, clean, dense "professional tool" feel; not playful/toy-like.
+  • Accent blue (~#1579be / #2563eb); near-white canvas; hairline borders; soft
+    shadows; rounded corners.
+  • Small UPPERCASE section/group labels; monospace for keys/dataKeys/ids.
+  • Calm status colors: amber for warnings, red for destructive/errors, green
+    for success.
+  • Speed and density over whitespace-heavy minimalism — operators do real work
+    here, often many fields/sections at once.
+
+WHAT "GOOD" LOOKS LIKE FOR A REDESIGN
+  • Faster to scan and build; clearer hierarchy; less crowding in dense panels.
+  • Beginners aren't overwhelmed (Basic vs Advanced), experts aren't slowed.
+  • Every part stays truthful: the canvas matches the preview; warnings/keys are
+    visible; nothing important is hidden behind the redesign.
+  • Consistent components across the whole tool (one button system, one input
+    system, one picker, one card) — ideally driven by shared tokens.
+================================================================================

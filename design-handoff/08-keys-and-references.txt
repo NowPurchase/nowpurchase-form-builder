@@ -1,0 +1,52 @@
+================================================================================
+08 — KEYS, REFERENCES, KEY PICKER & RENAME WARNINGS
+================================================================================
+
+WHAT IT IS
+Every data field has a KEY (dataKey) — the name its value is stored under, e.g.
+"moulding__casting_name". Keys are auto-derived from the section name + field
+name ("{section}__{field}"), so users rarely type them. Other parts of the form
+REFERENCE keys (show-when conditions, validations, defaults, dropdown cascades,
+auto-fill targets, table totals). This area is about surfacing and protecting
+those keys.
+
+WHERE KEYS APPEAR IN THE UI
+  • On each canvas chip (secondary, monospace).
+  • In the field's right-panel "Key" block (Basic, under the label) with an
+    "Override manually" escape hatch.
+  • In a section's "Name" field, with a live key preview.
+
+THE KEY PICKER (a searchable combobox)
+  Used wherever a rule needs to point at another field (show-when field,
+  default "from field", compare-to-field validation, dropdown cascade filter,
+  auto-fill "copy into"). Instead of a long raw dropdown, it is:
+    • a trigger showing the chosen field's label + key
+    • on open: a search box ("type to filter…") + a grouped list
+        - grouped by section, and "from {dropdown}" for virtual keys
+        - virtual keys include a dropdown's auto-fill/label/items keys
+    • a "use custom key" escape hatch for free-typed values
+  This scales to hundreds of keys (forms get large) and prevents typos.
+
+RENAME WARNING (non-blocking)
+  When you rename a key (or a section name, which cascades to all its child
+  keys), the panel shows: "⚠ '{key}' is used in N rules — renaming will break
+  them:" and lists the consumers (e.g. "'Grade' show-when", "'Qty' validation",
+  "auto-fill target"). It distinguishes:
+    • exact, structured references (dropdown-selected) — listed plainly
+    • best-effort references found in free-text formulas/code — flagged
+      "(best-effort)"
+  Plus a footnote that custom code / raw imported blocks aren't fully scanned.
+  It does NOT block the rename — it just warns so the user can fix references.
+
+DATA IN/OUT
+  Reads a memoized reference index built from the whole form. Powers the pickers
+  (referenceable keys) and the warnings (who references a key).
+
+DESIGN GOALS
+  • The picker should feel fast and reassuring (search + groups + clear current
+    selection). Virtual/auto keys need a subtle "derived" treatment so users
+    understand they aren't normal fields.
+  • The warning must be calm and informative (amber, list, footnote) — it's a
+    heads-up, not an error. Never block.
+  • Keys are a power-user concept surfaced gently — visible, monospace, but not
+    dominating the label.

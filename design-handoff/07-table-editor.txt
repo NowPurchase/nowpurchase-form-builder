@@ -1,0 +1,59 @@
+================================================================================
+07 — TABLE SECTIONS (repeating rows) + COLUMN SUMMARIES
+================================================================================
+
+WHAT IT IS
+A section can be a TABLE instead of a stack of fields — a spreadsheet-like grid
+where the user (at fill time) adds/removes rows. Each COLUMN is itself a field
+(text, number, dropdown, checkbox, …). Configured in the right panel's TABLE
+EDITOR (shown when a section's Layout = "Table").
+
+ON THE CANVAS
+  A table section shows a compact preview: a header row of the columns (header
+  text + key suffix) and a hint "Configure columns in the right panel →".
+  Data shape it produces: one array of row objects, e.g. { spec: [ {char, qty},
+  … ] }. Cells are bound to relative (per-row) keys.
+
+TABLE EDITOR (right panel)
+  • Rows mode: "Dynamic (add / remove rows)" or "Fixed (static rows)".
+  • Dynamic: "Start with" (initial rows), "Min rows" (can't delete below),
+    "Max rows", and an "Add-row button label".
+  • Fixed: "Number of rows".
+  • COLUMNS list — each column editor has:
+      - Header (shown to user) + reorder ↑/↓ + remove ✕
+      - Type (Text / Number / Date / Dropdown / Dropdown master / Checkbox /
+        Toggle / multi-select / Text Area / Read-only)   [NOTE: this type list
+        is currently SEPARATE from the main field palette — a planned change is
+        to unify them into one shared set; see design goal below]
+      - key suffix (e.g. "char") + width %
+      - Required, Unique (value unique across rows)
+      - type-specific bits (options for fixed dropdown; entity/search for master)
+      - SUMMARY — aggregate this column across all rows: Sum / Average / Min /
+        Max / Count / Product. (See below.)
+      - a key preview: "{table}[ ].{suffix}"
+  • "+ Column" button.
+  • "Show totals row under the table" — appears once any column has a Summary.
+
+COLUMN SUMMARIES (the "sum of rows" feature)
+  Setting a column's Summary computes an aggregate over all rows (e.g. total
+  Qty). The total is ALWAYS computed and saved (under a derived key like
+  derived__items__qty__sum). The VISIBLE totals row is hidden by default; the
+  "Show totals row" toggle surfaces it (a row beneath the table, aligned under
+  its column). So values are available even when not displayed.
+
+DATA IN/OUT
+  Reads/writes the table_config (row mode, counts, columns, per-column summary,
+  show_totals). Produces an array-of-rows on export + derived total keys.
+
+DESIGN GOALS
+  • A table must read clearly even with many columns — the canvas preview and
+    the per-column editor both get dense; strong column dividers / spacing help.
+  • The Summary control + "show totals row" relationship should be self-evident
+    ("computed & saved; this just shows the row").
+  • PLANNED: unify column types with the main field palette (one source of
+    truth) so the Dropdown column gets the same Fixed/External + multiple
+    toggles as a normal Dropdown field. Design the column type-picker to match
+    the main palette's consolidated set.
+  • Future: a per-row computed column (e.g. amount = qty × rate) and a richer
+    "inspection" table (spec range + tolerance + sample readings s1–s5) used by
+    production QA forms — worth designing headroom for.
