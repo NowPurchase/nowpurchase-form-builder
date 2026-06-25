@@ -17,6 +17,7 @@ import { collectUsedActions } from '../state/actions.js';
 import { THEMES } from '../state/themes.js';
 import { TOKENS } from '../state/tokens.js';
 import { getEntity, resolveRequest } from '../state/entities.js';
+import { dropdownLabelKey, dropdownItemsKey } from './autofill.js';
 
 // Maps builder field types → FormEngine component type-ids.
 const FIELD_TYPE_MAP = {
@@ -130,9 +131,17 @@ function buildFieldProps(field) {
       if (cfg.suffix) props.suffix = v(cfg.suffix);
       break;
 
-    case 'date':
-      if (cfg.format) props.format = v(cfg.format);
+    case 'date': {
+      // "Date + Time" (enable_time) works by giving rsuite's DatePicker a format
+      // that includes time tokens — that's what makes it render a time panel.
+      let fmt = cfg.format || '';
+      if (cfg.enable_time) {
+        const base = fmt || 'dd-MM-yyyy';
+        fmt = /[Hhms]/.test(base) ? base : `${base} HH:mm`;
+      }
+      if (fmt) props.format = v(fmt);
       break;
+    }
 
     case 'shift':
       props.data = v([
@@ -158,10 +167,20 @@ function buildFieldProps(field) {
       props.creatable = v(false);
       break;
 
-    case 'tags_async':
+    case 'tags_async': {
       props.data = v([]);
       props.creatable = v(false);
+      // The picker stores scalar ids at the field key; the RsTagPicker override
+      // writes a parallel array of { id, label, …recordFields } objects to
+      // `${dataKey}__items`. foldFields (from "Also save fields") = which record
+      // fields to fold into each object. Passed as JSON so the prop is a string.
+      props.itemsKey = v(dropdownItemsKey(field));
+      const foldFields = ((cfg.on_select_populate || [])
+        .filter((m) => m && m.source_path)
+        .map((m) => ({ path: m.source_path, key: String(m.source_path).split('.').pop() })));
+      props.foldFields = v(JSON.stringify(foldFields));
       break;
+    }
 
     case 'checkbox':
       props.checked = v(false);
@@ -316,13 +335,19 @@ function buildEvents(field) {
         const req = resolveRequest(getEntity(cfg.entity_id));
         if (req) ddArgs.request = req;
         events.onLoadData = [{ name: 'fetch_dropdown', type: 'code', args: ddArgs }];
-      }
-      if (Array.isArray(cfg.on_select_populate) && cfg.on_select_populate.length) {
-        events.onSelect = [{
-          name: 'populate_on_select',
-          type: 'code',
-          args: { mappings: cfg.on_select_populate.filter((m) => m && m.target_key) },
-        }];
+
+        // Single dropdown only: persist the chosen option's display text + any
+        // configured copy-into fields on select. (Multi-select folds its record
+        // fields into the `__items` objects via the RsTagPicker override instead.)
+        if (field.field_type === 'dropdown_async') {
+          const onSelect = [];
+          const labelKey = dropdownLabelKey(field);
+          if (labelKey) onSelect.push({ name: 'set_dropdown_label', type: 'code', args: { label_key: labelKey } });
+          if (Array.isArray(cfg.on_select_populate) && cfg.on_select_populate.length) {
+            onSelect.push({ name: 'populate_on_select', type: 'code', args: { mappings: cfg.on_select_populate.filter((m) => m && m.target_key) } });
+          }
+          if (onSelect.length) events.onSelect = onSelect;
+        }
       }
       break;
 
@@ -359,8 +384,11 @@ function buildEvents(field) {
 const RENDER_OPS = {
   equals: (f, val) => `String(form.data.${f} ?? '') === '${val}'`,
   not_equals: (f, val) => `String(form.data.${f} ?? '') !== '${val}'`,
-  is_empty: (f) => `!form.data.${f}`,
-  is_not_empty: (f) => `!!form.data.${f}`,
+  // Array-aware emptiness: multi-select / chips / upload store arrays, which are
+  // always truthy, so a plain `!value` never detects an empty selection. Check
+  // length for arrays; fall back to truthiness for scalars.
+  is_empty: (f) => `(Array.isArray(form.data.${f}) ? form.data.${f}.length === 0 : !form.data.${f})`,
+  is_not_empty: (f) => `(Array.isArray(form.data.${f}) ? form.data.${f}.length > 0 : !!form.data.${f})`,
   greater_than: (f, val) => `Number(form.data.${f} || 0) > ${val}`,
   less_than: (f, val) => `Number(form.data.${f} || 0) < ${val}`,
 };

@@ -37,10 +37,15 @@ function deriveDataKey(section, field) {
     return fieldName && fieldName !== 'attachment' ? `attachment__${fieldName}` : 'attachment';
   }
 
-  // Rule 6 — async dropdown/tags store the display value under a __label key.
+  // Rule 6 — async dropdowns store the selected id(s) at the field's OWN key.
+  //  • single (dropdown_async): id at the base; the chosen option's display text
+  //    is saved at `${key}__label` on select (see set_dropdown_label).
+  //  • multi (tags_async): the id array at the base; an array of
+  //    { id, label, …recordFields } objects at `${key}__items` (written by the
+  //    RsTagPicker override). So the key names read true: ids at the base.
   if (field.field_type === 'dropdown_async' || field.field_type === 'tags_async') {
     const fieldName = field.field_name || toSnakeCase(field.label);
-    return `${prefix}__${fieldName}__label`;
+    return `${prefix}__${fieldName}`;
   }
 
   // Rule 1 + 3 — standard: container__field

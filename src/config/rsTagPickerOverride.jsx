@@ -12,6 +12,7 @@ import {
   toLabeledValues,
   useComponentData,
 } from "@react-form-builder/core";
+import { rebuildSelectedItems } from "../ui-builder/engine/selectItems.js";
 
 /**
  * Drop-in replacement for the stock RsTagPicker (multi-select dropdown).
@@ -154,6 +155,8 @@ const RsTagPickerOverrideView = ({
   className,
   preload,
   disableVirtualized,
+  itemsKey,
+  foldFields,
   ...rest
 }) => {
   const { loading, ...state } = useTagDropdownState({
@@ -166,8 +169,20 @@ const RsTagPickerOverrideView = ({
     onOpenProp: onOpen,
   });
 
+  // foldFields arrives as JSON (a string prop): [{ path, key }] record fields to
+  // fold into each saved object.
+  const fold = useMemo(() => {
+    if (!foldFields) return [];
+    try { return JSON.parse(foldFields); } catch { return []; }
+  }, [foldFields]);
+
+  // Latest loaded options, so the items array can be rebuilt on every change.
+  const optionsRef = useRef([]);
+  optionsRef.current = state.data;
+
   // Re-validate on change so a "Required" error clears once a value is picked
-  // (mirrors rsDropdownOverride).
+  // (mirrors rsDropdownOverride). Also rebuild the companion `${key}__items`
+  // array of { id, label, …recordFields } objects from the current selection.
   const componentData = useComponentData();
   const handleChange = useCallback(
     (newValue, ...args) => {
@@ -177,8 +192,16 @@ const RsTagPickerOverrideView = ({
         field.setTouched();
         field.validate?.();
       }
+      if (itemsKey && componentData) {
+        try {
+          const root = componentData.rootData;
+          if (root) root[itemsKey] = rebuildSelectedItems(newValue, optionsRef.current, fold);
+        } catch {
+          /* rootData not writable in this context — ids are still saved */
+        }
+      }
     },
-    [onChange, componentData]
+    [onChange, componentData, itemsKey, fold]
   );
 
   const pickerRef = useRef(null);
@@ -234,6 +257,11 @@ export const rsTagPickerOverride = define(RsTagPickerOverrideView, "RsTagPicker"
     readOnly: boolean.default(false),
     disableVirtualized: boolean,
     preload: boolean.default(false),
+    // Where to write the array of selected { id, label, …recordFields } objects,
+    // and (as JSON) which record fields to fold in. Set by exportJSON for
+    // master-data multi-selects; absent for plain/fixed tag pickers (no-op).
+    itemsKey: string,
+    foldFields: string,
     onLoadData: event,
     onSelect: event,
     onClean: event,

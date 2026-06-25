@@ -25,6 +25,22 @@ export function dropdownBaseKey(field) {
   return fromDataKey || (field && field.field_name) || 'field';
 }
 
+// Where a single async dropdown saves the chosen option's display text on
+// select: the field's own key + `__label` (the id itself lives at the field's
+// key). e.g. dataKey 'casting__part' → label key 'casting__part__label'.
+export function dropdownLabelKey(field) {
+  const dk = field && field.dataKey ? String(field.dataKey) : '';
+  return dk ? `${dk}__label` : '';
+}
+
+// Where a multi-select dropdown saves its array of selected { id, label, … }
+// objects: the field's own key + `__items` (the scalar id array stays at the
+// field's key). e.g. dataKey 'assembly__components' → 'assembly__components__items'.
+export function dropdownItemsKey(field) {
+  const dk = field && field.dataKey ? String(field.dataKey) : '';
+  return dk ? `${dk}__items` : '';
+}
+
 // "Save with this field" target key: <baseKey>__<leaf of source path>.
 // e.g. ('casting__part', 'name') → 'casting__part__name'
 //      ('casting__part', 'main.data.grade') → 'casting__part__grade'

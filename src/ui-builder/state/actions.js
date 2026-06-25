@@ -113,10 +113,18 @@ const ACTION_REGISTRY = {
             const prepared = items
               .slice(currentDataLength || 0, (currentDataLength || 0) + 20)
               .map(function (item) {
-                // Coerce value to string — the picker stores string values, so a
-                // numeric id (e.g. 7) wouldn't match its option (\`"7" !== 7\`) and
-                // the selected label would not show.
+                // NOTE: this mirrors engine/dropdownMap.js mapDropdownItem (the
+                // tested source of truth) — keep the two in sync. It can't import
+                // that module because this body is injected as code into the form.
+                // The contract's valueKey is the id we save on select. Coerce to
+                // string — the picker stores string values, so a numeric id (e.g.
+                // 7) wouldn't match its option (\`"7" !== 7\`) and the selected
+                // label would not show.
                 var val = item[resp.valueKey];
+                // Safety net: a well-formed contract always returns the id, but
+                // if a row omits it, fall back to the displayed value so a
+                // selection never saves an empty value.
+                if (val == null || val === '') val = item[resp.labelKey];
                 return {
                   value: val == null ? '' : String(val),
                   label: (item[resp.labelKey] != null && item[resp.labelKey] !== '') ? item[resp.labelKey] : String(val == null ? '' : val),
@@ -156,6 +164,20 @@ const ACTION_REGISTRY = {
           if (typeof loadCallback === 'function') loadCallback([]);
         }
       }, 300);
+    `,
+  },
+
+  set_dropdown_label: {
+    // Included for single async dropdowns. On select, save the chosen option's
+    // display text at the label key (the id is stored by the picker at the
+    // field's own dataKey), so the saved form is self-contained — the readable
+    // value survives without re-fetching the master data.
+    params: { label_key: 'string' },
+    body: `
+      const args0 = Array.isArray(e.args) ? e.args : [];
+      const selected = args0[1] != null ? args0[1] : args0[0];
+      const label = selected && selected.label != null ? selected.label : '';
+      if (args.label_key && e && e.data) e.data[args.label_key] = label;
     `,
   },
 
@@ -351,11 +373,16 @@ function collectUsedActions(state) {
       if (field.default_value && field.default_value.mode) needed.add('set_default_value');
       switch (field.field_type) {
         case 'dropdown_async':
-        case 'tags_async':
           needed.add('fetch_dropdown');
+          needed.add('set_dropdown_label'); // save the chosen option's label on select
           if (Array.isArray(cfg.on_select_populate) && cfg.on_select_populate.length) {
             needed.add('populate_on_select');
           }
+          break;
+        case 'tags_async':
+          // Multi-select folds record fields into its `__items` objects via the
+          // RsTagPicker override, so no populate_on_select action is needed.
+          needed.add('fetch_dropdown');
           break;
         case 'time':
           if (cfg.auto_derive_shift) {

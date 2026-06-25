@@ -98,7 +98,7 @@ const mouldingState = {
         { id: 'f_date', field_name: 'date', label: 'Date', show_label: true, field_type: 'date', dataKey: 'moulding__date', required: true, type_config: { auto_fill_today: true } },
         { id: 'f_time', field_name: 'time', label: 'Time', show_label: true, field_type: 'time', dataKey: 'moulding__time', required: true, type_config: { auto_derive_shift: true, shift_target_key: 'shift' } },
         { id: 'f_sup', field_name: 'supervisor', label: 'Supervisor', show_label: true, field_type: 'supervisor', dataKey: 'disabled__supervisor', special_prefix: 'disabled__', type_config: {} },
-        { id: 'f_cast', field_name: 'casting_name', label: 'Casting', show_label: true, field_type: 'dropdown_async', dataKey: 'moulding__casting_name__label', type_config: { entity_id: 'casting_master', search_fields: 'casting_name' } },
+        { id: 'f_cast', field_name: 'casting_name', label: 'Casting', show_label: true, field_type: 'dropdown_async', dataKey: 'moulding__casting_name', type_config: { entity_id: 'casting_master', search_fields: 'casting_name' } },
       ],
     },
     {
@@ -129,7 +129,7 @@ const out = exportJSON(mouldingState);
 const keys = [...countDataKeys(out.form)];
 // Repeater-table standard: array key = container name; cell dataKeys RELATIVE.
 const expect = [
-  'moulding__date', 'moulding__time', 'disabled__supervisor', 'moulding__casting_name__label',
+  'moulding__date', 'moulding__time', 'disabled__supervisor', 'moulding__casting_name',
   'spec',                  // the Repeater node's array key
   'char', 'observation', 'ok',  // relative cell dataKeys (row-scoped)
 ];
