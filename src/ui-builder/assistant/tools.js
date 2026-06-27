@@ -14,8 +14,21 @@
 // ---------------------------------------------------------------------------
 
 import { reducer, findNode, createTableConfig } from '../state/formState.js';
-import { toSnakeCase } from '../engine/dataKey.js';
+import { toSnakeCase, RESERVED_NAMES } from '../engine/dataKey.js';
 import { THEMES } from '../state/themes.js';
+
+// Sanitize a requested container_name and make it unique among its siblings.
+// MCP callers (e.g. claude.ai) supply names verbatim, so without this two
+// sections named "dup" would export the SAME key — an invalid form. We snake-
+// case the input, avoid reserved names, and suffix _2/_3… on a clash.
+function uniqueContainerName(desired, takenNames) {
+  const taken = new Set([...(takenNames || []), ...RESERVED_NAMES]);
+  const base = toSnakeCase(desired || '') || 'section';
+  if (!taken.has(base)) return base;
+  let i = 2;
+  while (taken.has(`${base}_${i}`)) i += 1;
+  return `${base}_${i}`;
+}
 
 const FIELD_TYPES = [
   'text', 'number', 'date', 'time', 'shift', 'dropdown_fixed', 'dropdown_async',
@@ -457,14 +470,16 @@ function resolveDataKey(state, ref) {
 export function applyTool(state, name, args = {}) {
   switch (name) {
     case 'add_section': {
+      const name = uniqueContainerName(args.container_name, state.sections.map((x) => x.container_name).filter(Boolean));
       let s = reducer(state, { type: 'ADD_SECTION' });
       const sec = s.sections[s.sections.length - 1];
       s = reducer(s, { type: 'UPDATE_SECTION', sectionId: sec.id, patch: {
-        container_name: args.container_name,
+        container_name: name,
         label: args.label || null,
         fields_per_row: args.fields_per_row || 2,
       } });
-      return { state: s, message: `Added section "${args.container_name}".` };
+      const note = name !== (toSnakeCase(args.container_name || '') || 'section') ? ` (auto-renamed — that name was taken or reserved)` : '';
+      return { state: s, message: `Added section "${name}".${note}` };
     }
 
     case 'add_field': {
@@ -537,9 +552,10 @@ export function applyTool(state, name, args = {}) {
     }
 
     case 'add_table': {
+      const name = uniqueContainerName(args.container_name, state.sections.map((x) => x.container_name).filter(Boolean));
       let s = reducer(state, { type: 'ADD_SECTION' });
       const sec = s.sections[s.sections.length - 1];
-      s = reducer(s, { type: 'UPDATE_SECTION', sectionId: sec.id, patch: { container_name: args.container_name, label: args.label || null } });
+      s = reducer(s, { type: 'UPDATE_SECTION', sectionId: sec.id, patch: { container_name: name, label: args.label || null } });
       const base = createTableConfig();
       const cols = (args.columns || []).map((c, i) => ({
         key: `col_${i}`, header: c.header, dataKey_suffix: c.suffix,
@@ -551,11 +567,12 @@ export function applyTool(state, name, args = {}) {
         row_mode: args.row_mode || 'dynamic',
         fixed_rows: args.fixed_rows || 3,
         max_rows: args.max_rows || 20,
-        data_prefix: args.container_name,
+        data_prefix: name,
         columns: cols.length ? cols : base.columns,
       };
       s = reducer(s, { type: 'SET_TABLE_CONFIG', sectionId: sec.id, config });
-      return { state: s, message: `Added ${config.row_mode} table "${args.container_name}" with ${config.columns.length} columns.` };
+      const note = name !== (toSnakeCase(args.container_name || '') || 'section') ? ` (auto-renamed — that name was taken or reserved)` : '';
+      return { state: s, message: `Added ${config.row_mode} table "${name}" with ${config.columns.length} columns.${note}` };
     }
 
     case 'set_theme': {
@@ -573,13 +590,15 @@ export function applyTool(state, name, args = {}) {
     case 'add_nested_group': {
       const parent = findSection(state, args.parent_section);
       if (!parent) return { state, message: `⚠ No section "${args.parent_section}".` };
+      const name = uniqueContainerName(args.container_name, (parent.children || []).map((c) => c.container_name).filter(Boolean));
       let s = reducer(state, { type: 'ADD_SUBCONTAINER', parentId: parent.id });
       const after = findNode(s.sections, parent.id);
       const child = after.children[after.children.length - 1];
       s = reducer(s, { type: 'UPDATE_SECTION', sectionId: child.id, patch: {
-        container_name: args.container_name, label: args.label || null, fields_per_row: args.fields_per_row || 1,
+        container_name: name, label: args.label || null, fields_per_row: args.fields_per_row || 1,
       } });
-      return { state: s, message: `Added nested group "${args.container_name}" inside "${args.parent_section}".` };
+      const note = name !== (toSnakeCase(args.container_name || '') || 'section') ? ` (auto-renamed — that name was taken or reserved)` : '';
+      return { state: s, message: `Added nested group "${name}" inside "${args.parent_section}".${note}` };
     }
 
     case 'update_section': {

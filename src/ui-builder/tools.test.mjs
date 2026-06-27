@@ -239,9 +239,34 @@ function findType(form, type) { let hit = null; (function w(n) { if (!n) return;
   const clean = build([['add_section', { container_name: 'a' }], ['add_field', { section: 'a', field_type: 'text', label: 'X' }]]);
   ok('validate clean → ok', applyTool(clean, 'validate_form', {}).message.startsWith('✓'));
 
-  // duplicate section names
-  const dup = build([['add_section', { container_name: 'dup' }], ['add_section', { container_name: 'dup' }]]);
-  ok('validate flags duplicate names', /Duplicate section name/.test(applyTool(dup, 'validate_form', {}).message));
+  // duplicate section names are auto-prevented at creation (second → dup_2)
+  const dedup = build([['add_section', { container_name: 'dup' }], ['add_section', { container_name: 'dup' }]]);
+  eq('add_section auto-dedupes container names', dedup.sections.map((s) => s.container_name).join(','), 'dup,dup_2');
+
+  // …but validate_form still flags a collision created by a manual rename
+  const dup = build([['add_section', { container_name: 'a' }], ['add_section', { container_name: 'b' }], ['update_section', { section: 'b', container_name: 'a' }]]);
+  ok('validate flags duplicate names (manual rename collision)', /Duplicate section name/.test(applyTool(dup, 'validate_form', {}).message));
+}
+
+// ============ container-name sanitize + dedupe (MCP robustness) ============
+{
+  // add_table dedupes against existing sections too
+  const t = build([['add_section', { container_name: 'samples' }], ['add_table', { container_name: 'samples', columns: [{ header: 'A', suffix: 'a', field_type: 'input' }] }]]);
+  eq('add_table dedupes vs existing section', t.sections.map((s) => s.container_name).join(','), 'samples,samples_2');
+
+  // add_nested_group dedupes among its siblings (not against unrelated sections)
+  const n = build([
+    ['add_section', { container_name: 'parent' }],
+    ['add_nested_group', { parent_section: 'parent', container_name: 'grp' }],
+    ['add_nested_group', { parent_section: 'parent', container_name: 'grp' }],
+  ]);
+  const kids = n.sections.find((s) => s.container_name === 'parent').children.map((c) => c.container_name);
+  eq('add_nested_group dedupes siblings', kids.join(','), 'grp,grp_2');
+
+  // messy + reserved names are sanitized to valid, unique container keys
+  const m = build([['add_section', { container_name: 'My Section! #1' }], ['add_section', { container_name: 'data' }]]);
+  eq('add_section snake-cases a messy name', m.sections[0].container_name, 'my_section_1');
+  ok('add_section avoids reserved names', m.sections[1].container_name !== 'data' && /^data_\d+$/.test(m.sections[1].container_name));
 }
 
 // ============ failure modes (must NOT mutate, must warn) ============
