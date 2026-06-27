@@ -56,10 +56,10 @@ function loginPage({ authorizePath, params, client, error }) {
   h1{font-size:17px;margin:0 0 4px}
   p.sub{margin:0 0 20px;color:#9aa3b2;font-size:13px}
   label{display:block;font-size:12px;color:#9aa3b2;margin:0 0 6px}
-  input[type=password]{width:100%;box-sizing:border-box;padding:11px 12px;
+  input[type=password],input[type=text]{width:100%;box-sizing:border-box;padding:11px 12px;
     border-radius:9px;border:1px solid #2b3240;background:#0f1115;color:#e7e9ee;
     font-size:15px;outline:none}
-  input[type=password]:focus{border-color:#4c7dff}
+  input:focus{border-color:#4c7dff}
   button{margin-top:18px;width:100%;padding:11px;border:0;border-radius:9px;
     background:#4c7dff;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
   button:hover{background:#3d6cf0}
@@ -70,8 +70,10 @@ function loginPage({ authorizePath, params, client, error }) {
 <body><form class="card" method="POST" action="${esc(authorizePath)}">
   <h1>FormEngine Builder</h1>
   <p class="sub">Authorize <b>${esc(client.client_name || client.client_id)}</b> to build forms on your behalf.</p>
+  <label for="nm">Your name</label>
+  <input id="nm" name="mcp_name" type="text" autofocus autocomplete="name" required style="margin-bottom:14px">
   <label for="pw">Access password</label>
-  <input id="pw" name="mcp_password" type="password" autofocus autocomplete="current-password" required>
+  <input id="pw" name="mcp_password" type="password" autocomplete="current-password" required>
   ${error ? `<div class="err">${esc(error)}</div>` : ''}
   ${hidden('response_type', 'code')}
   ${hidden('client_id', client.client_id)}
@@ -122,11 +124,11 @@ export function createOAuthProvider({
   // userKey identifies one authorization (one human login), independent of the
   // OAuth client_id (which claude.ai may share across users) and stable across
   // token refresh. The HTTP layer keys form state by it → per-user isolation.
-  function issueTokens(clientId, scopes, userKey) {
+  function issueTokens(clientId, scopes, userKey, identity) {
     const access = token();
     const refresh = token();
-    accessTokens.set(access, { clientId, scopes, userKey, exp: nowSec() + tokenTtlSec });
-    refreshTokens.set(refresh, { clientId, scopes, userKey });
+    accessTokens.set(access, { clientId, scopes, userKey, identity, exp: nowSec() + tokenTtlSec });
+    refreshTokens.set(refresh, { clientId, scopes, userKey, identity });
     return {
       access_token: access,
       token_type: 'bearer',
@@ -144,6 +146,7 @@ export function createOAuthProvider({
     async authorize(client, params, res) {
       const req = res.req;
       const submitted = req?.body?.mcp_password;
+      const name = (req?.body?.mcp_name || '').toString().trim();
       const gated = loginPassword !== '';
 
       // not yet authenticated → show the password page (or re-show with an error)
@@ -161,6 +164,7 @@ export function createOAuthProvider({
       codes.set(code, {
         clientId: client.client_id,
         userKey: token(),
+        identity: { name: name || 'Unknown' }, // self-reported; stamped on saved drafts
         codeChallenge: params.codeChallenge,
         redirectUri: params.redirectUri,
         scopes: params.scopes || [],
@@ -197,7 +201,7 @@ export function createOAuthProvider({
       if (redirectUri !== undefined && redirectUri !== rec.redirectUri) {
         throw new InvalidGrantError('redirect_uri mismatch');
       }
-      return issueTokens(client.client_id, rec.scopes, rec.userKey);
+      return issueTokens(client.client_id, rec.scopes, rec.userKey, rec.identity);
     },
 
     async exchangeRefreshToken(client, refreshToken, scopes) {
@@ -207,14 +211,14 @@ export function createOAuthProvider({
       }
       refreshTokens.delete(refreshToken); // rotate
       const nextScopes = scopes && scopes.length ? scopes : rec.scopes;
-      return issueTokens(client.client_id, nextScopes, rec.userKey); // carry userKey across refresh
+      return issueTokens(client.client_id, nextScopes, rec.userKey, rec.identity); // carry userKey + identity across refresh
     },
 
     // Validates the bearer on /mcp. Accepts both OAuth access tokens and the
     // static shared secret (the latter keeps tests / curl / scripts working).
     async verifyAccessToken(tok) {
       if (sharedSecret && tok === sharedSecret) {
-        return { token: tok, clientId: 'shared-secret', scopes: [], expiresAt: nowSec() + 3600, extra: { userKey: 'shared-secret' } };
+        return { token: tok, clientId: 'shared-secret', scopes: [], expiresAt: nowSec() + 3600, extra: { userKey: 'shared-secret', name: 'Service' } };
       }
       const rec = accessTokens.get(tok);
       if (!rec) throw new InvalidTokenError('Invalid access token');
@@ -222,7 +226,7 @@ export function createOAuthProvider({
         accessTokens.delete(tok);
         throw new InvalidTokenError('Access token expired');
       }
-      return { token: tok, clientId: rec.clientId, scopes: rec.scopes, expiresAt: rec.exp, extra: { userKey: rec.userKey } };
+      return { token: tok, clientId: rec.clientId, scopes: rec.scopes, expiresAt: rec.exp, extra: { userKey: rec.userKey, name: rec.identity?.name } };
     },
   };
 }

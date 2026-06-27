@@ -93,11 +93,25 @@ the connector panel), and runs the authorization-code + **PKCE** flow. The human
 proves access once via a **login password** screen during the OAuth redirect; the
 client only ever receives short-lived tokens.
 
+The login screen also asks for the user's **name** (self-reported), which is
+stamped as `created_by` on any form saved via `save_form`.
+
 The static `MCP_SHARED_SECRET` is **also** accepted as a bearer on `/mcp` — handy
 for `curl`/scripts/tests — so both paths coexist.
 
 OAuth endpoints (served at root): `/.well-known/oauth-authorization-server`,
 `/.well-known/oauth-protected-resource/mcp`, `/authorize`, `/token`, `/register`.
+
+### Saving forms (`save_form`) → DLMS draft API
+
+`preview_url` embeds the whole form in the URL hash — fine for small forms, but a
+big form makes a multi-thousand-char link that chat UIs truncate. **`save_form`**
+instead persists the form to the **DLMS draft API** and returns a short
+`…/preview?form=<draft-url>` link (the preview page fetches it). Re-saving
+overwrites the same draft (stable URL) until `new_form`. Needs `DLMS_API_BASE` +
+`DLMS_SERVICE_KEY`; if unset, `save_form` reports that saving isn't configured
+(everything else still works). Writes send `Authorization: Bearer
+$DLMS_SERVICE_KEY`; the public read link carries an unguessable `draft_id`.
 
 ### Env vars (HTTP mode)
 
@@ -108,7 +122,9 @@ OAuth endpoints (served at root): `/.well-known/oauth-authorization-server`,
 | `MCP_AUTH_PASSWORD` | _(falls back to `MCP_SHARED_SECRET`)_ | password users type on the OAuth login screen. **Login gate is OFF if this and `MCP_SHARED_SECRET` are both unset.** |
 | `MCP_SHARED_SECRET` | _(unset)_ | optional static bearer also accepted on `/mcp`; also the default login password |
 | `MCP_PUBLIC_URL` | `RENDER_EXTERNAL_URL` → `http://localhost:$PORT` | public **https** origin used in OAuth metadata. Auto-detected on Render. |
-| `PREVIEW_BASE_URL` | `http://localhost:5173` | base for `preview_url` links |
+| `PREVIEW_BASE_URL` | `http://localhost:5173` | base for `preview_url` / `save_form` links (the form-builder app origin) |
+| `DLMS_API_BASE` | _(unset)_ | DLMS backend origin for the draft API; enables `save_form` |
+| `DLMS_SERVICE_KEY` | _(unset)_ | bearer the server sends on draft writes (server-to-server) |
 
 Endpoints: `POST/GET/DELETE /mcp` (the MCP channel) and `GET /health` (200 `ok`).
 
@@ -157,6 +173,7 @@ fork. Guard with the test suites below before shipping.
 npm run test:mcp        # stdio: spawn server + real client, build → export (28 checks)
 npm run test:mcp-http   # http: auth, build→export, cross-session persistence (same user) (11 checks)
 npm run test:mcp-oauth  # http: full OAuth flow + per-user persistence across refresh + concurrent-user isolation (21 checks)
+npm run test:mcp-save   # http: save_form → stub DLMS draft API (service-key write, created_by, short link, overwrite) (11 checks)
 
 # validate the BUNDLED artifact (not just source) over HTTP:
 npm run mcp:bundle && MCP_SERVER_PATH=server/dist/mcp.mjs npm run test:mcp-http

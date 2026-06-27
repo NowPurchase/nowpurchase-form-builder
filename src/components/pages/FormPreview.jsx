@@ -1,33 +1,57 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import PreviewForm from "../shared/PreviewForm";
-import { decodeForm, payloadFromHash } from "../../ui-builder/preview-url";
+import { decodeForm, payloadFromHash, formSourceFromSearch } from "../../ui-builder/preview-url";
 import "rsuite/dist/rsuite.min.css";
 
 /**
  * FormPreview — a clean, lightweight, context-free live preview.
  *
- * Ungated public route (`/preview`): no auth, no app shell, no backend. The
- * entire form travels compressed in the URL fragment (`/preview#f=...`), so the
- * same link works from the in-app Preview button and from a URL an AI hands the
- * user — on any machine, forever.
+ * Ungated public route (`/preview`). Two link shapes:
+ *   • `/preview#f=<compressed>` — the whole form embedded in the URL fragment
+ *     (in-app Preview button; self-contained, no backend). Decoded synchronously.
+ *   • `/preview?form=<url>` — a short link; the form is FETCHED from <url> (the
+ *     DLMS draft API). Used by the MCP `save_form` tool so big forms don't blow
+ *     up the URL. Loaded asynchronously.
  *
  * Handles both shapes: a single FormEngine form, and a multi-step form
  * (`{ sections: [{ section_name, form_json }] }`) — rendered with a step
  * switcher, exactly like the production ViewForm.
  */
 export default function FormPreview() {
-  const { parsed, error } = useMemo(() => {
+  const [{ loading, parsed, error }, setState] = useState({ loading: true, parsed: null, error: null });
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const src = formSourceFromSearch(window.location.search);
+    if (src) {
+      // short link → fetch the saved draft, then render its form_json
+      fetch(src)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? "This saved form was not found (it may have been deleted)." : `Could not load this saved form (${r.status}).`))))
+        .then((d) => setState({ loading: false, parsed: d?.form_json ?? d, error: null }))
+        .catch((e) => setState({ loading: false, parsed: null, error: e.message || "Could not load this saved form." }));
+      return;
+    }
+    // hash link → decode the embedded form synchronously
     try {
       const payload = payloadFromHash(window.location.hash);
-      if (!payload) return { parsed: null, error: "No form data in this link." };
-      return { parsed: JSON.parse(decodeForm(payload)), error: null };
+      if (!payload) { setState({ loading: false, parsed: null, error: "No form data in this link." }); return; }
+      setState({ loading: false, parsed: JSON.parse(decodeForm(payload)), error: null });
     } catch (e) {
-      return { parsed: null, error: e.message || "Could not read the preview link." };
+      setState({ loading: false, parsed: null, error: e.message || "Could not read the preview link." });
     }
   }, []);
 
   const steps = Array.isArray(parsed?.sections) ? parsed.sections : null;
-  const [active, setActive] = useState(0);
+
+  if (loading) {
+    return (
+      <div style={WRAP}>
+        <div style={CARD}>
+          <div style={{ color: "#5b6470", fontSize: 14 }}>Loading preview…</div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

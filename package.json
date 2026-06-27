@@ -26,7 +26,8 @@
     "mcp:bundle": "node server/build.mjs",
     "test:mcp": "node server/mcp-smoke.mjs",
     "test:mcp-http": "node server/mcp-http-smoke.mjs",
-    "test:mcp-oauth": "node server/mcp-oauth-smoke.mjs"
+    "test:mcp-oauth": "node server/mcp-oauth-smoke.mjs",
+    "test:mcp-save": "node server/mcp-save-smoke.mjs"
   },
   "dependencies": {
     "@emotion/css": "^11.13.5",

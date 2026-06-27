@@ -51,7 +51,7 @@ import { summarizeState } from '../src/ui-builder/assistant/runtime.js';
 import { exportJSON } from '../src/ui-builder/engine/exportJSON.js';
 import { importJSON } from '../src/ui-builder/engine/importJSON.js';
 import { exportMultiStep, importMultiStep } from '../src/ui-builder/engine/multiStep.js';
-import { buildPreviewUrl } from '../src/ui-builder/preview-url.js';
+import { buildPreviewUrl, buildShortPreviewUrl } from '../src/ui-builder/preview-url.js';
 
 const PREVIEW_BASE_URL = process.env.PREVIEW_BASE_URL || 'http://localhost:5173';
 
@@ -86,6 +86,7 @@ const LIFECYCLE_TOOLS = [
   { name: 'export_form', description: 'Return the current form as valid JSON (single FormEngine form, or a multi-step {sections:[…]} when there are multiple steps).', parameters: { type: 'object', properties: {} } },
   { name: 'get_form', description: 'Return a compact summary of the current form (steps, sections, fields, keys).', parameters: { type: 'object', properties: {} } },
   { name: 'preview_url', description: 'Return a shareable URL that renders the current form live in the browser (no login needed). Works for single and multi-step forms.', parameters: { type: 'object', properties: {} } },
+  { name: 'save_form', description: 'Save the current form as a persistent draft and return a short shareable preview URL. Re-saving overwrites the same draft (stable URL) until you start a new form. Use this instead of pasting JSON for anything but tiny forms.', parameters: { type: 'object', properties: { name: { type: 'string', description: 'optional label for the draft' } } } },
   // --- multi-step management ---
   { name: 'add_step', description: 'Add a new step (page) — makes this a multi-step form — and switch edits to it.', parameters: { type: 'object', properties: { name: { type: 'string', description: 'step name, e.g. "Inspection"' } } } },
   { name: 'switch_step', description: 'Switch the active step that subsequent edits apply to (by name or 0-based index).', parameters: { type: 'object', properties: { name: { type: 'string' }, index: { type: 'integer' } } } },
@@ -102,7 +103,7 @@ const LIFECYCLE_TOOLS = [
 // therefore keeps one holder per authenticated client and shares it across that
 // client's sessions. If no holder is passed (stdio), we create a private one.
 // ---------------------------------------------------------------------------
-function createServer({ enablePersist = false, holder } = {}) {
+function createServer({ enablePersist = false, holder, identity, saveDraft } = {}) {
   const h = holder || { doc: enablePersist ? loadDoc() : { steps: [emptyStep()], active: 0 } };
 
   const cur = () => h.doc.steps[h.doc.active].state;
@@ -142,6 +143,7 @@ function createServer({ enablePersist = false, holder } = {}) {
     switch (name) {
       case 'new_form':
         h.doc = { steps: [emptyStep()], active: 0 };
+        h.draftId = undefined; // a new form → a new draft on next save
         persist();
         return ok('Started a new empty form.');
 
@@ -151,10 +153,12 @@ function createServer({ enablePersist = false, holder } = {}) {
           const steps = importMultiStep(json);
           if (steps) {
             h.doc = { steps, active: 0 };
+            h.draftId = undefined;
             persist();
             return ok(`Imported a multi-step form with ${steps.length} step(s): ${steps.map((s) => s.name).join(', ')}.`);
           }
           h.doc = { steps: [{ name: 'Step 1', state: importJSON(json) }], active: 0 };
+          h.draftId = undefined;
           persist();
           return ok(`Imported a single form with ${h.doc.steps[0].state.sections.length} section(s).`);
         } catch (e) {
@@ -177,6 +181,17 @@ function createServer({ enablePersist = false, holder } = {}) {
 
       case 'preview_url':
         return ok(buildPreviewUrl(PREVIEW_BASE_URL, currentExport()));
+
+      case 'save_form': {
+        if (!saveDraft) return ok('⚠ Saving is not configured on this server (set DLMS_API_BASE + DLMS_SERVICE_KEY).');
+        try {
+          const res = await saveDraft({ form: currentExport(), name: args.name, draftId: h.draftId, createdBy: identity });
+          h.draftId = res.draft_id; // remember → re-saves overwrite the same draft (stable URL)
+          return ok(`Saved draft "${res.draft_id}"${args.name ? ` (“${args.name}”)` : ''}. Open or share this preview:\n${res.url}`);
+        } catch (e) {
+          return ok(`⚠ Could not save the draft: ${e.message}`);
+        }
+      }
 
       case 'add_step': {
         h.doc.steps.push(emptyStep(args.name || `Step ${h.doc.steps.length + 1}`));
@@ -256,6 +271,31 @@ async function startHttp() {
   const issuerUrl = new URL(PUBLIC_URL);
   const resourceServerUrl = new URL('/mcp', issuerUrl);
 
+  // DLMS draft API — save_form persists the form there and returns a short
+  // preview link (avoids dumping big JSON into chat). Off if not configured.
+  const DLMS_API_BASE = (process.env.DLMS_API_BASE || '').replace(/\/+$/, '');
+  const DLMS_SERVICE_KEY = process.env.DLMS_SERVICE_KEY || '';
+  const DRAFT_WRITE = `${DLMS_API_BASE}/api/v1/admin/template-draft-mcp`;
+  const DRAFT_READ = (id) => `${DLMS_API_BASE}/api/v1/admin/template-draft-mcp/${id}`;
+  const saveDraft = (DLMS_API_BASE && DLMS_SERVICE_KEY)
+    ? async ({ form, name, draftId, createdBy }) => {
+      const body = { form_json: form, created_by: { name: (createdBy && createdBy.name) || 'Unknown' } };
+      if (draftId) body.draft_id = draftId;
+      if (name) body.name = name;
+      const r = await fetch(DRAFT_WRITE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${DLMS_SERVICE_KEY}` },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const detail = await r.text().catch(() => '');
+        throw new Error(`DLMS draft API ${r.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}`);
+      }
+      const data = await r.json();
+      return { draft_id: data.draft_id, url: buildShortPreviewUrl(PREVIEW_BASE_URL, DRAFT_READ(data.draft_id)) };
+    }
+    : null;
+
   const transports = Object.create(null); // sessionId -> StreamableHTTPServerTransport
   // Form state keyed by the authenticated USER (the per-login userKey baked into
   // the OAuth token, stable across token refresh), so:
@@ -305,12 +345,13 @@ async function startHttp() {
           // new session, but state is shared per authenticated user so it
           // survives across claude.ai's per-call sessions
           const holder = holderFor(req.auth?.extra?.userKey || req.auth?.clientId);
+          const identity = { name: req.auth?.extra?.name }; // self-reported at login; stamped on saved drafts
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (id) => { transports[id] = transport; },
           });
           transport.onclose = () => { if (transport.sessionId) delete transports[transport.sessionId]; };
-          await createServer({ holder }).connect(transport);
+          await createServer({ holder, identity, saveDraft }).connect(transport);
         } else {
           res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'No valid session — send an initialize request first.' }, id: null });
           return;

@@ -22,7 +22,9 @@ COPY dist/mcp.mjs ./mcp.mjs
 #   MCP_SHARED_SECRET  optional static bearer also accepted (tests/scripts)
 #   MCP_PUBLIC_URL     public https origin for OAuth metadata. On Render this is
 #                      auto-detected from RENDER_EXTERNAL_URL, so it's optional.
-#   PREVIEW_BASE_URL   base for preview links (defaults to http://localhost:5173)
+#   PREVIEW_BASE_URL   base for preview/save links (defaults to http://localhost:5173)
+#   DLMS_API_BASE      DLMS backend origin; enables the save_form tool
+#   DLMS_SERVICE_KEY   bearer the server sends on draft writes (server-to-server)
 ENV MCP_TRANSPORT=http
 ENV PORT=8080
 EXPOSE 8080

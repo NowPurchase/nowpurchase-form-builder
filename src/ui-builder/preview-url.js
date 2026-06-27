@@ -39,3 +39,18 @@ export function buildPreviewUrl(baseUrl, form) {
   const base = String(baseUrl || '').replace(/\/+$/, '');
   return `${base}/preview#f=${encodeForm(form)}`;
 }
+
+// Short-link variant: the form is FETCHED from `formSourceUrl` rather than
+// embedded, so the URL stays tiny (no truncation, far fewer chat tokens). The
+// HTTP MCP server's save_form uses this — the form lives in the DLMS draft API
+// and the preview page reads `?form=` and fetches it.
+export function buildShortPreviewUrl(baseUrl, formSourceUrl) {
+  const base = String(baseUrl || '').replace(/\/+$/, '');
+  return `${base}/preview?form=${encodeURIComponent(formSourceUrl)}`;
+}
+
+// pull the `?form=<url>` source out of a location.search string ('' if absent)
+export function formSourceFromSearch(search) {
+  try { return new URLSearchParams(search || '').get('form') || ''; }
+  catch { return ''; }
+}
