@@ -52,6 +52,56 @@ const ACTION_REGISTRY = {
     `,
   },
 
+  load_static_list: {
+    // Included for fixed dropdowns with options_source: 'list' (curated
+    // per-customer values). Fires on the field's onLoadData. Fetches the whole
+    // (template, customer) doc ONCE — all fixed pickers share the cached promise
+    // — then hands this field its slice. Customer is derived from the JWT
+    // server-side; template id comes from window.__NP_VARS.templateId (injected
+    // by the host at render). Any failure / missing data degrades to an empty
+    // dropdown (never throws). When the list is empty AND the field is required,
+    // a single non-selectable sentinel option flags the config gap (the export
+    // sets disabledItemValues:['__none__'] so it can't be picked).
+    params: { entity_id: 'string', required: 'boolean' },
+    body: `
+      const loadCallback = (e && e.args) ? e.args[1] : null;
+      const { entity_id, required } = args;
+      if (typeof loadCallback !== 'function') return;
+
+      const finish = function (opts) {
+        const list = Array.isArray(opts) ? opts : [];
+        if (!list.length && required) {
+          loadCallback([{ value: '__none__', label: '⚠ No options configured', disabled: true }]);
+        } else {
+          loadCallback(list);
+        }
+      };
+
+      try {
+        const vars = window.__NP_VARS || {};
+        const templateId = vars.templateId || '';
+        if (!templateId) { finish([]); return; }
+        const host = vars.dlmsHost || 'https://dlms-api-stage.iotnp.com';
+        // Fetch once per template; subsequent pickers await the same promise.
+        if (!window.__NP_STATIC_LISTS_PROMISE || window.__NP_STATIC_LISTS_TID !== templateId) {
+          window.__NP_STATIC_LISTS_TID = templateId;
+          const token = localStorage.getItem('dlms_auth_token');
+          window.__NP_STATIC_LISTS_PROMISE = fetch(host + '/api/v1/static-lists/' + templateId, {
+            headers: { 'accept': 'application/json', 'Authorization': 'Bearer ' + token }
+          })
+            .then(function (r) { return r.ok ? r.json() : {}; })
+            .catch(function () { return {}; });
+        }
+        const map = await window.__NP_STATIC_LISTS_PROMISE;
+        // Tolerate either the bare map or a { lists: {...} } envelope.
+        const lists = (map && map.lists) ? map.lists : (map || {});
+        finish(lists[entity_id]);
+      } catch (err) {
+        finish([]);
+      }
+    `,
+  },
+
   fetch_dropdown: {
     // Included when any field is dropdown_async or tags_async. Handles two
     // contracts: a GENERIC one baked from the entity registry (args.request — any
@@ -366,11 +416,13 @@ function collectUsedActions(state) {
       // need a custom action (the dropdown loader).
       const cols = (section.table_config || {}).columns || [];
       if (cols.some((c) => c.field_type === 'dropdown_async' || c.field_type === 'tags_async')) needed.add('fetch_dropdown');
+      if (cols.some((c) => (c.field_type === 'dropdown_fixed' || c.field_type === 'tags_fixed') && (c.type_config || {}).options_source === 'list')) needed.add('load_static_list');
     }
 
     (section.fields || []).forEach((field) => {
       const cfg = field.type_config || {};
       if (field.default_value && field.default_value.mode) needed.add('set_default_value');
+      if ((field.field_type === 'dropdown_fixed' || field.field_type === 'tags_fixed') && cfg.options_source === 'list') needed.add('load_static_list');
       switch (field.field_type) {
         case 'dropdown_async':
           needed.add('fetch_dropdown');

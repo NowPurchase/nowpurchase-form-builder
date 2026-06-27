@@ -88,6 +88,22 @@ function findType(form, type) { let hit = null; (function w(n) { if (!n) return;
   eq('configure_field options', fieldBy(sec(s, 'g'), 'Grade').type_config.options.length, 2);
   eq('export dropdown data', findType(exportJSON(s).form, 'RsDropdown').props.data.value.length, 2);
 
+  // referenced static list (per-customer curated values) — only the key travels
+  s = build([['add_field', { section: 'g', field_type: 'dropdown_fixed', label: 'Defect', required: true }]], s);
+  s = applyTool(s, 'configure_field', { section: 'g', field: 'Defect', options_source: 'list', entity_id: 'defect_type' }).state;
+  eq('static list options_source', fieldBy(sec(s, 'g'), 'Defect').type_config.options_source, 'list');
+  {
+    const exp = exportJSON(s);
+    const findKey = (n, dk) => { let h = null; (function w(x) { if (!x) return; if (x.dataKey === dk) h = x; (x.children || []).forEach(w); })(n); return h; };
+    const node = findKey(exp.form, 'g__defect');
+    eq('static list export data empty', node.props.data.value.length, 0);
+    eq('static list disabledItemValues sentinel', node.props.disabledItemValues.value[0], '__none__');
+    eq('static list onLoadData action', node.events.onLoadData[0].name, 'load_static_list');
+    eq('static list onLoadData entity_id', node.events.onLoadData[0].args.entity_id, 'defect_type');
+    eq('static list onLoadData required', node.events.onLoadData[0].args.required, true);
+    ok('static list action emitted', !!exp.actions.load_static_list);
+  }
+
   // validations
   s = applyTool(s, 'add_validation', { section: 'g', field: 'Total Qty', type: 'max_value', value: '100', message: 'too big' }).state;
   eq('add_validation stored', fieldBy(sec(s, 'g'), 'Total Qty').validations.length, 1);

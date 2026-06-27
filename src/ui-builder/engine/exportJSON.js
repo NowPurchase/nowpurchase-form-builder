@@ -154,7 +154,11 @@ function buildFieldProps(field) {
       break;
 
     case 'dropdown_fixed':
-      props.data = v(cfg.options || []);
+      // Referenced list: values come from /static-lists at render (load_static_list
+      // wires onLoadData in buildEvents) — start empty. disabledItemValues keeps the
+      // "no options configured" sentinel non-selectable. Inline: bake the options.
+      props.data = v(cfg.options_source === 'list' ? [] : (cfg.options || []));
+      if (cfg.options_source === 'list') props.disabledItemValues = v(['__none__']);
       if (cfg.clearable != null) props.cleanable = v(!!cfg.clearable);
       if (cfg.placement) props.placement = v(cfg.placement);
       break;
@@ -165,7 +169,8 @@ function buildFieldProps(field) {
       break;
 
     case 'tags_fixed':
-      props.data = v(cfg.options || []);
+      props.data = v(cfg.options_source === 'list' ? [] : (cfg.options || []));
+      if (cfg.options_source === 'list') props.disabledItemValues = v(['__none__']);
       props.creatable = v(false);
       break;
 
@@ -312,6 +317,19 @@ function buildEvents(field) {
   switch (field.field_type) {
     case 'date':
       if (cfg.auto_fill_today) events.onDidMount = [{ name: 'set_date_on_mount', type: 'code' }];
+      break;
+
+    case 'dropdown_fixed':
+    case 'tags_fixed':
+      // Referenced curated list: load this field's slice from the shared
+      // /static-lists doc at render. Inline options need no event.
+      if (cfg.options_source === 'list') {
+        events.onLoadData = [{
+          name: 'load_static_list',
+          type: 'code',
+          args: { entity_id: cfg.entity_id || '', required: !!field.required },
+        }];
+      }
       break;
 
     case 'time':

@@ -43,7 +43,11 @@ function defaultTypeConfig(fieldType) {
     case 'date': return { auto_fill_today: false, format: 'dd-MM-yyyy', enable_time: false };
     case 'time': return { auto_derive_shift: false, shift_target_key: 'shift' };
     case 'dropdown_fixed':
-    case 'tags_fixed': return { options: [], clearable: true };
+    case 'tags_fixed':
+      // options_source 'inline' = options typed here, travel in the template.
+      // 'list' = curated per-customer values fetched at render from
+      // /static-lists/{template_id}, keyed by entity_id (see option-lists API).
+      return { options: [], clearable: true, options_source: 'inline', entity_id: '' };
     case 'dropdown_async':
     case 'tags_async': return { entity_id: '', search_fields: '', filters: [], on_select_populate: [] };
     case 'number': return { allow_negative: false, decimal_scale: 0, prefix: '', suffix: '' };

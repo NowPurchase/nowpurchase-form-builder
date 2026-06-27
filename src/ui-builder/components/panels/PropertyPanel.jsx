@@ -175,6 +175,28 @@ function DropdownConfig({ field, set, setField, fieldOptions }) {
       <Check label="Allow multiple" checked={multiple} onChange={(v) => change({ multiple: v })} />
       {source === 'external'
         ? <AsyncConfig c={c} set={set} fieldOptions={fieldOptions} field={field} />
+        : <FixedConfig c={c} set={set} />}
+    </>
+  );
+}
+
+// Fixed dropdown: typed options (travel in the template) OR a referenced
+// per-customer list (only the list key travels; values are set in template
+// config and loaded at render — empty until configured).
+function FixedConfig({ c, set }) {
+  const isList = c.options_source === 'list';
+  return (
+    <>
+      <Field label="Options" hint="Typed: values live in this template. Referenced list: curated per-customer values set in template config — only the list key travels, so copying the template never copies values.">
+        <select value={c.options_source || 'inline'} onChange={(e) => set({ options_source: e.target.value })}>
+          <option value="inline">Typed options</option>
+          <option value="list">Referenced list (per-customer)</option>
+        </select>
+      </Field>
+      {isList
+        ? <Field label="List key" hint="The entity_id this field reads from /static-lists. Values load at render; empty dropdown until configured for the customer.">
+            <input type="text" value={c.entity_id || ''} placeholder="e.g. casting_grade" onChange={(e) => set({ entity_id: e.target.value })} />
+          </Field>
         : <OptionsEditor options={c.options || []} onChange={(options) => set({ options })} />}
     </>
   );

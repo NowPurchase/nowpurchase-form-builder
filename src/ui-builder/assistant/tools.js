@@ -206,9 +206,10 @@ export const TOOLS = [
         suffix: { type: 'string' },
         rows: { type: 'integer' },
         multiple: { type: 'boolean' },
-        entity_id: { type: 'string' },
+        entity_id: { type: 'string', description: 'for dropdown_async/tags_async: master-data entity id; for a fixed dropdown with options_source "list": the per-customer static-list key' },
         search_fields: { type: 'string' },
         options: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] } },
+        options_source: { type: 'string', enum: ['inline', 'list'], description: 'for fixed dropdowns: "inline" = options typed in the template, "list" = curated per-customer values loaded from static-lists by entity_id' },
         url: { type: 'string', description: 'for spectrometer: device/reading endpoint URL' },
         elements: { type: 'string', description: 'for spectrometer: comma-separated element symbols' },
         columns_per_row: { type: 'integer', description: 'for spectrometer: element grid columns per row' },
@@ -612,7 +613,7 @@ export function applyTool(state, name, args = {}) {
       if (!fld) return { state, message: `⚠ No field "${args.field}" in "${args.section}".` };
       const patch = {};
       ['format', 'auto_fill_today', 'enable_time', 'auto_derive_shift', 'shift_target_key', 'allow_negative',
-        'decimal_scale', 'prefix', 'suffix', 'rows', 'multiple', 'entity_id', 'search_fields', 'options',
+        'decimal_scale', 'prefix', 'suffix', 'rows', 'multiple', 'entity_id', 'search_fields', 'options', 'options_source',
         'url', 'elements', 'columns_per_row', 'show_connection_status', 'allow_duplicates', 'max_chips']
         .forEach((k) => { if (args[k] !== undefined) patch[k] = args[k]; });
       if (!Object.keys(patch).length) return { state, message: `⚠ Nothing to configure on "${args.field}".` };
