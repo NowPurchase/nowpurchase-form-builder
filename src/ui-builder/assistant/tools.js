@@ -15,6 +15,7 @@
 
 import { reducer, findNode, createTableConfig } from '../state/formState.js';
 import { toSnakeCase } from '../engine/dataKey.js';
+import { THEMES } from '../state/themes.js';
 
 const FIELD_TYPES = [
   'text', 'number', 'date', 'time', 'shift', 'dropdown_fixed', 'dropdown_async',
@@ -386,7 +387,9 @@ export const TOOLS = [
     description: 'Set the visual theme for the whole form.',
     parameters: {
       type: 'object',
-      properties: { theme: { type: 'string', enum: ['metalcloud'] } },
+      // Enum derived from the theme registry so it never goes stale when
+      // themes are added/removed. Description maps id → human name.
+      properties: { theme: { type: 'string', enum: Object.keys(THEMES), description: 'Theme id. Available: ' + Object.keys(THEMES).map(function (id) { return id + ' (' + THEMES[id].name + ')'; }).join(', ') } },
       required: ['theme'],
     },
   },
