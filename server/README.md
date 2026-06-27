@@ -62,3 +62,74 @@ claude mcp add formengine -- node /Users/manhar/FrontEnd/nowpurchase-form-builde
 
 `new_form` → a few `add_section`/`add_field`/`add_table` calls → `export_form` →
 paste the JSON into the UI-Builder (Import) or save it as a template.
+
+---
+
+## Remote deploy (HTTP — for claude.ai)
+
+The same server speaks **two transports** from one codebase (no logic duplicated):
+
+| Transport | Use | How |
+|---|---|---|
+| **stdio** (default) | local MCP hosts (Claude Desktop/Code/Cursor) | `node server/mcp-formengine.mjs` |
+| **Streamable HTTP** | remote — a claude.ai **custom connector** | `MCP_TRANSPORT=http` (or set `PORT`) |
+
+HTTP mode keeps **per-session** form state (keyed by `Mcp-Session-Id`), so many
+people can build concurrently without colliding. It does **not** persist to a DB
+— persistence is the chat / preview-URL→save model.
+
+### Env vars (HTTP mode)
+
+| Var | Default | Meaning |
+|---|---|---|
+| `MCP_TRANSPORT` | `stdio` | set `http` for remote (or just set `PORT`) |
+| `PORT` | `8080` | port to listen on (Render injects this) |
+| `MCP_SHARED_SECRET` | _(unset)_ | bearer token required on `/mcp`. **Auth is OFF if unset — always set it in prod.** |
+| `PREVIEW_BASE_URL` | `http://localhost:5173` | base for `preview_url` links |
+
+Endpoints: `POST/GET/DELETE /mcp` (the MCP channel) and `GET /health` (200 `ok`).
+
+### Deploy as a Docker image (no repo connection)
+
+The image ships **only** the bundled artifact — Render never sees your source.
+
+```bash
+# 1. bundle server + engine → one self-contained file (server/dist/mcp.mjs)
+npm run mcp:bundle
+
+# 2. build the image (build context = server/, so the repo isn't sent)
+docker build -f server/Dockerfile -t <registry>/formengine-mcp:latest server/
+
+# 3. push to your registry (Docker Hub, GHCR, etc.)
+docker push <registry>/formengine-mcp:latest
+```
+
+On **Render**: *New → Web Service → Deploy an existing image* → paste the image
+URL → set env var `MCP_SHARED_SECRET` (a strong random token) → deploy. Render
+pulls the image; **no GitHub connection needed**. Health check path: `/health`.
+
+> Use a paid always-on instance — a free tier that sleeps drops in-memory
+> sessions on cold start.
+
+### Register in claude.ai
+
+A Team admin: *Settings → Connectors → Add custom connector* → the Render URL
+(`https://…/mcp`) with the bearer `MCP_SHARED_SECRET`. The team then toggles it
+on per chat.
+
+### Maintenance
+
+The bundle is a **generated artifact** (like the web app's `dist/`), never
+hand-edited. Change a tool in `src/ui-builder/assistant/tools.js` → the MCP
+inherits it → `npm run mcp:bundle` → rebuild/push the image. One codebase, no
+fork. Guard with the test suites below before shipping.
+
+## Tests
+
+```bash
+npm run test:mcp        # stdio: spawn server + real client, build → export (28 checks)
+npm run test:mcp-http   # http: health, 401 without bearer, build→export, per-session isolation (12 checks)
+
+# validate the BUNDLED artifact (not just source) over HTTP:
+npm run mcp:bundle && MCP_SERVER_PATH=server/dist/mcp.mjs npm run test:mcp-http
+```

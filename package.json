@@ -22,7 +22,10 @@
     "test:fieldkind": "node src/ui-builder/engine/fieldKind.test.mjs",
     "test:ui-builder-fixtures": "node src/ui-builder/verify.js",
     "mcp": "node server/mcp-formengine.mjs",
-    "test:mcp": "node server/mcp-smoke.mjs"
+    "mcp:http": "MCP_TRANSPORT=http node server/mcp-formengine.mjs",
+    "mcp:bundle": "node server/build.mjs",
+    "test:mcp": "node server/mcp-smoke.mjs",
+    "test:mcp-http": "node server/mcp-http-smoke.mjs"
   },
   "dependencies": {
     "@emotion/css": "^11.13.5",
