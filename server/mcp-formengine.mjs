@@ -15,25 +15,35 @@
 // TWO TRANSPORTS (same engine, no logic duplication):
 //   • stdio (default)  — spawned locally by an MCP host. `node mcp-formengine.mjs`
 //   • Streamable HTTP  — remote, for claude.ai. Per-session in-memory state
-//     keyed by Mcp-Session-Id; optional shared-secret bearer auth.
+//     keyed by Mcp-Session-Id; OAuth 2.1 auth (the model claude.ai connectors
+//     use) with a static-shared-secret bearer also accepted (tests/scripts).
 //   Selected by MCP_TRANSPORT=http (or by setting PORT). Env:
-//     PORT (default 8080), MCP_SHARED_SECRET (bearer token; auth off if unset).
+//     PORT (default 8080)
+//     MCP_SHARED_SECRET   bearer accepted directly + default login password
+//     MCP_AUTH_PASSWORD   login password for the OAuth browser gate (falls
+//                         back to MCP_SHARED_SECRET; gate off if both unset)
+//     MCP_PUBLIC_URL      public origin for OAuth metadata (defaults to
+//                         RENDER_EXTERNAL_URL, then http://localhost:$PORT)
 //
 // Run:   node server/mcp-formengine.mjs            # stdio
 //        MCP_TRANSPORT=http PORT=8080 node ...      # http
 // ---------------------------------------------------------------------------
 
 import fs from 'fs';
-import http from 'node:http';
 import { randomUUID } from 'node:crypto';
+import express from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import {
   ListToolsRequestSchema, CallToolRequestSchema,
   ListResourcesRequestSchema, ReadResourceRequestSchema,
   isInitializeRequest,
 } from '@modelcontextprotocol/sdk/types.js';
+
+import { createOAuthProvider } from './oauth-provider.mjs';
 
 import { initialState } from '../src/ui-builder/state/formState.js';
 import { TOOLS, applyTool } from '../src/ui-builder/assistant/tools.js';
@@ -226,42 +236,52 @@ function createServer({ enablePersist = false } = {}) {
 
 // ---------------------------------------------------------------------------
 // Streamable HTTP transport (remote — for claude.ai). One transport + one
-// server instance per session, tracked by Mcp-Session-Id. Optional shared
-// secret. No FORM_FILE persistence (multi-session); state lives per session.
+// server instance per session, tracked by Mcp-Session-Id. No FORM_FILE
+// persistence (multi-session); state lives per session.
+//
+// Auth: OAuth 2.1 (the SDK's mcpAuthRouter supplies discovery metadata, DCR,
+// /authorize, /token + PKCE; oauth-provider.mjs supplies storage + the login
+// gate). The /mcp channel is guarded by requireBearerAuth, which also emits
+// the WWW-Authenticate: resource_metadata header that triggers a client's
+// OAuth discovery. The static MCP_SHARED_SECRET is still accepted as a bearer.
 // ---------------------------------------------------------------------------
 async function startHttp() {
   const PORT = Number(process.env.PORT || 8080);
   const SECRET = process.env.MCP_SHARED_SECRET || '';
+  const LOGIN_PASSWORD = process.env.MCP_AUTH_PASSWORD || SECRET || '';
+  const PUBLIC_URL = (process.env.MCP_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
+  const issuerUrl = new URL(PUBLIC_URL);
+  const resourceServerUrl = new URL('/mcp', issuerUrl);
+
   const transports = Object.create(null); // sessionId -> StreamableHTTPServerTransport
 
-  const send = (res, code, obj) => {
-    res.writeHead(code, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(obj));
-  };
-  const readBody = (req) => new Promise((resolve) => {
-    if (req.method !== 'POST') { resolve(undefined); return; }
-    let data = '';
-    req.on('data', (c) => { data += c; });
-    req.on('end', () => { try { resolve(data ? JSON.parse(data) : undefined); } catch { resolve(undefined); } });
-    req.on('error', () => resolve(undefined));
+  const provider = createOAuthProvider({ sharedSecret: SECRET, loginPassword: LOGIN_PASSWORD });
+
+  const app = express();
+  app.disable('x-powered-by');
+
+  // health check (Render etc.)
+  app.get(['/', '/health'], (_req, res) => res.status(200).send('ok'));
+
+  // OAuth 2.1 endpoints (mounted at root): /authorize, /token, /register,
+  // /.well-known/oauth-authorization-server, /.well-known/oauth-protected-resource/mcp
+  app.use(mcpAuthRouter({
+    provider,
+    issuerUrl,
+    resourceServerUrl,
+    scopesSupported: ['mcp'],
+    resourceName: 'FormEngine Builder',
+  }));
+
+  // bearer guard for the MCP channel; points 401s at the resource metadata
+  const bearer = requireBearerAuth({
+    verifier: provider,
+    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(resourceServerUrl),
   });
 
-  const httpServer = http.createServer(async (req, res) => {
+  const mcpChannel = async (req, res) => {
     try {
-      const path = (req.url || '').split('?')[0];
-      // health check (Render etc.)
-      if (req.method === 'GET' && (path === '/' || path === '/health')) { res.writeHead(200).end('ok'); return; }
-      if (path !== '/mcp') { send(res, 404, { error: 'not found' }); return; }
-
-      // shared-secret bearer auth (pilot-grade; off if MCP_SHARED_SECRET unset)
-      if (SECRET) {
-        if ((req.headers['authorization'] || '') !== `Bearer ${SECRET}`) {
-          send(res, 401, { error: 'unauthorized' });
-          return;
-        }
-      }
-
-      const body = await readBody(req);
+      const body = req.body; // parsed by express.json() on POST; undefined otherwise
       const sid = req.headers['mcp-session-id'];
       let transport = sid ? transports[sid] : undefined;
 
@@ -275,19 +295,24 @@ async function startHttp() {
           transport.onclose = () => { if (transport.sessionId) delete transports[transport.sessionId]; };
           await createServer().connect(transport);
         } else {
-          send(res, 400, { jsonrpc: '2.0', error: { code: -32000, message: 'No valid session — send an initialize request first.' }, id: null });
+          res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'No valid session — send an initialize request first.' }, id: null });
           return;
         }
       }
 
       await transport.handleRequest(req, res, body);
     } catch (e) {
-      if (!res.headersSent) send(res, 500, { error: String((e && e.message) || e) });
+      if (!res.headersSent) res.status(500).json({ error: String((e && e.message) || e) });
     }
-  });
+  };
 
-  httpServer.listen(PORT, () => {
-    console.error(`formengine MCP server ready (http :${PORT}, auth ${SECRET ? 'on' : 'OFF'})`);
+  app.post('/mcp', bearer, express.json({ limit: '8mb' }), mcpChannel);
+  app.get('/mcp', bearer, mcpChannel);
+  app.delete('/mcp', bearer, mcpChannel);
+
+  app.listen(PORT, () => {
+    const gate = LOGIN_PASSWORD ? 'on' : 'OFF (no MCP_AUTH_PASSWORD/MCP_SHARED_SECRET)';
+    console.error(`formengine MCP server ready (http :${PORT}, OAuth issuer ${issuerUrl.href}, login gate ${gate})`);
   });
 }
 

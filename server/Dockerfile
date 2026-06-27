@@ -14,8 +14,15 @@ WORKDIR /app
 COPY dist/mcp.mjs ./mcp.mjs
 
 # HTTP transport for remote use (claude.ai). PORT is provided by the host
-# (Render injects $PORT); 8080 is the local default. MCP_SHARED_SECRET MUST be
-# set at deploy time — auth is OFF if it's unset.
+# (Render injects $PORT); 8080 is the local default.
+#
+# Auth is OAuth 2.1 (what claude.ai connectors use). Set at deploy time:
+#   MCP_AUTH_PASSWORD  password users enter in the OAuth login screen
+#                      (falls back to MCP_SHARED_SECRET; login gate OFF if both unset)
+#   MCP_SHARED_SECRET  optional static bearer also accepted (tests/scripts)
+#   MCP_PUBLIC_URL     public https origin for OAuth metadata. On Render this is
+#                      auto-detected from RENDER_EXTERNAL_URL, so it's optional.
+#   PREVIEW_BASE_URL   base for preview links (defaults to http://localhost:5173)
 ENV MCP_TRANSPORT=http
 ENV PORT=8080
 EXPOSE 8080

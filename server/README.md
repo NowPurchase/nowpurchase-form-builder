@@ -78,13 +78,31 @@ HTTP mode keeps **per-session** form state (keyed by `Mcp-Session-Id`), so many
 people can build concurrently without colliding. It does **not** persist to a DB
 — persistence is the chat / preview-URL→save model.
 
+### Auth: OAuth 2.1 (what claude.ai uses)
+
+claude.ai authenticates connectors with **OAuth**, not a static token. The server
+is a self-contained OAuth 2.1 authorization server (via the MCP SDK's
+`mcpAuthRouter`): it advertises discovery metadata, supports **Dynamic Client
+Registration** (so claude.ai registers itself — leave Client ID/Secret blank in
+the connector panel), and runs the authorization-code + **PKCE** flow. The human
+proves access once via a **login password** screen during the OAuth redirect; the
+client only ever receives short-lived tokens.
+
+The static `MCP_SHARED_SECRET` is **also** accepted as a bearer on `/mcp` — handy
+for `curl`/scripts/tests — so both paths coexist.
+
+OAuth endpoints (served at root): `/.well-known/oauth-authorization-server`,
+`/.well-known/oauth-protected-resource/mcp`, `/authorize`, `/token`, `/register`.
+
 ### Env vars (HTTP mode)
 
 | Var | Default | Meaning |
 |---|---|---|
 | `MCP_TRANSPORT` | `stdio` | set `http` for remote (or just set `PORT`) |
 | `PORT` | `8080` | port to listen on (Render injects this) |
-| `MCP_SHARED_SECRET` | _(unset)_ | bearer token required on `/mcp`. **Auth is OFF if unset — always set it in prod.** |
+| `MCP_AUTH_PASSWORD` | _(falls back to `MCP_SHARED_SECRET`)_ | password users type on the OAuth login screen. **Login gate is OFF if this and `MCP_SHARED_SECRET` are both unset.** |
+| `MCP_SHARED_SECRET` | _(unset)_ | optional static bearer also accepted on `/mcp`; also the default login password |
+| `MCP_PUBLIC_URL` | `RENDER_EXTERNAL_URL` → `http://localhost:$PORT` | public **https** origin used in OAuth metadata. Auto-detected on Render. |
 | `PREVIEW_BASE_URL` | `http://localhost:5173` | base for `preview_url` links |
 
 Endpoints: `POST/GET/DELETE /mcp` (the MCP channel) and `GET /health` (200 `ok`).
@@ -105,17 +123,21 @@ docker push <registry>/formengine-mcp:latest
 ```
 
 On **Render**: *New → Web Service → Deploy an existing image* → paste the image
-URL → set env var `MCP_SHARED_SECRET` (a strong random token) → deploy. Render
+URL → set env var `MCP_AUTH_PASSWORD` (the OAuth login password) → deploy. Render
 pulls the image; **no GitHub connection needed**. Health check path: `/health`.
+`MCP_PUBLIC_URL` is auto-detected from `RENDER_EXTERNAL_URL`. For a private
+image, add a registry credential (GHCR username + a PAT with `read:packages`).
 
 > Use a paid always-on instance — a free tier that sleeps drops in-memory
-> sessions on cold start.
+> sessions **and OAuth tokens** on cold start (clients just re-authorize).
 
 ### Register in claude.ai
 
 A Team admin: *Settings → Connectors → Add custom connector* → the Render URL
-(`https://…/mcp`) with the bearer `MCP_SHARED_SECRET`. The team then toggles it
-on per chat.
+(`https://…/mcp`). **Leave OAuth Client ID/Secret blank** — the server supports
+Dynamic Client Registration, so claude.ai registers itself. On first use each
+member is sent to the login screen and enters `MCP_AUTH_PASSWORD` once. The team
+toggles the connector on per chat.
 
 ### Maintenance
 
@@ -129,7 +151,9 @@ fork. Guard with the test suites below before shipping.
 ```bash
 npm run test:mcp        # stdio: spawn server + real client, build → export (28 checks)
 npm run test:mcp-http   # http: health, 401 without bearer, build→export, per-session isolation (12 checks)
+npm run test:mcp-oauth  # http: full OAuth 2.1 flow — discovery → DCR → login → PKCE token → authed /mcp (19 checks)
 
 # validate the BUNDLED artifact (not just source) over HTTP:
 npm run mcp:bundle && MCP_SERVER_PATH=server/dist/mcp.mjs npm run test:mcp-http
+npm run mcp:bundle && MCP_SERVER_PATH=server/dist/mcp.mjs npm run test:mcp-oauth
 ```
