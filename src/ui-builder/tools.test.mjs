@@ -104,6 +104,22 @@ function findType(form, type) { let hit = null; (function w(n) { if (!n) return;
     ok('static list action emitted', !!exp.actions.load_static_list);
   }
 
+  // async dropdown: cascade filter (cross-field) + auto-fill — MCP-authorable
+  s = build([['add_field', { section: 'g', field_type: 'dropdown_async', label: 'Part' }]], s);
+  s = applyTool(s, 'configure_field', { section: 'g', field: 'Part', entity_id: 'mtc_part_no',
+    filters: [{ key: 'client', source: 'field', field: 'g__grade' }],
+    on_select_populate: [{ source_path: 'data.name', target_key: 'g__part_name', target_mode: 'field' }] }).state;
+  {
+    const partCfg = fieldBy(sec(s, 'g'), 'Part').type_config;
+    eq('configure_field cascade filter stored', partCfg.filters[0].field, 'g__grade');
+    eq('configure_field cascade source', partCfg.filters[0].source, 'field');
+    eq('configure_field autofill mapping stored', partCfg.on_select_populate[0].target_key, 'g__part_name');
+    // export carries the cascade into the dropdown's onLoadData args
+    const exp2 = exportJSON(s);
+    const partNode = (function find(n) { let h = null; (function w(x) { if (!x) return; if (x.dataKey === 'g__part') h = x; (x.children || []).forEach(w); })(n); return h; })(exp2.form);
+    eq('export cascade filter in onLoadData', partNode.events.onLoadData[0].args.filters[0].field, 'g__grade');
+  }
+
   // validations
   s = applyTool(s, 'add_validation', { section: 'g', field: 'Total Qty', type: 'max_value', value: '100', message: 'too big' }).state;
   eq('add_validation stored', fieldBy(sec(s, 'g'), 'Total Qty').validations.length, 1);

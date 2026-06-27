@@ -210,6 +210,8 @@ export const TOOLS = [
         search_fields: { type: 'string' },
         options: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'] } },
         options_source: { type: 'string', enum: ['inline', 'list'], description: 'for fixed dropdowns: "inline" = options typed in the template, "list" = curated per-customer values loaded from static-lists by entity_id' },
+        filters: { type: 'array', description: 'for async dropdowns: request filters that limit the options. Each is a fixed value or pulled from another field (cascade — creates a cross-field dependency tracked by rename warnings).', items: { type: 'object', properties: { key: { type: 'string', description: 'request param name (e.g. client, grade_id)' }, source: { type: 'string', enum: ['static', 'field'], description: '"static" = fixed value; "field" = cascade, pull from another field at fetch time' }, value: { type: 'string', description: 'for source "static": the fixed value' }, field: { type: 'string', description: 'for source "field": the dataKey to pull from' } }, required: ['key', 'source'] } },
+        on_select_populate: { type: 'array', description: 'for async dropdowns: auto-fill mappings — copy fields from the selected record into other form fields on select.', items: { type: 'object', properties: { source_path: { type: 'string', description: 'path within the selected record (e.g. data.grade)' }, target_key: { type: 'string', description: 'dataKey to write the value into' }, target_mode: { type: 'string', enum: ['auto', 'field'], description: '"auto" = save under an auto-derived key; "field" = write to an existing field dataKey' } }, required: ['source_path'] } },
         url: { type: 'string', description: 'for spectrometer: device/reading endpoint URL' },
         elements: { type: 'string', description: 'for spectrometer: comma-separated element symbols' },
         columns_per_row: { type: 'integer', description: 'for spectrometer: element grid columns per row' },
@@ -614,6 +616,7 @@ export function applyTool(state, name, args = {}) {
       const patch = {};
       ['format', 'auto_fill_today', 'enable_time', 'auto_derive_shift', 'shift_target_key', 'allow_negative',
         'decimal_scale', 'prefix', 'suffix', 'rows', 'multiple', 'entity_id', 'search_fields', 'options', 'options_source',
+        'filters', 'on_select_populate',
         'url', 'elements', 'columns_per_row', 'show_connection_status', 'allow_duplicates', 'max_chips']
         .forEach((k) => { if (args[k] !== undefined) patch[k] = args[k]; });
       if (!Object.keys(patch).length) return { state, message: `⚠ Nothing to configure on "${args.field}".` };

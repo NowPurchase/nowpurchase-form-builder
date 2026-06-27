@@ -79,20 +79,38 @@ const ACTION_REGISTRY = {
 
       try {
         const vars = window.__NP_VARS || {};
-        const templateId = vars.templateId || '';
+        // Template id is in the URL (path param /config/:templateId, or a
+        // ?template_id= query). Reading it live is switch-safe: navigating to a
+        // different template changes the URL, so each picker resolves the
+        // CURRENT template — no stale global to keep in sync. Template ids are
+        // 24-char Mongo ObjectIds; customer ids are numeric, so they can't
+        // collide in the path. window.__NP_VARS.templateId is a last fallback.
+        let templateId = '';
+        try {
+          const search = new URLSearchParams(window.location.search);
+          templateId = search.get('template_id') || '';
+          if (!templateId) {
+            const m = window.location.pathname.match(/[0-9a-fA-F]{24}/);
+            if (m) templateId = m[0];
+          }
+        } catch (e) { /* non-browser env */ }
+        if (!templateId) templateId = vars.templateId || '';
         if (!templateId) { finish([]); return; }
         const host = vars.dlmsHost || 'https://dlms-api-stage.iotnp.com';
-        // Fetch once per template; subsequent pickers await the same promise.
-        if (!window.__NP_STATIC_LISTS_PROMISE || window.__NP_STATIC_LISTS_TID !== templateId) {
-          window.__NP_STATIC_LISTS_TID = templateId;
+        // Cache the fetch PER templateId (not one global slot) so switching
+        // between templates never serves another template's lists, and two
+        // forms mounting close together can't clobber each other's promise.
+        // All pickers of the same template still share one fetch.
+        window.__NP_STATIC_LISTS = window.__NP_STATIC_LISTS || {};
+        if (!window.__NP_STATIC_LISTS[templateId]) {
           const token = localStorage.getItem('dlms_auth_token');
-          window.__NP_STATIC_LISTS_PROMISE = fetch(host + '/api/v1/static-lists/' + templateId, {
+          window.__NP_STATIC_LISTS[templateId] = fetch(host + '/api/v1/static-lists/' + templateId, {
             headers: { 'accept': 'application/json', 'Authorization': 'Bearer ' + token }
           })
             .then(function (r) { return r.ok ? r.json() : {}; })
             .catch(function () { return {}; });
         }
-        const map = await window.__NP_STATIC_LISTS_PROMISE;
+        const map = await window.__NP_STATIC_LISTS[templateId];
         // Tolerate either the bare map or a { lists: {...} } envelope.
         const lists = (map && map.lists) ? map.lists : (map || {});
         finish(lists[entity_id]);

@@ -47,16 +47,75 @@ rows are data-driven). Conditional **cell per-row by a same-row sibling** is
 hard (FormEngine `renderWhen` uses absolute `form.data.X`, can't reach a row
 sibling cleanly) — out of scope unless a real need appears.
 
+## 4. Preview-aware placeholder for referenced static lists
+
+**What:** In the stateless `/preview#f=…` page there's no template_id / customer /
+backend, so referenced lists (`options_source: 'list'`) resolve to an **empty**
+dropdown (or the required-sentinel). Safe, but unhelpful — the author can't tell
+the field is a referenced list or which key it's bound to.
+**Idea:** Detect preview (`#f=` hash / `/preview` path) in `load_static_list` →
+skip the fetch → emit ONE disabled, non-selectable placeholder naming the list,
+e.g. `⟨ list: casting_grade ⟩  (values load per-customer at runtime)`. Reuses the
+`disabledItemValues` sentinel mechanism, so nothing fake is submittable.
+**Status:** Deferred. Current behavior (empty in preview) is correct, just not
+informative.
+**Unblocks:** Authors verifying a form in preview can see *that* a dropdown is a
+referenced list and *which* key — instead of a mystery blank.
+
+## 5. Static-list `entity_id` reference-awareness
+
+**What:** The key dependency graph (`engine/keyGraph.js`) + rename warnings track
+form-*internal* dataKey references. A referenced-list field's **dataKey** is
+already covered (rename warns like any field). But its **`entity_id` (list key)**
+is an *outward* reference — to the backend `/static-lists` store — that the graph
+does NOT model.
+**Two gaps:**
+- *Within the form:* multiple fields can share one `entity_id` (e.g. 15 product
+  dropdowns → `casting_grade`). Renaming one silently diverges from the rest. A
+  light "this list key is shared by N fields" hint would help.
+- *Against backend config:* an `entity_id` that doesn't match a key configured
+  for that (template, customer) just renders empty. The builder can't know the
+  backend config at author time.
+**Higher-value fix (ties to #1, the admin page):** auto-derive the set of
+`entity_id`s the form references and present exactly those for configuration —
+form declares "I need these lists", config page fills them. Closes the loop
+without a true cross-key warning.
+**Status:** Deferred.
+
+## 6. Surface rename warnings through the MCP/tool layer
+
+**What:** The key dependency graph (`engine/keyGraph.js`) powers a rename warning
+in the **Builder UI** — before renaming a field/section, the user sees what
+references break. The **MCP/assistant** path (`update_field` / `update_section`)
+just *applies* the rename; it doesn't return "this breaks N references" to the
+caller. So an MCP-driven rename can silently break a cascade filter / computed /
+render-when reference.
+**Idea:** Have the rename tools compute `referencesTo(...)` for the old key and
+include any breakages in the tool's return message (advisory), or require an
+`acknowledge_breakage` flag. The graph already exists — it's just not wired into
+the tool responses.
+**Status:** Deferred. (Authoring parity is done; this is about *warning* parity.)
+
 ---
 
 ## Host-side wiring still required for static lists to work live
+
 (Not "future features" — these are the integration points the shipped frontend
 depends on. Track until confirmed.)
 
-- **`window.__NP_VARS.templateId`** must be injected by the host at render —
-  `load_static_list` reads it for the GET URL. Missing → empty dropdowns (safe).
-  Same `__NP_VARS` the `state/entities.js` TODO already anticipates (host base
-  URLs too).
+- **Template id source — RESOLVED via URL.** `load_static_list` reads the
+  template id from the URL at load time (query `?template_id=`, else the 24-char
+  Mongo-ObjectId path segment, e.g. `/config/:templateId`). This is switch-safe:
+  navigating to another template changes the URL, so every picker resolves the
+  CURRENT template — no stale global. `window.__NP_VARS.templateId` is only a
+  last-ditch fallback now. ⚠ Still confirm the **render repo's** fill-URL shape
+  matches (path-param 24-hex or `?template_id=`); the parser assumes one of those.
+- **Host base URL** still falls back to the hardcoded staging
+  `https://dlms-api-stage.iotnp.com`; move to `window.__NP_VARS.dlmsHost` for
+  env-portability (same TODO as `state/entities.js`).
 - **Confirm the route prefix** `/api/v1/static-lists` in `services/staticListApi.js`
   and in the `load_static_list` action body matches what the backend (ENG-898)
   actually registered in `app/api/v1/router.py`.
+- **Preview page caveat:** the stateless `/preview#f=…` page has no template_id
+  (form travels in the hash, no backend) → referenced lists render empty there.
+  Acceptable (design-time preview, no customer context).
