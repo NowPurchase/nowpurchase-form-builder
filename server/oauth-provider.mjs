@@ -119,11 +119,14 @@ export function createOAuthProvider({
     },
   };
 
-  function issueTokens(clientId, scopes) {
+  // userKey identifies one authorization (one human login), independent of the
+  // OAuth client_id (which claude.ai may share across users) and stable across
+  // token refresh. The HTTP layer keys form state by it → per-user isolation.
+  function issueTokens(clientId, scopes, userKey) {
     const access = token();
     const refresh = token();
-    accessTokens.set(access, { clientId, scopes, exp: nowSec() + tokenTtlSec });
-    refreshTokens.set(refresh, { clientId, scopes });
+    accessTokens.set(access, { clientId, scopes, userKey, exp: nowSec() + tokenTtlSec });
+    refreshTokens.set(refresh, { clientId, scopes, userKey });
     return {
       access_token: access,
       token_type: 'bearer',
@@ -152,10 +155,12 @@ export function createOAuthProvider({
         return;
       }
 
-      // authenticated (or no gate configured) → issue a one-time auth code
+      // authenticated (or no gate configured) → issue a one-time auth code.
+      // Mint a fresh userKey for THIS login so each user's form state is isolated.
       const code = token();
       codes.set(code, {
         clientId: client.client_id,
+        userKey: token(),
         codeChallenge: params.codeChallenge,
         redirectUri: params.redirectUri,
         scopes: params.scopes || [],
@@ -192,7 +197,7 @@ export function createOAuthProvider({
       if (redirectUri !== undefined && redirectUri !== rec.redirectUri) {
         throw new InvalidGrantError('redirect_uri mismatch');
       }
-      return issueTokens(client.client_id, rec.scopes);
+      return issueTokens(client.client_id, rec.scopes, rec.userKey);
     },
 
     async exchangeRefreshToken(client, refreshToken, scopes) {
@@ -202,14 +207,14 @@ export function createOAuthProvider({
       }
       refreshTokens.delete(refreshToken); // rotate
       const nextScopes = scopes && scopes.length ? scopes : rec.scopes;
-      return issueTokens(client.client_id, nextScopes);
+      return issueTokens(client.client_id, nextScopes, rec.userKey); // carry userKey across refresh
     },
 
     // Validates the bearer on /mcp. Accepts both OAuth access tokens and the
     // static shared secret (the latter keeps tests / curl / scripts working).
     async verifyAccessToken(tok) {
       if (sharedSecret && tok === sharedSecret) {
-        return { token: tok, clientId: 'shared-secret', scopes: [], expiresAt: nowSec() + 3600 };
+        return { token: tok, clientId: 'shared-secret', scopes: [], expiresAt: nowSec() + 3600, extra: { userKey: 'shared-secret' } };
       }
       const rec = accessTokens.get(tok);
       if (!rec) throw new InvalidTokenError('Invalid access token');
@@ -217,7 +222,7 @@ export function createOAuthProvider({
         accessTokens.delete(tok);
         throw new InvalidTokenError('Access token expired');
       }
-      return { token: tok, clientId: rec.clientId, scopes: rec.scopes, expiresAt: rec.exp };
+      return { token: tok, clientId: rec.clientId, scopes: rec.scopes, expiresAt: rec.exp, extra: { userKey: rec.userKey } };
     },
   };
 }

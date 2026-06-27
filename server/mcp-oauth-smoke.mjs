@@ -158,6 +158,27 @@ try {
   })).json();
   check('refresh_token grant returns a new access token', !!refreshed.access_token && refreshed.access_token !== tokens.access_token);
 
+  // 9b. refreshed token (same user/login) still sees the first user's form
+  const t1 = new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${refreshed.access_token}` } } });
+  const m1 = new Client({ name: 'oauth-smoke-refresh', version: '0' }, { capabilities: {} });
+  await m1.connect(t1);
+  const sameUserForm = (await m1.callTool({ name: 'get_form', arguments: {} })).content?.map((c) => c.text).join('\n') ?? '';
+  check('state survives token refresh (same userKey sees prior form)', sameUserForm.includes('heat'));
+  await m1.close();
+
+  // 10. SECOND login (fresh /authorize → new userKey) must NOT see user 1's form
+  const v2 = b64url(randomBytes(32)); const ch2 = b64url(createHash('sha256').update(v2).digest());
+  const q2 = new URLSearchParams({ response_type: 'code', client_id: client.client_id, redirect_uri: REDIRECT, code_challenge: ch2, code_challenge_method: 'S256', scope: 'mcp', state: 's2' });
+  const good2 = await fetch(asm.authorization_endpoint, { method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ ...Object.fromEntries(q2), mcp_password: PASSWORD }) });
+  const code2 = new URL(good2.headers.get('location')).searchParams.get('code');
+  const tokens2 = await (await fetch(asm.token_endpoint, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: code2, code_verifier: v2, client_id: client.client_id, redirect_uri: REDIRECT }) })).json();
+  const t2 = new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${tokens2.access_token}` } } });
+  const m2 = new Client({ name: 'oauth-smoke-user2', version: '0' }, { capabilities: {} });
+  await m2.connect(t2);
+  const user2Form = (await m2.callTool({ name: 'get_form', arguments: {} })).content?.map((c) => c.text).join('\n') ?? '';
+  check('concurrent users are isolated (2nd login has no user-1 section)', !user2Form.includes('heat'));
+  await m2.close();
+
   console.log(`\nmcp-oauth-smoke: ${pass} passed, ${fail} failed`);
   code = fail === 0 ? 0 : 1;
 } catch (e) {

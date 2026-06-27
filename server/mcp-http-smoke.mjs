@@ -85,18 +85,18 @@ try {
   check('no duplicate node keys', new Set(nodeKeys).size === nodeKeys.length);
 
   // 4. per-session isolation: a second client must NOT see session A's section
+  // 4. cross-session PERSISTENCE (same client): a brand-new session must SEE the
+  //    form built in session A. This is what makes claude.ai work — it issues a
+  //    fresh session per tool call, so state is keyed by client, not session.
   const b = await connectClient();
-  await b.client.callTool({ name: 'new_form', arguments: {} });
+  const bForm = JSON.parse(text(await b.client.callTool({ name: 'get_form', arguments: {} })));
+  check('state persists across sessions (new session sees prior build)', JSON.stringify(bForm).includes('moulding'));
+  // and an edit in the new session is visible back in session A
   await b.client.callTool({ name: 'add_section', arguments: { container_name: 'inspection' } });
   const aForm = JSON.parse(text(await a.client.callTool({ name: 'get_form', arguments: {} })));
-  const bForm = JSON.parse(text(await b.client.callTool({ name: 'get_form', arguments: {} })));
-  const aSecs = (aForm.sections || []).map((s) => s.container_name ?? s.name ?? s.key);
-  const bSecs = (bForm.sections || []).map((s) => s.container_name ?? s.name ?? s.key);
-  check('session A still has its own section', JSON.stringify(aForm).includes('moulding'));
-  check('session B has its own section', JSON.stringify(bForm).includes('inspection'));
-  check('sessions are isolated (B has no moulding)', !JSON.stringify(bForm).includes('moulding'));
+  check('edits in one session are visible in another (shared doc)', JSON.stringify(aForm).includes('inspection'));
 
-  // 5. distinct session ids
+  // 5. distinct session ids (separate transports, shared state)
   check('each session has a distinct id', a.transport.sessionId && b.transport.sessionId && a.transport.sessionId !== b.transport.sessionId);
 
   await a.client.close();

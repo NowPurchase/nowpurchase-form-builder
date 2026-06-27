@@ -95,17 +95,20 @@ const LIFECYCLE_TOOLS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Per-session server factory. Each call owns its own `doc` (form state), so an
-// HTTP deployment can run many independent sessions concurrently. The handler
-// logic is identical to the single-session path — only the state is scoped.
+// MCP server factory. Form state lives in a `holder` object ({ doc }) passed in
+// by the caller, so it can OUTLIVE a single MCP session. This matters for
+// remote (HTTP) use: claude.ai makes each tool call as its own short-lived
+// session, so per-session state would vanish between calls. The HTTP layer
+// therefore keeps one holder per authenticated client and shares it across that
+// client's sessions. If no holder is passed (stdio), we create a private one.
 // ---------------------------------------------------------------------------
-function createServer({ enablePersist = false } = {}) {
-  let doc = enablePersist ? loadDoc() : { steps: [emptyStep()], active: 0 };
+function createServer({ enablePersist = false, holder } = {}) {
+  const h = holder || { doc: enablePersist ? loadDoc() : { steps: [emptyStep()], active: 0 } };
 
-  const cur = () => doc.steps[doc.active].state;
-  const setCur = (s) => { doc.steps[doc.active].state = s; };
+  const cur = () => h.doc.steps[h.doc.active].state;
+  const setCur = (s) => { h.doc.steps[h.doc.active].state = s; };
   // single step → plain FormEngine form; multiple steps → multi-step wrapper
-  const currentExport = () => (doc.steps.length > 1 ? exportMultiStep(doc.steps) : exportJSON(cur()));
+  const currentExport = () => (h.doc.steps.length > 1 ? exportMultiStep(h.doc.steps) : exportJSON(cur()));
 
   const persist = () => {
     if (enablePersist && FORM_FILE) {
@@ -115,8 +118,8 @@ function createServer({ enablePersist = false } = {}) {
 
   const resolveStepIndex = (args) => {
     if (typeof args.index === 'number') return args.index;
-    if (args.name) return doc.steps.findIndex((s) => s.name === args.name);
-    return doc.active;
+    if (args.name) return h.doc.steps.findIndex((s) => s.name === args.name);
+    return h.doc.active;
   };
 
   const server = new Server(
@@ -138,7 +141,7 @@ function createServer({ enablePersist = false } = {}) {
 
     switch (name) {
       case 'new_form':
-        doc = { steps: [emptyStep()], active: 0 };
+        h.doc = { steps: [emptyStep()], active: 0 };
         persist();
         return ok('Started a new empty form.');
 
@@ -147,13 +150,13 @@ function createServer({ enablePersist = false } = {}) {
           const json = typeof args.json === 'string' ? JSON.parse(args.json) : args.json;
           const steps = importMultiStep(json);
           if (steps) {
-            doc = { steps, active: 0 };
+            h.doc = { steps, active: 0 };
             persist();
             return ok(`Imported a multi-step form with ${steps.length} step(s): ${steps.map((s) => s.name).join(', ')}.`);
           }
-          doc = { steps: [{ name: 'Step 1', state: importJSON(json) }], active: 0 };
+          h.doc = { steps: [{ name: 'Step 1', state: importJSON(json) }], active: 0 };
           persist();
-          return ok(`Imported a single form with ${doc.steps[0].state.sections.length} section(s).`);
+          return ok(`Imported a single form with ${h.doc.steps[0].state.sections.length} section(s).`);
         } catch (e) {
           return ok(`⚠ Could not import: ${e.message}`);
         }
@@ -163,11 +166,11 @@ function createServer({ enablePersist = false } = {}) {
         return ok(JSON.stringify(currentExport(), null, 2));
 
       case 'get_form':
-        if (doc.steps.length > 1) {
+        if (h.doc.steps.length > 1) {
           return ok(JSON.stringify({
             form_type: 'multi-step',
-            active: doc.active,
-            steps: doc.steps.map((st, i) => ({ index: i, name: st.name, ...summarizeState(st.state) })),
+            active: h.doc.active,
+            steps: h.doc.steps.map((st, i) => ({ index: i, name: st.name, ...summarizeState(st.state) })),
           }, null, 2));
         }
         return ok(JSON.stringify(summarizeState(cur()), null, 2));
@@ -176,37 +179,37 @@ function createServer({ enablePersist = false } = {}) {
         return ok(buildPreviewUrl(PREVIEW_BASE_URL, currentExport()));
 
       case 'add_step': {
-        doc.steps.push(emptyStep(args.name || `Step ${doc.steps.length + 1}`));
-        doc.active = doc.steps.length - 1;
+        h.doc.steps.push(emptyStep(args.name || `Step ${h.doc.steps.length + 1}`));
+        h.doc.active = h.doc.steps.length - 1;
         persist();
-        return ok(`Added step "${doc.steps[doc.active].name}" — now ${doc.steps.length} steps; it is the active step.`);
+        return ok(`Added step "${h.doc.steps[h.doc.active].name}" — now ${h.doc.steps.length} steps; it is the active step.`);
       }
 
       case 'switch_step': {
         const idx = resolveStepIndex(args);
-        if (idx < 0 || idx >= doc.steps.length) return ok('⚠ No such step.');
-        doc.active = idx;
-        return ok(`Active step is now "${doc.steps[idx].name}" (${idx + 1}/${doc.steps.length}).`);
+        if (idx < 0 || idx >= h.doc.steps.length) return ok('⚠ No such step.');
+        h.doc.active = idx;
+        return ok(`Active step is now "${h.doc.steps[idx].name}" (${idx + 1}/${h.doc.steps.length}).`);
       }
 
       case 'rename_step':
-        doc.steps[doc.active].name = args.name;
+        h.doc.steps[h.doc.active].name = args.name;
         persist();
         return ok(`Renamed the active step to "${args.name}".`);
 
       case 'remove_step': {
-        if (doc.steps.length <= 1) return ok('⚠ Cannot remove the only step.');
+        if (h.doc.steps.length <= 1) return ok('⚠ Cannot remove the only step.');
         const idx = resolveStepIndex(args);
-        if (idx < 0 || idx >= doc.steps.length) return ok('⚠ No such step.');
-        const [rm] = doc.steps.splice(idx, 1);
-        doc.active = Math.min(doc.active, doc.steps.length - 1);
+        if (idx < 0 || idx >= h.doc.steps.length) return ok('⚠ No such step.');
+        const [rm] = h.doc.steps.splice(idx, 1);
+        h.doc.active = Math.min(h.doc.active, h.doc.steps.length - 1);
         persist();
-        return ok(`Removed step "${rm.name}". ${doc.steps.length} step(s) left.`);
+        return ok(`Removed step "${rm.name}". ${h.doc.steps.length} step(s) left.`);
       }
 
       case 'list_steps':
         return ok(JSON.stringify(
-          doc.steps.map((s, i) => ({ index: i, name: s.name, active: i === doc.active, sections: (s.state.sections || []).length })),
+          h.doc.steps.map((s, i) => ({ index: i, name: s.name, active: i === h.doc.active, sections: (s.state.sections || []).length })),
           null, 2,
         ));
 
@@ -254,6 +257,18 @@ async function startHttp() {
   const resourceServerUrl = new URL('/mcp', issuerUrl);
 
   const transports = Object.create(null); // sessionId -> StreamableHTTPServerTransport
+  // Form state keyed by the authenticated USER (the per-login userKey baked into
+  // the OAuth token, stable across token refresh), so:
+  //   • a build survives claude.ai's per-call sessions (same user → same doc), and
+  //   • concurrent users are isolated (each login gets its own userKey).
+  // Single-instance in-memory; horizontal scaling would need an external store.
+  const docs = new Map(); // userKey -> { doc }
+  const holderFor = (key) => {
+    const k = key || 'anon';
+    let holder = docs.get(k);
+    if (!holder) { holder = { doc: { steps: [emptyStep()], active: 0 } }; docs.set(k, holder); }
+    return holder;
+  };
 
   const provider = createOAuthProvider({ sharedSecret: SECRET, loginPassword: LOGIN_PASSWORD });
 
@@ -287,13 +302,15 @@ async function startHttp() {
 
       if (!transport) {
         if (req.method === 'POST' && isInitializeRequest(body)) {
-          // new session: fresh transport + fresh per-session server/state
+          // new session, but state is shared per authenticated user so it
+          // survives across claude.ai's per-call sessions
+          const holder = holderFor(req.auth?.extra?.userKey || req.auth?.clientId);
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (id) => { transports[id] = transport; },
           });
           transport.onclose = () => { if (transport.sessionId) delete transports[transport.sessionId]; };
-          await createServer().connect(transport);
+          await createServer({ holder }).connect(transport);
         } else {
           res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'No valid session — send an initialize request first.' }, id: null });
           return;

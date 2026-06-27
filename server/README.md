@@ -74,9 +74,14 @@ The same server speaks **two transports** from one codebase (no logic duplicated
 | **stdio** (default) | local MCP hosts (Claude Desktop/Code/Cursor) | `node server/mcp-formengine.mjs` |
 | **Streamable HTTP** | remote — a claude.ai **custom connector** | `MCP_TRANSPORT=http` (or set `PORT`) |
 
-HTTP mode keeps **per-session** form state (keyed by `Mcp-Session-Id`), so many
-people can build concurrently without colliding. It does **not** persist to a DB
-— persistence is the chat / preview-URL→save model.
+HTTP mode keeps form state **per authenticated user** — keyed by a `userKey`
+baked into each OAuth login's token (stable across token refresh), **not** by
+the MCP session id. This is deliberate: claude.ai issues a fresh MCP session for
+**every tool call**, so per-session state would vanish between `add_section` and
+`export_form`. Keying by user means a build accumulates across those calls, while
+concurrent users (separate logins) stay isolated. State is in-memory on a single
+instance (no DB; horizontal scaling would need an external store) — persistence
+of a finished form is the chat / preview-URL→save model.
 
 ### Auth: OAuth 2.1 (what claude.ai uses)
 
@@ -150,8 +155,8 @@ fork. Guard with the test suites below before shipping.
 
 ```bash
 npm run test:mcp        # stdio: spawn server + real client, build → export (28 checks)
-npm run test:mcp-http   # http: health, 401 without bearer, build→export, per-session isolation (12 checks)
-npm run test:mcp-oauth  # http: full OAuth 2.1 flow — discovery → DCR → login → PKCE token → authed /mcp (19 checks)
+npm run test:mcp-http   # http: auth, build→export, cross-session persistence (same user) (11 checks)
+npm run test:mcp-oauth  # http: full OAuth flow + per-user persistence across refresh + concurrent-user isolation (21 checks)
 
 # validate the BUNDLED artifact (not just source) over HTTP:
 npm run mcp:bundle && MCP_SERVER_PATH=server/dist/mcp.mjs npm run test:mcp-http
